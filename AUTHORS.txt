@@ -1,0 +1,270 @@
+Code authors
+============
+
+This program was written by the following people:
+ - David M. Maletz
+
+
+Asset attribution
+=================
+
+
+Base LPC Assets authored by the following people:
+=================================================
+
+Stephen Challener (AKA Redshrike)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Character templates
+ - female_walkcycle.png
+ - female_hurt.png
+ - female_slash.png
+ - female_spellcast.png
+ - male_walkcycle.png
+ - male_hurt.png
+ - male_slash.png
+ - male_spellcast.png
+ - male_pants.png
+ - male_hurt_pants.png
+ - male_fall_down_pants.png
+ - male_slash_pants.png
+
+
+Charles Sanchez (AKA CharlesGabriel)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Monsters
+ - bat.png
+ - bee.png
+ - big_worm.png
+ - eyeball.png
+ - ghost.png
+ - man_eater_flower.png
+ - pumpking.png
+ - slime.png
+ - small_worm.png
+ - snake.png
+
+Manuel Riecke (AKA MrBeast)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - hairfemale.png and hairfemale.xcf
+ - hairmale.png and hairmale.xcf
+
+
+Universal LPC Spritesheet Assets authored by the following people:
+==================================================================
+ 
+Luke Mehl
+~~~~~~~~~
+Most of the female assets
+All layers in the tiaras group
+All layers in the necklaces group
+All layers in the buckles group
+silver belt
+iron belt
+gold belt
+brown belt
+bronze belt
+black belt
+All layers in the robes group
+All layers in the slippers group
+
+Johannes Sjölund
+~~~~~~~~~~~~~~~~
+shield (cutout metal hat)
+shield (cutout body)
+spear
+dagger (m)
+arrow
+arrow (skeleton)
+bow
+bow (skeleton)
+gloves metal (m)
+helmet metal (plate)
+hat (chain)
+hat (leather)
+hood (chain)
+hood (robe)
+page (color removed by Matthew Krohn)
+page2 (adapted from page by Joe White)
+Casting Eyeglow
+belt leather (m)
+belt rope (m)
+arms shoulders (m)
+plate (m)
+bracers (m)
+leather shoulders (m)
+torso (m)
+jacket purple (chain)
+torso (chain)
+shirt brown (robes)
+shirt white (leather)
+pants metal (m)
+skirt brown (robes)
+pants greenish (leather, chain)
+boots metal (m)
+shoes black
+shoes brown (leather, chain)
+quiver
+The following base animations:
+	Thrust (male)
+	Shoot (male)
+	Walkcycle (skeleton)
+	Hurt (skeleton)
+	Slash (skeleton)
+	Spellcast (skeleton)
+Oversized spear
+Oversized male longsword
+Oversized male rapier
+
+Marcel van de Steeg
+~~~~~~~~~~~~~~~~~~~
+bracelet
+orceyepatch
+bandana
+pirateshirtlady
+Tanned and dark skinned color tones
+orc
+
+Manuel Riecke
+~~~~~~~~~~~~~
+ponytail
+loose
+swoop
+pixie
+bangsshort
+bangslong
+unkempt
+messy1
+longhawk
+messy2
+bedhead
+shorthawk
+bangs
+mohawk
+long
+
+Thane Brimhall
+~~~~~~~~~~~~~~
+dress with sash
+ghillies
+All layers in the Formal Male Attire group
+All layers in the Accessories group (except necklaces)
+
+Matthew Krohn
+~~~~~~~~~~~~~
+Adapted the following
+dagger (f)
+metal gloves (f)
+leather belt (f)
+rope belt (f)
+plate shoulders (f)
+plate chest (f)
+bracers (f)
+leather shoulders (f)
+leather torso (f)
+robe skirt (f)
+metal pants (f)
+metal boots (f)
+golden armor layers (f)
+The following base animations:
+	Thrust (female)
+	Shoot (female)
+Oversized female longsword
+Oversized female rapier
+Oversized female saber
+Oversized female mace
+
+Lori Angela Nagel
+~~~~~~~~~~~~~~~~~
+wings
+robe
+
+Lanea Zimmerman (AKA Sharm)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+overskirt
+blue vest
+underdress
+princess (color removed by Matthew Krohn)
+
+Stephen Challener (AKA Redshrike)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The following base animations:
+	Walkcycle (male and female)
+	Hurt (male and female)
+	Slash (male and female)
+	Spellcast (male and female)
+Orc heads adapted by Marcel van de Steeg from Stephen Challener's original material
+
+Daniel Eddeland
+~~~~~~~~~~~~~~~
+greatbow
+recurve bow
+Oversized male mace
+Oversized male saber
+Oversized trident
+Oversized dragonspear
+
+Shaun Williams
+~~~~~~~~~~~~~~
+Golden Armor (male) layers (separated by Matthew Krohn)
+
+Joe White
+~~~~~~~~~
+brown shoes (f)
+black shoes (f)
+thrust and shoot animations for slippers layers
+green pants (f)
+ponytail2 hairstyle (f)
+plain hairstyle (m)
+
+Mark Weyer
+~~~~~~~~~~
+dark2 (male and female)
+grey eyes (male and female)
+
+Barbara Rivera
+~~~~~~~~~~~~~~
+bangslong2 (based on bangsshort)
+bunches (based on unkempt)
+
+
+Other Assets authored by the following people:
+==============================================
+
+Daniel Eddeland
+~~~~~~~~~~~~~~~
+turtleshell_side.png
+snakebite_side.png
+firelion_left.png
+iceshield.png
+lightningclaw.png
+spikes.png
+torrentacle.png
+tornado.png
+
+JAP
+~~~
+sunsetintheswamp.png
+cloudsinthedesert.png
+wizardtower.png
+
+pennomi
+~~~~~~~
+frame.png
+
+McFunkypants (One Game A Month)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+font.png
+
+
+Achievement Icons authored by the following people:
+===================================================
+Lorc, http://lorcblog.blogspot.com
+Delapouite, http://delapouite.com
+John Colburn, http://ninmunanmu.com
+Felbrigg, http://blackdogofdoom.blogspot.co.uk
+
+
+Finally, some modifications, including asset manipulation code and the white_shirt_female.png were done by David Maletz.
