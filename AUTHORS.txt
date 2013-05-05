@@ -8,6 +8,11 @@ This program was written by the following people:
 Asset attribution
 =================
 
+Music and Sound Effects authored by the following people:
+=========================================================
+
+Dean Bigbee
+Paul Acerno
 
 Base LPC Assets authored by the following people:
 =================================================

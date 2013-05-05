@@ -8,8 +8,6 @@ However, my plan is to create a full-featured, easy to use RPG Maker-like game e
 
 Stay tuned for updates, and if you want to support the project, feel free to contact me!
 
-Sound Effects and Music for Rhythos were created by Robot Horse Productions (Dean Bigbee and Paul Acerno), however have not been included in this repository yet as I have to get his approval to release these under the creative commons as he is away on a trip. Hopefully, he will be back soon and I will get his consent and add those. Until then, the generated out.swf will be silent and battles will crash when it tries to read the bgm length.
-
 Building and running
 --------------------
 

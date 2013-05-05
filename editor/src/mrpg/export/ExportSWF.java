@@ -200,7 +200,7 @@ public class ExportSWF {
 			
 			System.out.println("sounds");
 
-			/*swf.addSound(loadSound(new File(FOLDER+"bgm/menu.mp3")), "menu");
+			swf.addSound(loadSound(new File(FOLDER+"bgm/menu.mp3")), "menu");
 			swf.addSound(loadSound(new File(FOLDER+"bgm/battle1.mp3")), "battle", 1);
 			swf.addSound(loadSound(new File(FOLDER+"bgm/battle2.mp3")), "battle", 2);
 			swf.addSound(loadSound(new File(FOLDER+"bgm/battle3.mp3")), "battle", 3);
@@ -230,7 +230,7 @@ public class ExportSWF {
 			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_water.mp3")), "spell_sfx", 4);
 			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_wind.mp3")), "spell_sfx", 5);
 			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_lightning.mp3")), "spell_sfx", 6);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_heal.mp3")), "spell_sfx", 7);*/
+			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_heal.mp3")), "spell_sfx", 7);
 			
 			ByteArrayOutputStream ar = new ByteArrayOutputStream();
 			DataOutputStream out = new DataOutputStream(ar); out.writeUTF("HELLO WORLD!");
