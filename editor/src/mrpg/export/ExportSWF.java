@@ -97,6 +97,8 @@ public class ExportSWF {
 	}
 	public static void test(){
 		try {
+			File f = new File("img"); if(!f.exists()) f.mkdir();
+			f = new File("snd"); if(!f.exists()) f.mkdir();
 			String FOLDER = "../assets/"; System.out.println("start");
 			Graphic font = loadImage(new File(FOLDER+"font.png"));
 			Graphic bg = loadImage(new File(FOLDER+"swamp.png"));

@@ -15,9 +15,13 @@ Building and running
 
 First, in rhythos/game, open Rhythos.hxproj in Flash Develop and build a release flash version of the base code. Only the flash release option currently works, the other options will require some work to fix platform-dependent differences. If you don't have Flash Develop, you can get it, or use another text editor. Haxe/NME and all dependencies can be found here: http://www.nme.io/
 
+Copy the created rhythos/game/bin/flash/bin/base.swf into rhythos/editor/src, or in eclipse, you can use the Link Source option to automatically link the base.swf as part of the generated source.
+
 Next, in rhythos/editor, import the project into Eclipse, compile and run MapEditor. It will run the map editor (still under development), and in the console, it will print updates on the conversion of all assets and creation of the swf. This may take some time the first time you run the code. When it prints "Done," you can close the MapEditor window (which will end the program), and you should see an out.swf in rhythos/editor. This used the base.swf we created from rhythos/game, and added all of the art and music assets and created something that runs very similarly to the publicly uploaded version (it's certainly playable, with a few small bugs as this process is still under development).
 
 The generation of out.swf can be disabled by commenting out ExportSWF.test(); in the main function. Feel free to mess with the MapEditor, but I am currently in the process of switching it over to a nicer system of resource management linked with files, and so importing, exporting, opening and saving will be disabled.
+
+This will be easier later, I promise!
 
 TODO
 --------------------
