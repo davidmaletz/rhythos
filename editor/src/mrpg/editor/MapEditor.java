@@ -26,6 +26,9 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -42,6 +45,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -56,6 +60,17 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreePath;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import mrpg.display.WorldPanel;
 import mrpg.editor.resource.AutoTile;
@@ -65,6 +80,7 @@ import mrpg.editor.resource.Media;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
 import mrpg.editor.resource.Tileset;
+import mrpg.editor.resource.Workspace;
 import mrpg.editor.tools.FillTool;
 import mrpg.editor.tools.LineTool;
 import mrpg.editor.tools.PencilTool;
@@ -77,7 +93,7 @@ import mrpg.export.Target;
 import mrpg.world.Tile;
 import mrpg.world.World;
 
-public class MapEditor extends JFrame implements ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
+public class MapEditor extends JFrame implements WindowListener, ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
 	
 	private static final long serialVersionUID = 7934438411041874443L;
 	
@@ -164,8 +180,8 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		deselect(); historyChanged(); clipboardChanged(); valueChanged(null);
 		
 		w.startAnim();
-		
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); setSize(800,600); setVisible(true);
+		addWindowListener(this);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); setSize(800,600); setVisible(true);
 	}
 	
 	private static Hashtable<String, ImageIcon> icons = new Hashtable<String, ImageIcon>();
@@ -475,6 +491,22 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 	}
 
 	public WorkspaceBrowser getBrowser(){return browser;}
+	
+	public void windowActivated(WindowEvent e) {}
+	public void windowClosed(WindowEvent e) {}
+	public void windowClosing(WindowEvent e) {
+		if(saveall.isEnabled()){
+			int i = JOptionPane.showConfirmDialog(this, "Save all maps before closing?");
+			if(i == JOptionPane.NO_OPTION){writeWorkspace(); dispose();}
+			else if(i == JOptionPane.YES_OPTION){
+				browser.saveAll(); writeWorkspace(); dispose();
+			}
+		} else{writeWorkspace(); dispose();}
+	}
+	public void windowDeactivated(WindowEvent e) {}
+	public void windowDeiconified(WindowEvent e) {}
+	public void windowIconified(WindowEvent e) {}
+	public void windowOpened(WindowEvent e) {}
 
 	public static MapEditor instance;
 	
@@ -499,6 +531,33 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 	public static Object[] getTargetsArray(){return targets.toArray();}
 	public static Class<? extends Target> defaultTarget(){return targets.iterator().next();}
 	
+	private static final DocumentBuilderFactory document_factory = DocumentBuilderFactory.newInstance();
+	private static final TransformerFactory transformer_factory = TransformerFactory.newInstance();
+	private void writeWorkspace(){
+		try{
+			Document doc = document_factory.newDocumentBuilder().newDocument();
+			Element root = doc.createElement("workspace"); doc.appendChild(root);
+			Element element = doc.createElement("projectDirectory");
+			element.setTextContent(Project.folderChooser.getCurrentDirectory().toString()); root.appendChild(element);
+			element = doc.createElement("imageDirectory");
+			element.setTextContent(WorkspaceBrowser.imgChooser.getCurrentDirectory().toString()); root.appendChild(element);
+			element = doc.createElement("mediaDirectory");
+			element.setTextContent(WorkspaceBrowser.sndChooser.getCurrentDirectory().toString()); root.appendChild(element);
+			Workspace w = browser.getWorkspace();
+			for(int i=0; i<w.getProjectCount(); i++){
+				element = doc.createElement("project"); Project p = w.getProject(i);
+				Attr attr = doc.createAttribute("directory");
+				attr.setValue(p.getFile().toString()); element.setAttributeNode(attr);
+				if(current_map != null && WorkspaceBrowser.getProject(current_map) == p){
+					Element elem = doc.createElement("map"); elem.setTextContent(Long.toString(current_map.getId()));
+					element.appendChild(elem);
+				} tileset_viewer.addElements(doc, element, p); root.appendChild(element);
+			}
+			Transformer transformer = transformer_factory.newTransformer(); transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			StreamResult result = new StreamResult(new File(".workspace"));
+			transformer.transform(new DOMSource(doc), result);
+		} catch(Exception e){e.printStackTrace();}
+	}
 	public static void main(String[] args){
 		Resource.register(Image.EXT, Image.class);
 		Resource.register(Media.EXT, Media.class);
@@ -507,5 +566,25 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		Resource.register(AutoTile.EXT, AutoTile.class);
 		registerTarget(SWFTarget.class);
 		instance = new MapEditor(); //SWFTarget.test();
+		File f = new File(".workspace");
+		if(f.exists()) try{
+			Document doc = document_factory.newDocumentBuilder().parse(f);
+			Element root = doc.getDocumentElement();
+			try{Project.folderChooser.setCurrentDirectory(new File(root.getElementsByTagName("projectDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			try{WorkspaceBrowser.imgChooser.setCurrentDirectory(new File(root.getElementsByTagName("imageDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			try{WorkspaceBrowser.sndChooser.setCurrentDirectory(new File(root.getElementsByTagName("mediaDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			NodeList list = root.getElementsByTagName("project");
+			for(int i=0; i<list.getLength(); i++){
+				try{
+					Element element = (Element)list.item(i);
+					Project p = instance.browser.addProject(new File(element.getAttribute("directory")));
+					try{p.getMapById(Long.parseLong(element.getElementsByTagName("map").item(0).getTextContent())).edit();}catch(Exception exx){}
+					try{p.getTilemapById(Long.parseLong(element.getElementsByTagName("tileset").item(0).getTextContent())).edit();}catch(Exception exx){}
+					NodeList n = element.getElementsByTagName("autotile");
+					for(int j=0; j<n.getLength(); j++)
+						try{p.getTilemapById(Long.parseLong(n.item(j).getTextContent())).edit();}catch(Exception exx){}
+				}catch(Exception ex){}
+			}			
+		} catch(Exception e){e.printStackTrace();}
 	}
 }

@@ -70,13 +70,17 @@ public class Image extends Resource {
 	}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
-		out.writeLong(id); graphic.write(out);
+		try{
+			out.writeLong(id); graphic.write(out);
+		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MEDIA);}
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		id = in.readLong(); graphic = new Graphic(in); long i = WorkspaceBrowser.getProject(this).setImageId(this, id);
-		if(i != id){id = i; save();}
+		try{
+			id = in.readLong(); graphic = new Graphic(in); long i = WorkspaceBrowser.getProject(this).setImageId(this, id);
+			if(i != id){id = i; save();}
+		}catch(Exception e){in.close(); throw e;}
 	}
 	
 	public static Image importImage(File img, File f, MapEditor e, Project p) throws Exception {

@@ -81,17 +81,21 @@ public class AutoTile extends TileResource implements ActionListener {
 	}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-		out.writeLong(id); out.writeLong(image.getId()); autotile.write(out); out.flush(); out.close();
+		try{
+			out.writeLong(id); out.writeLong(image.getId()); autotile.write(out); out.flush(); out.close();
+		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
-		if(image.getImage().getHeight() == Tile.tile_size*2)
-			autotile = new WallTilemap(in, image.getImage(), getId());
-		else autotile = new AutoTilemap(in, image.getImage(), getId());
-		in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
-		if(active){active = false; editor.getTilesetViewer().addAutoTile(autotile, p);}
+		try{
+			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
+			if(image.getImage().getHeight() == Tile.tile_size*2)
+				autotile = new WallTilemap(in, image.getImage(), getId());
+			else autotile = new AutoTilemap(in, image.getImage(), getId());
+			in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
+			if(active){active = false; editor.getTilesetViewer().addAutoTile(autotile, p);}
+		}catch(Exception e){in.close(); throw e;}
 	}
 	public static AutoTile createAutoTile(File f, MapEditor e, Project p) throws Exception {
 		AutoTile ret = new AutoTile(f, e); ret.id = p.newTilemapId();

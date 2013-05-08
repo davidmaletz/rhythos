@@ -68,13 +68,17 @@ public class Media extends Resource {
 	}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
-		out.writeLong(id); sound.write(out);
+		try{
+			out.writeLong(id); sound.write(out);
+		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MEDIA);}
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		id = in.readLong(); sound = new Sound(in); long i = WorkspaceBrowser.getProject(this).setMediaId(this, id);
-		if(i != id){id = i; save();}
+		try{
+			id = in.readLong(); sound = new Sound(in); long i = WorkspaceBrowser.getProject(this).setMediaId(this, id);
+			if(i != id){id = i; save();}
+		}catch(Exception e){in.close(); throw e;}
 	}
 	
 	public static Media importMedia(File media, File f, MapEditor e, Project p) throws Exception {

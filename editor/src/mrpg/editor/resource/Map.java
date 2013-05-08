@@ -84,16 +84,21 @@ public class Map extends Resource {
 	public void revert() throws  Exception {super.refresh();}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-		out.writeLong(id); if(background == null) out.writeByte(0); else {out.writeByte(1); out.writeLong(background.getId());}
-		WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this);
+		try{
+			out.writeLong(id); if(background == null) out.writeByte(0); else {out.writeByte(1); out.writeLong(background.getId());}
+			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this);
+		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MAP);}
 	public void deferredRead(File f) throws Exception{
-		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f))); Project p = WorkspaceBrowser.getProject(this);
-		id = in.readLong(); if(in.readByte() == 1) try{background = p.getImageById(in.readLong());}catch(Exception e){background = null;} else background = null;
-		world = World.read(new WorldIO(p, in)); in.close(); if(background != null) world.background = background.getImage();
-		long i = p.setMapId(this, id); if(i != id){id = i; save();}
-		if(active){active = false; edit();} setModified(false);
+		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
+		try{
+			Project p = WorkspaceBrowser.getProject(this);
+			id = in.readLong(); if(in.readByte() == 1) try{background = p.getImageById(in.readLong());}catch(Exception e){background = null;} else background = null;
+			world = World.read(new WorldIO(p, in)); in.close(); if(background != null) world.background = background.getImage();
+			long i = p.setMapId(this, id); if(i != id){id = i; save();}
+			if(active){active = false; edit();} setModified(false);
+		}catch(Exception e){in.close(); throw e;}
 	}
 	
 	public static Map createMap(File f, MapEditor e, Project p) throws Exception{

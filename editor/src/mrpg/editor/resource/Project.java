@@ -58,7 +58,7 @@ import mrpg.editor.WorkspaceBrowser;
 
 public class Project extends Folder {
 	private static final long serialVersionUID = -8656579697414666933L;
-	private static JFileChooser folderChooser = new JFileChooser();
+	public static JFileChooser folderChooser = new JFileChooser();
 	static {
 		folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		folderChooser.setDialogTitle("Choose Project Directory"); 
@@ -77,7 +77,9 @@ public class Project extends Folder {
 	public static Project openProject(MapEditor e, Workspace w) throws Exception {
 		File f; if(folderChooser.showOpenDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
 			f = folderChooser.getSelectedFile(); if(!f.exists() && !f.mkdirs()) throw new Exception();
-		} else throw new Exception();
+		} else throw new Exception(); return openProject(e,w,f);
+	}
+	public static Project openProject(MapEditor e, Workspace w, File f) throws Exception {
 		File prop = new File(f.toString()+File.separator+".project"); if(!prop.exists()) throw new Exception();
 		for(int i=0; i<w.getProjectCount(); i++) if(w.getProject(i).getFile().equals(f)){
 			JOptionPane.showMessageDialog(MapEditor.instance, "The selected project is already open!", "Cannot Open Project", JOptionPane.ERROR_MESSAGE);
@@ -90,19 +92,23 @@ public class Project extends Folder {
 	public void save() throws Exception {
 		File f = new File(getFile().toString()+File.separator+".project");
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-		out.writeUTF(target); if(frame == null) out.writeLong(0); else out.writeLong(frame.getId());
-		if(font == null) out.writeLong(0); else out.writeLong(font.getId());
-		if(bg == null) out.writeLong(0); else out.writeLong(bg.getId()); int sz = options.size();
-		out.write(sz); for(int i=0; i<sz; i++) out.writeUTF(options.get(i)); out.flush(); out.close();
+		try{
+			out.writeUTF(target); if(frame == null) out.writeLong(0); else out.writeLong(frame.getId());
+			if(font == null) out.writeLong(0); else out.writeLong(font.getId());
+			if(bg == null) out.writeLong(0); else out.writeLong(bg.getId()); int sz = options.size();
+			out.write(sz); for(int i=0; i<sz; i++) out.writeUTF(options.get(i)); out.flush(); out.close();
+		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {super.read(f); MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File _f) throws Exception {
 		File f = new File(getFile().toString()+File.separator+".project");
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		target = in.readUTF(); try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
-		try{font = getImageById(in.readLong());}catch(Exception e){font = null;}
-		try{bg = getImageById(in.readLong());}catch(Exception e){bg = null;} int sz = in.read();
-		options = new ArrayList<String>(sz); for(int i=0; i<sz; i++) options.add(in.readUTF()); in.close();
+		try{
+			target = in.readUTF(); try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
+			try{font = getImageById(in.readLong());}catch(Exception e){font = null;}
+			try{bg = getImageById(in.readLong());}catch(Exception e){bg = null;} int sz = in.read();
+			options = new ArrayList<String>(sz); for(int i=0; i<sz; i++) options.add(in.readUTF()); in.close();
+		}catch(Exception e){in.close(); throw e;}
 	}
 	public boolean hasProperties(){return true;}
 	public void contextMenu(JPopupMenu menu){

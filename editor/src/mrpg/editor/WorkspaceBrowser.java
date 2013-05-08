@@ -58,7 +58,7 @@ import mrpg.editor.resource.Workspace;
 
 public class WorkspaceBrowser extends JTree implements ActionListener, MouseListener, MouseMotionListener {
 	private static final long serialVersionUID = -2561363020096125820L;
-	private static JFileChooser imgChooser = new JFileChooser(), sndChooser = new JFileChooser();
+	public static JFileChooser imgChooser = new JFileChooser(), sndChooser = new JFileChooser();
 	private static class ExtFileFilter extends FileFilter {
 		private String[] ext; private String name;
 		public ExtFileFilter(String n, String[] _ext){
@@ -112,6 +112,10 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		scrollPathToVisible(path);
 		editor.updateSaveButtons();
 	}
+	public Project addProject(File f) throws Exception {
+		Project p = Project.openProject(editor, (Workspace)getModel().getRoot(), f); addProject(p);
+		MapEditor.doDeferredRead(false); return p;
+	}
 	public static Project getProject(TreePath path){return (path.getPathCount() <= 1)?null:(Project)path.getPathComponent(1);}
 	public static Project getProject(Resource node){
 		Resource ret = null;
@@ -147,27 +151,27 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			if(parent == null) selectProjectError();
 		} return parent;
 	}
-	private void importImage(Resource parent, File f){
+	private void importImage(Resource parent, File f, Project p, boolean sub){
 		String dir = parent.getFile().toString();
 		String n = f.getName(); int idx = n.lastIndexOf('.'); if(idx != -1) n = n.substring(0,idx); Resource r;
 		try{
 			if(f.isDirectory()){
 				r = Folder.create(new File(dir+File.separator+n), editor);
-				for(File c : f.listFiles()) importImage(r, c);
+				for(File c : f.listFiles()) if(sub || !c.isDirectory()) importImage(r, c, p, sub);
 			} else {
-				r = Image.importImage(f, new File(dir+File.separator+n+"."+Image.EXT), editor, getProject(parent));
+				r = Image.importImage(f, new File(dir+File.separator+n+"."+Image.EXT), editor, p);
 			} addResource(r, parent);
 		}catch(Exception e){}
 	}
-	private void importMedia(Resource parent, File f){
+	private void importMedia(Resource parent, File f, Project p, boolean sub){
 		String dir = parent.getFile().toString();
 		String n = f.getName(); int idx = n.lastIndexOf('.'); if(idx != -1) n = n.substring(0,idx); Resource r;
 		try{
 			if(f.isDirectory()){
 				r = Folder.create(new File(dir+File.separator+n), editor);
-				for(File c : f.listFiles()) importMedia(r, c);
+				for(File c : f.listFiles()) if(sub || !c.isDirectory()) importMedia(r, c, p, sub);
 			} else {
-				r = Media.importMedia(f, new File(dir+File.separator+n+"."+Media.EXT), editor, getProject(parent));
+				r = Media.importMedia(f, new File(dir+File.separator+n+"."+Media.EXT), editor, p);
 			} addResource(r, parent);
 		}catch(Exception e){}
 	}
@@ -259,13 +263,22 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		if(command == MapEditor.SAVE) saveSelection();
 		else if(command == MapEditor.SAVE_ALL) saveAll();
 		else if(command == MapEditor.REVERT) revertSelection();
-		else if(command == MapEditor.OPEN){try{addProject(Project.openProject(editor, (Workspace)getModel().getRoot())); MapEditor.doDeferredRead(false);}catch(Exception ex){}
+		else if(command == MapEditor.OPEN){
+			try{
+				addProject(Project.openProject(editor, (Workspace)getModel().getRoot())); MapEditor.doDeferredRead(false);
+			}catch(Exception ex){}
 		} else if(command == MapEditor.DELETE){
 			deleteSelection();
 		} else if(command == MapEditor.REFRESH){
 			refreshSelection();
 		} else if(command == MapEditor.REMOVE){
-			removeResource(getSelectedResource(), false);
+			Resource r = getSelectedResource(); if(innerAnyModified(r)){
+				int i = JOptionPane.showConfirmDialog(this, "Save all maps before removing project?");
+				if(i == JOptionPane.NO_OPTION) removeResource(r, false);
+				else if(i == JOptionPane.YES_OPTION){
+					innerSaveAll(r); removeResource(r, false);
+				}
+			} else removeResource(r, false);
 		} else if(command == MapEditor.RENAME){
 			Resource r = getSelectedResource(); String s = r.getName();
 			String name = JOptionPane.showInputDialog(this, "Enter new name for \""+s+"\":", s);
@@ -281,15 +294,21 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		else if(command == IMAGE_ICON){
 			if(imgChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
 				try{
-					Resource parent = getInsertResource();
-					for(File f : imgChooser.getSelectedFiles()) importImage(parent, f);
+					Resource parent = getInsertResource(); boolean sub = false;
+					for(File f : imgChooser.getSelectedFiles()) if(f.isDirectory()) sub = true;
+					if(sub) sub = JOptionPane.showConfirmDialog(this, "Include Subdirectories?", "Import Images", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE) == JOptionPane.YES_OPTION;
+					for(File f : imgChooser.getSelectedFiles()) importImage(parent, f, getProject(parent), sub);
+					MapEditor.doDeferredRead(true);
 				} catch(Exception ex){}
 			}
 		} else if(command == MEDIA_ICON){
 			if(sndChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
 				try{
-					Resource parent = getInsertResource();
-					for(File f : sndChooser.getSelectedFiles()) importMedia(parent, f);
+					Resource parent = getInsertResource(); boolean sub = false;
+					for(File f : sndChooser.getSelectedFiles()) if(f.isDirectory()) sub = true;
+					if(sub) sub = JOptionPane.showConfirmDialog(this, "Include Subdirectories?", "Import Media", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE) == JOptionPane.YES_OPTION;
+					for(File f : sndChooser.getSelectedFiles()) importMedia(parent, f, getProject(parent), sub);
+					MapEditor.doDeferredRead(true);
 				} catch(Exception ex){}
 			}
 		} else if(command == SCRIPT_ICON){/*TODO:addResource(new Script(Script.DEFAULT_NAME, editor));*/

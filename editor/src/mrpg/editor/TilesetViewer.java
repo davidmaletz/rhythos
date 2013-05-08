@@ -31,6 +31,9 @@ import java.util.Iterator;
 import javax.swing.JPanel;
 import javax.swing.Scrollable;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import mrpg.editor.resource.Project;
 import mrpg.world.BasicTilemap;
 import mrpg.world.Direction;
@@ -75,7 +78,8 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 		} catch(Exception e){}
 	}
 	public void setTilemap(BasicTilemap map, Project p){
-		if(mainMap == map || (project != null && project != p)) return; selX1 = 0; selY1 = 0; selX2 = 0; selY2 = 0; mainMap = map; computeSize();
+		if(mainMap == map || (project != null && project != p)) return;
+		selX1 = 0; selY1 = 0; selX2 = 0; selY2 = 0; mainMap = map; computeSize();
 	}
 	public boolean removeTilemap(BasicTilemap map){
 		if(mainMap == map){selX1 = 0; selY1 = 0; selX2 = 0; selY2 = 0; mainMap = null; computeSize(); return true;} else return false;
@@ -89,10 +93,18 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 	public void addAutoTile(Tilemap m, Project p){
 		if(!m.indexNeighbors() || (project != null && project != p)) return;
 		if(extraTiles == null) extraTiles = new ArrayList<Tilemap>();
-		extraTiles.add(m); computeSize();
+		extraTiles.add(m); computeSize(); computeSize();
 	}
 	public boolean removeAutoTile(Tilemap m){
 		if(extraTiles == null) return false; boolean ret = extraTiles.remove(m); computeSize(); return ret;
+	}
+	public void addElements(Document doc, Element element, Project p){
+		if(project != p) return;
+		if(mainMap != null){
+			Element elem = doc.createElement("tileset"); elem.setTextContent(Long.toString(mainMap.getId())); element.appendChild(elem);
+		} if(extraTiles != null) for(Tilemap t : extraTiles){
+			Element elem = doc.createElement("autotile"); elem.setTextContent(Long.toString(t.getId())); element.appendChild(elem);
+		}
 	}
 	public void paint(Graphics g){
 		g.getClipBounds(rect);

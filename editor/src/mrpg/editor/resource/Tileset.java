@@ -74,15 +74,19 @@ public class Tileset extends TileResource implements ActionListener {
 	}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-		out.writeLong(id); out.writeLong(image.getId()); tilemap.write(out); out.flush(); out.close();
+		try{
+			out.writeLong(id); out.writeLong(image.getId()); tilemap.write(out); out.flush(); out.close();
+		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
-		tilemap = new BasicTilemap(in, image.getImage(), getId());
-		in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
-		if(active){active = false; editor.getTilesetViewer().setTilemap(tilemap, p);}
+		try{
+			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
+			tilemap = new BasicTilemap(in, image.getImage(), getId());
+			in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
+			if(active){active = false; editor.getTilesetViewer().setTilemap(tilemap, p);}
+		}catch(Exception e){in.close(); throw e;}
 	}
 	
 	public static Tileset createTileset(File f, MapEditor e, Project p) throws Exception {

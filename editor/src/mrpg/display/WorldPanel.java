@@ -32,6 +32,7 @@ import javax.swing.JPanel;
 import javax.swing.Scrollable;
 import javax.swing.Timer;
 
+import mrpg.editor.MapEditor;
 import mrpg.world.Cell;
 import mrpg.world.Tile;
 import mrpg.world.World;
@@ -178,7 +179,7 @@ public class WorldPanel extends JPanel implements ActionListener, Scrollable {
 		if(isDisplayable()){
 			frame_num++;
 			if(world != null) repaint();
-		}
+		} if(!MapEditor.instance.isDisplayable()) timer.stop();
 	}
 	
 	public int getFrame(){return frame_num;}
