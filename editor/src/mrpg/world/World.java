@@ -19,11 +19,12 @@
 package mrpg.world;
 
 import java.awt.Image;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+
+import mrpg.editor.resource.Project;
+import mrpg.export.WorldIO;
 
 public class World {
 	private ArrayList<Cell> cells;
@@ -42,6 +43,10 @@ public class World {
 			Cell c = w.cells.get(i);
 			cells.add((c == null)?null:new Cell(c, this));
 		}
+	}
+	public void refresh(Project p){
+		boolean u = false; for(Cell c : cells) if(c != null) u |= c.refresh(p);
+		if(u) updateNeighbors();
 	}
 	public int getWidth(){return width;} public int getHeight(){return height;}
 	public Cell getCell(int x, int y){
@@ -99,35 +104,35 @@ public class World {
 		width = _width; height = _height; cells = _cells;
 	}
 	
-	public void write(DataOutputStream out, Tilemap tileIO) throws IOException {
-		out.write(width); out.write(height); int wrap = 0; if(wrapX) wrap |= 1; if(wrapY) wrap |= 2; out.write(wrap);
+	public void write(WorldIO tileIO) throws IOException {
+		tileIO.write(width); tileIO.write(height); int wrap = 0; if(wrapX) wrap |= 1; if(wrapY) wrap |= 2; tileIO.write(wrap);
 		for(int i=0; i<width*height; i++){
 			Cell c = cells.get(i);
-			if(c == null) out.write(0);
+			if(c == null) tileIO.write(0);
 			else {
 				int ct = 0;
 				for(Tile t : c) if(t != Tile.empty) ct++;
-				out.write(ct); ct = 0;
+				tileIO.write(ct); ct = 0;
 				for(Tile t : c){
-					if(t != Tile.empty){out.write(ct); t.write(out, tileIO);}
+					if(t != Tile.empty){tileIO.write(ct); t.write(tileIO);}
 					ct++;
 				}
 			}
 		}
 	}
-	public static World read(DataInputStream in, Tilemap tileIO) throws IOException {
-		int width = in.read(); int height = in.read();
+	public static World read(WorldIO tileIO) throws IOException {
+		int width = tileIO.read(); int height = tileIO.read();
 		World w = new World(width, height, true);
-		int wrap = in.read(); w.wrapX = (wrap & 1) != 0; w.wrapY = (wrap & 2) != 0;
+		int wrap = tileIO.read(); w.wrapX = (wrap & 1) != 0; w.wrapY = (wrap & 2) != 0;
 		for(int y=0; y<height; y++)
 		for(int x=0; x<width; x++){
-			int tiles = in.read();
+			int tiles = tileIO.read();
 			if(tiles == 0) w.cells.add(null);
 			else{
 				Cell c = new Cell(w, x, y); w.cells.add(c);
 				for(int t=0; t<tiles; t++){
-					int level = in.read();
-					c.setTile(Tile.read(in, tileIO), level, false);
+					int level = tileIO.read();
+					c.setTile(Tile.read(tileIO), level, false);
 				}
 			}
 		}

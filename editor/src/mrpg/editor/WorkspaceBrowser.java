@@ -28,14 +28,17 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.io.File;
 import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
+import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
 import javax.swing.border.Border;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.basic.BasicTreeUI;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -44,25 +47,48 @@ import javax.swing.tree.TreeSelectionModel;
 
 import mrpg.editor.resource.AutoTile;
 import mrpg.editor.resource.Folder;
+import mrpg.editor.resource.Image;
 import mrpg.editor.resource.Map;
+import mrpg.editor.resource.Media;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
 import mrpg.editor.resource.Tileset;
-import mrpg.editor.resource.Type;
 import mrpg.editor.resource.Workspace;
 
 
 public class WorkspaceBrowser extends JTree implements ActionListener, MouseListener, MouseMotionListener {
 	private static final long serialVersionUID = -2561363020096125820L;
+	private static JFileChooser imgChooser = new JFileChooser(), sndChooser = new JFileChooser();
+	private static class ExtFileFilter extends FileFilter {
+		private String[] ext; private String name;
+		public ExtFileFilter(String n, String[] _ext){
+			ext = _ext; StringBuilder b = new StringBuilder();
+			b.append(n); b.append(" ("); for(String e : ext){
+				b.append("*"); b.append(e); if(e != ext[ext.length-1]) b.append(",");
+			} b.append(")"); name = b.toString();
+		}
+		public boolean accept(File f){
+			if(f == null || f.toString() == null) return false; if(f.isDirectory()) return true;
+			String s = f.toString(); for(String e : ext){
+				if(s.endsWith(e)) return true;
+			} return false;
+		}
+		public String getDescription(){return name;}
+	}
+	static {
+		imgChooser.setAcceptAllFileFilterUsed(false); imgChooser.setFileFilter(new ExtFileFilter("Image Files", new String[]{".png",".jpeg",".jpg",".gif"}));
+		imgChooser.setMultiSelectionEnabled(true); imgChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+		sndChooser.setAcceptAllFileFilterUsed(false); sndChooser.setFileFilter(new ExtFileFilter("Audio Files", new String[]{".wav",".mp3"}));
+		sndChooser.setMultiSelectionEnabled(true); sndChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+	}
 	public static final String ADD_FOLDER_ICON = "add_folder", EDIT_ICON = "edit",
 		IMAGE_ICON = "image", MEDIA_ICON = "media", SCRIPT_ICON = "script", TILESET = "database", AUTOTILE = new String("database");
-	private static final byte CHECK_DRAG = -1; 
+	private final int NO_DRAG=0, CHECK_DRAG=1, HAS_DRAG=2;
 	private final MapEditor editor;
 	private final JPopupMenu context_menu; private Resource dragTo = null, dragLine = null;
-	private byte dragType = Type.NONE; private Object dragKey = null; private int shouldSelect = -1; private Resource clipboard[] = null;
+	private int dragType = NO_DRAG; private int shouldSelect = -1; private Resource clipboard[] = null;
 	public WorkspaceBrowser(MapEditor e){
-		super(new Workspace("Workspace", e));
-		editor = e;
+		super(new Workspace(e)); editor = e;
 		setCellRenderer(new ProjectTreeRenderer());
 		context_menu = new JPopupMenu(); context_menu.setOpaque(true); context_menu.setLightWeightPopupEnabled(true);
 		MouseListener m = getMouseListeners()[0];
@@ -84,7 +110,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		expandPath(path);
 		setSelectionPath(path);
 		scrollPathToVisible(path);
-		editor.updateSaveButtons(); if(editor.getWorld() == null) p.editFirstMap();
+		editor.updateSaveButtons();
 	}
 	public static Project getProject(TreePath path){return (path.getPathCount() <= 1)?null:(Project)path.getPathComponent(1);}
 	public static Project getProject(Resource node){
@@ -96,48 +122,109 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		return (Project)ret;
 	}
 	public void addResource(Resource r, Resource parent){
-		getProject(parent).setModified(true);
 		DefaultTreeModel m = (DefaultTreeModel)getModel();
 		m.insertNodeInto(r, parent, parent.getChildCount());
 		TreePath path = new TreePath(r.getPath());
 		setSelectionPath(path);
 		scrollPathToVisible(path);
 	}
-	
-	public void addResource(Resource r){
-		if(isSelectionEmpty() && getRowCount() == 0){
-			Project p = new Project(editor);
-			p.addResource(r);
-			addProject(p);
-			setSelectionPath(new TreePath(r.getPath()));
-		} else {
-			TreePath path;
-			if(isSelectionEmpty()) path = getPathForRow(0);
-			else path = getSelectionPath();
-			Resource parent = getResource(path);
-			if(parent != null && parent.canAdd(r.getType(), r.getTypeKey()))
-				addResource(r, parent);
-			else {
-				Project p = (Project)path.getPathComponent(1);
-				p.addResource(r); ((DefaultTreeModel)getModel()).reload(p);
-				setSelectionPath(new TreePath(r.getPath()));
-			}
-		}
+	public void removeResource(Resource r, boolean delete){
+		try{r.remove(delete);}catch(Exception ex){}
+		((DefaultTreeModel)getModel()).removeNodeFromParent(r);
 	}
-	
-	private void addResources(TreePath paths[]){
-		TreePath path = getSelectionPath();
-		TreePath select[] = new TreePath[paths.length]; int i=0;
-		for(TreePath p : paths){
-			if(p == null) continue;
-			addResource(getResource(p).copy());
-			select[i++] = getSelectionPath();
-			if(path == null) clearSelection(); else setSelectionPath(path);
-		}
-		clearSelection();
-		addSelectionPaths(select);
+	private void selectProjectError() throws Exception {
+		JOptionPane.showMessageDialog(editor, "Please select a project or folder to import into.", "Unable to Import", JOptionPane.ERROR_MESSAGE);
+		throw new Exception();
 	}
-
+	private Resource getInsertResource() throws Exception {
+		if(isSelectionEmpty() && getRowCount() == 0) selectProjectError();
+		TreePath path;
+		if(isSelectionEmpty()) path = getPathForRow(0);
+		else path = getSelectionPath();
+		Resource parent = getResource(path); if(parent == null) selectProjectError();
+		while(!parent.canAddChildren()){
+			parent = parent.getParent();
+			if(parent == null) selectProjectError();
+		} return parent;
+	}
+	private void importImage(Resource parent, File f){
+		String dir = parent.getFile().toString();
+		String n = f.getName(); int idx = n.lastIndexOf('.'); if(idx != -1) n = n.substring(0,idx); Resource r;
+		try{
+			if(f.isDirectory()){
+				r = Folder.create(new File(dir+File.separator+n), editor);
+				for(File c : f.listFiles()) importImage(r, c);
+			} else {
+				r = Image.importImage(f, new File(dir+File.separator+n+"."+Image.EXT), editor, getProject(parent));
+			} addResource(r, parent);
+		}catch(Exception e){}
+	}
+	private void importMedia(Resource parent, File f){
+		String dir = parent.getFile().toString();
+		String n = f.getName(); int idx = n.lastIndexOf('.'); if(idx != -1) n = n.substring(0,idx); Resource r;
+		try{
+			if(f.isDirectory()){
+				r = Folder.create(new File(dir+File.separator+n), editor);
+				for(File c : f.listFiles()) importMedia(r, c);
+			} else {
+				r = Media.importMedia(f, new File(dir+File.separator+n+"."+Media.EXT), editor, getProject(parent));
+			} addResource(r, parent);
+		}catch(Exception e){}
+	}
+	public void addFolder(){
+		try{
+			Resource parent = getInsertResource();
+			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new folder:", "Create New Folder", JOptionPane.PLAIN_MESSAGE, null, null, "New Folder");
+			if(name == null) throw new Exception();
+			String dir = parent.getFile().toString();
+			File f = new File(dir+File.separator+name);
+			if(f.exists()){
+				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create New Folder", JOptionPane.ERROR_MESSAGE);
+				throw new Exception();
+			} addResource(Folder.create(f, editor), parent);
+		}catch(Exception e){}
+	}
+	public void addMap(){
+		try{
+			Resource parent = getInsertResource();
+			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new map:", "Create New Map", JOptionPane.PLAIN_MESSAGE, null, null, "New Map");
+			if(name == null) throw new Exception();
+			String dir = parent.getFile().toString();
+			File f = new File(dir+File.separator+name+"."+Map.EXT);
+			if(f.exists()){
+				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create New Map", JOptionPane.ERROR_MESSAGE);
+				throw new Exception();
+			} Map m = Map.createMap(f, editor, getProject(parent)); addResource(m, parent);
+			if(editor.getWorld() == null) m.edit();
+		}catch(Exception e){e.printStackTrace();}
+	}
+	public void addTileset(){
+		try{
+			Resource parent = getInsertResource();
+			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new tileset:", "Create New Tileset", JOptionPane.PLAIN_MESSAGE, null, null, "New Tileset");
+			if(name == null) throw new Exception();
+			String dir = parent.getFile().toString();
+			File f = new File(dir+File.separator+name+"."+Tileset.EXT);
+			if(f.exists()){
+				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create New Tileset", JOptionPane.ERROR_MESSAGE);
+				throw new Exception();
+			} Tileset t = Tileset.createTileset(f, editor, getProject(parent)); addResource(t, parent);
+			if(editor.getTilesetViewer().getTilemap() == null) editor.getTilesetViewer().setTilemap(t.getTilemap(), getProject(t));
+		}catch(Exception e){}
+	}
+	public void addAutoTile(){
+		try{
+			Resource parent = getInsertResource();
+			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new autotile:", "Create Autotile", JOptionPane.PLAIN_MESSAGE, null, null, "New Autotile");
+			if(name == null) throw new Exception();
+			String dir = parent.getFile().toString();
+			File f = new File(dir+File.separator+name+"."+AutoTile.EXT);
+			if(f.exists()){
+				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create Autotile", JOptionPane.ERROR_MESSAGE);
+				throw new Exception();
+			} addResource(AutoTile.createAutoTile(f, editor, getProject(parent)), parent);
+		}catch(Exception e){}
+	}
 	private static final Border underline=BorderFactory.createMatteBorder(1,0,0,0,Color.black),
 	empty=BorderFactory.createEmptyBorder(1,0,0,0);
 	private class ProjectTreeRenderer extends DefaultTreeCellRenderer {
@@ -169,54 +256,45 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 	
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
-		if(command == MapEditor.OPEN){//editor.openProject();
+		if(command == MapEditor.SAVE) saveSelection();
+		else if(command == MapEditor.SAVE_ALL) saveAll();
+		else if(command == MapEditor.REVERT) revertSelection();
+		else if(command == MapEditor.OPEN){try{addProject(Project.openProject(editor, (Workspace)getModel().getRoot())); MapEditor.doDeferredRead(false);}catch(Exception ex){}
 		} else if(command == MapEditor.DELETE){
 			deleteSelection();
+		} else if(command == MapEditor.REFRESH){
+			refreshSelection();
+		} else if(command == MapEditor.REMOVE){
+			removeResource(getSelectedResource(), false);
 		} else if(command == MapEditor.RENAME){
 			Resource r = getSelectedResource(); String s = r.getName();
 			String name = JOptionPane.showInputDialog(this, "Enter new name for \""+s+"\":", s);
 			if(name == null || name.length() == 0) return;
-			r.setName(name);
-			((DefaultTreeModel)getModel()).nodeChanged(r);
-		} else if(command == ADD_FOLDER_ICON){addResource(new Folder(editor), getSelectedResource());
+			try{
+				r.setName(name);
+			}catch(Exception ex){}
+		} else if(command == ADD_FOLDER_ICON){addFolder();
 		} else if(command == EDIT_ICON){getSelectedResource().edit();
 		} else if(command == MapEditor.PROPERTIES){getSelectedResource().properties();
-		} else if(command == MapEditor.MAP){
-			Map m = Map.createMap(editor);
-			if(m != null){
-				addResource(m);
-				if(editor.getWorld() == null) m.edit();
-			}
-		} else if(command == Project.PROJECT) addProject(new Project(editor));
+		} else if(command == MapEditor.MAP){addMap();
+		} else if(command == Project.PROJECT) try{addProject(Project.createProject(editor));}catch(Exception ex){}
 		else if(command == IMAGE_ICON){
-			/*TODO: ImageChooser chooser = new ImageChooser(new Folder.Remote("C:/Java/OpenWorlds/FSM", editor, Type.IMAGE), null);
-			chooser.tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
-			chooser.setVisible(true);
-			if(chooser.tree.getSelectionCount() != 0){
-				TreePath[] paths = chooser.tree.getSelectionPaths(); trimChildren(chooser.tree, paths);
-				addResources(paths);
-			}*/
+			if(imgChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+				try{
+					Resource parent = getInsertResource();
+					for(File f : imgChooser.getSelectedFiles()) importImage(parent, f);
+				} catch(Exception ex){}
+			}
 		} else if(command == MEDIA_ICON){
-			/*TODO: MediaChooser chooser = new MediaChooser(new Folder.Remote("C:/Java/OpenWorlds/FSM", editor, Type.MEDIA), null);
-			chooser.tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
-			chooser.setVisible(true);
-			if(chooser.tree.getSelectionCount() != 0){
-				TreePath[] paths = chooser.tree.getSelectionPaths(); trimChildren(chooser.tree, paths);
-				addResources(paths);
-			}*/
-		} else if(command == SCRIPT_ICON){/*addResource(new Script(Script.DEFAULT_NAME, editor));*/
-		} else if(command == TILESET){
-			Tileset t = Tileset.createTileset(editor);
-			if(t != null){
-				addResource(t);
-				if(editor.getTilesetViewer().getTilemap() == null) editor.getTilesetViewer().setTilemap(t.getTilemap());
+			if(sndChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+				try{
+					Resource parent = getInsertResource();
+					for(File f : sndChooser.getSelectedFiles()) importMedia(parent, f);
+				} catch(Exception ex){}
 			}
-		} else if(command == AUTOTILE){
-			AutoTile t = AutoTile.createAutoTile(editor);
-			if(t != null){
-				addResource(t);
-			}
-		}
+		} else if(command == SCRIPT_ICON){/*TODO:addResource(new Script(Script.DEFAULT_NAME, editor));*/
+		} else if(command == TILESET){addTileset();
+		} else if(command == AUTOTILE){addAutoTile();}
 	}
 	
 	public void mouseClicked(MouseEvent e) {}
@@ -226,7 +304,10 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		editor.gainBrowserFocus();
 		int r = getRowForLocation(e.getX(), e.getY());
 		if(r != -1 && isRowSelected(r)){e.consume(); shouldSelect = r;}
-		dragType = CHECK_DRAG; dragKey = null;
+		dragType = CHECK_DRAG;
+	}
+	public boolean canRefreshSelection(){
+		return getSelectionCount() > 0;
 	}
 	public boolean canDeleteSelection(){
 		int ct = getSelectionCount(); if(ct == 0) return false;
@@ -248,48 +329,79 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 	public void deleteSelection(){
 		int ct = getSelectionCount();
 		String del = (ct == 1)?"\""+getResource(getSelectionPath())+"\"?":"the "+ct+" selected resources?";
-		if(JOptionPane.showConfirmDialog(this, "Are you sure you wish to remove "+del) == JOptionPane.YES_OPTION){
+		if(JOptionPane.showConfirmDialog(this, "Are you sure you wish to permanently delete "+del+"?\nThis operation cannot be undone.") == JOptionPane.YES_OPTION){
 			DefaultTreeModel m = (DefaultTreeModel)getModel();
 			for(TreePath p : getSelectionPathsTrimChildren()){
 				if(p == null) continue;
 				Resource r = getResource(p);
-				getProject(r).setModified(true);
-				r.remove();
-				m.removeNodeFromParent(r);
+				try{
+					r.remove(true); m.removeNodeFromParent(r);
+				} catch(Exception ex){}
 			}
 		}
 		editor.updateSaveButtons();
 	}
-	public void cut(){
-		TreePath paths[] = getSelectionPaths();
-		clipboard = new Resource[trimChildren(this, paths)]; int i=0;
+	public void refreshSelection(){
 		DefaultTreeModel m = (DefaultTreeModel)getModel();
-		for(TreePath p : paths){
-			if(p != null){
-				Resource r = getResource(p);
-				getProject(r).setModified(true);
-				clipboard[i++] = r;
-				r.remove();
-				m.removeNodeFromParent(r);
-			}
+		for(TreePath p : getSelectionPathsTrimChildren()){
+			if(p == null) continue;
+			Resource r = getResource(p); try{r.refresh(); m.reload(r);}catch(Exception e){}
+		} MapEditor.doDeferredRead(false);
+	}
+	public void revertSelection(){
+		DefaultTreeModel m = (DefaultTreeModel)getModel();
+		for(TreePath p : getSelectionPathsTrimChildren()){
+			if(p == null) continue;
+			try{Map r = (Map)getResource(p); if(r.isModified()){r.revert(); m.reload(r);}}catch(Exception e){}
+		} MapEditor.doDeferredRead(false);
+	}
+	public void saveSelection(){
+		for(TreePath p : getSelectionPathsTrimChildren()){
+			if(p == null) continue;
+			try{Map r = (Map)getResource(p); if(r.isModified()) r.save();}catch(Exception e){}
+		} MapEditor.doDeferredRead(false);
+	}
+	
+	private void innerSaveAll(Resource r){
+		for(int i=0; i<r.getChildCount(); i++){
+			Resource c = r.getChild(i); innerSaveAll(c);
+			try{Map m = (Map)c; if(m.isModified()) m.save();}catch(Exception e){}
 		}
 	}
+	public void saveAll(){innerSaveAll(getWorkspace());}
+	public boolean selectionModified(){
+		int ct = getSelectionCount(); if(ct == 0) return false;
+		if(ct > 1){
+			for(TreePath p : getSelectionPaths()){
+				Resource r = getResource(p); if(r instanceof Map && ((Map)r).isModified()) return true;
+			} return false;
+		} else{
+			Resource r = getResource(getSelectionPath()); return r instanceof Map && ((Map)r).isModified();
+		}
+	}
+	private boolean innerAnyModified(Resource r){
+		for(int i=0; i<r.getChildCount(); i++){
+			Resource c = r.getChild(i); if(innerAnyModified(c)) return true;
+			if(c instanceof Map && ((Map)c).isModified()) return true;
+		} return false;
+	}
+	public boolean anyModified(){return innerAnyModified(getWorkspace());}
 	public void copy(){
 		TreePath paths[] = getSelectionPaths();
 		clipboard = new Resource[trimChildren(this, paths)]; int i=0;
 		for(TreePath p : paths){
-			if(p != null) clipboard[i++] = getResource(p).copy();
+			if(p != null) clipboard[i++] = getResource(p);
 		}
 	}
-	public void paste(){
+	public void paste() throws Exception {
 		if(clipboard != null){
 			TreePath path = getSelectionPath();
+			Resource parent = getInsertResource();
 			for(int i=0; i<clipboard.length; i++){
-				if(clipboard[i] instanceof Project) addProject((Project)clipboard[i].copy());
-				else addResource(clipboard[i].copy());
+				addResource(Resource.readFile(clipboard[i].copy(parent.getFile()),editor), parent);
 				if(path == null) clearSelection(); else setSelectionPath(path);
 			}
-		}
+		} MapEditor.doDeferredRead(true);
 	}
 	public boolean hasClipboardData(){return clipboard != null;}
 	public void mouseReleased(MouseEvent e) {
@@ -297,31 +409,31 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		if(dragTo != null || dragLine != null){
 			DefaultTreeModel m = (DefaultTreeModel)getModel();
 			if(dragTo != null){
-				getProject(dragTo).setModified(true);
 				for(TreePath p : getSelectionPathsTrimChildren()){
 					if(p == null) continue;
-					getProject(p).setModified(true);
 					Resource r = getResource(p);
-					m.removeNodeFromParent(r); m.insertNodeInto(r, dragTo, dragTo.getChildCount());
+					try{
+						r.rename(r.changeDirectory(dragTo.getFile(),false));
+						m.removeNodeFromParent(r); m.insertNodeInto(r, dragTo, dragTo.getChildCount());
+					} catch(Exception ex){}
 				}
 			} else {
 				if(!isPathSelected(new TreePath(m.getPathToRoot(dragLine)))){
 					Resource parent = dragLine.getParent();
-					Project pr = getProject(parent);
-					if(pr != null) pr.setModified(true);
 					for(TreePath p : getSelectionPathsTrimChildren()){
 						if(p == null) continue;
-						pr = getProject(p.getParentPath());
-						if(pr != null) pr.setModified(true);
 						Resource r = getResource(p);
-						m.removeNodeFromParent(r); m.insertNodeInto(r, parent, parent.getIndex(dragLine));
+						try{
+							r.rename(r.changeDirectory(parent.getFile(),false));
+							m.removeNodeFromParent(r); m.insertNodeInto(r, parent, parent.getIndex(dragLine));
+						} catch(Exception ex){}
 					}
 				}
 			}
 			dragTo = null; dragLine = null; shouldSelect = -1;
 			repaint();
 		}
-		dragType = Type.NONE; dragKey = null;
+		dragType = NO_DRAG;
 		if(e.isPopupTrigger()){
 			int r = getRowForLocation(e.getX(), e.getY());
 			context_menu.removeAll();
@@ -336,10 +448,13 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 					for(TreePath p : getSelectionPaths())
 						if(!getResource(p).canDelete()) return;
 					context_menu.add(delete_all);
+					context_menu.add(refresh_all);
 				} else {
 					Resource res = getResource(getSelectionPath());
 					res.contextMenu(context_menu);
 					if(res.canDelete()) context_menu.add(delete);
+					else context_menu.add(remove);
+					context_menu.add(refresh);
 					context_menu.add(rename);
 				}
 			}
@@ -359,16 +474,21 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			shouldSelect = -1;
 		}
 	}
-	public final JMenuItem delete = MapEditor.createMenuItemIcon("Remove", MapEditor.DELETE, this),
-		delete_all = MapEditor.createMenuItemIcon("Remove Selected", MapEditor.DELETE, this),
+	public final JMenuItem delete = MapEditor.createMenuItemIcon("Delete", MapEditor.DELETE, this),
+		delete_all = MapEditor.createMenuItemIcon("Delete Selected", MapEditor.DELETE, this),
+		refresh = MapEditor.createMenuItemIcon("Refresh", MapEditor.REFRESH, this),
+		refresh_all = MapEditor.createMenuItemIcon("Refresh Selected", MapEditor.REFRESH, this),
+		save = MapEditor.createMenuItemIcon("Save", MapEditor.SAVE, this),
+		revert = MapEditor.createMenuItemIcon("Revert", MapEditor.REVERT, this),
+		remove = MapEditor.createMenuItemIcon("Remove Project", MapEditor.DELETE, MapEditor.REMOVE, this),
 		rename = MapEditor.createMenuItemIcon("Rename", MapEditor.RENAME, this),
-		add_folder = MapEditor.createMenuItemIcon("Create New Folder", ADD_FOLDER_ICON, this),
-		add_map = MapEditor.createMenuItemIcon("Create New Map", MapEditor.MAP, this),
-		add_tileset = MapEditor.createMenuItemIcon("Create New Tileset", TILESET, this),
-		add_autotile = MapEditor.createMenuItemIcon("Create New AutoTile", AUTOTILE, this),
-		add_image = MapEditor.createMenuItemIcon("Import Image", IMAGE_ICON, this),
-		add_media = MapEditor.createMenuItemIcon("Import Audio", MEDIA_ICON, this),
-		add_script = MapEditor.createMenuItemIcon("Create New Script", SCRIPT_ICON, this),
+		add_folder = MapEditor.createMenuItemIcon("Folder", ADD_FOLDER_ICON, this),
+		add_map = MapEditor.createMenuItemIcon("Map", MapEditor.MAP, this),
+		add_tileset = MapEditor.createMenuItemIcon("Tileset", TILESET, this),
+		add_autotile = MapEditor.createMenuItemIcon("AutoTile", AUTOTILE, this),
+		add_image = MapEditor.createMenuItemIcon("Image File", IMAGE_ICON, this),
+		add_media = MapEditor.createMenuItemIcon("Audio File", MEDIA_ICON, this),
+		add_script = MapEditor.createMenuItemIcon("Script", SCRIPT_ICON, this),
 		edit = MapEditor.createMenuItemIcon("Edit", EDIT_ICON, this),
 		properties = MapEditor.createMenuItemIcon("Properties", MapEditor.PROPERTIES, this),
 		add_project = MapEditor.createMenuItemIcon("Create New Project", Project.PROJECT, this),
@@ -382,20 +502,20 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 	}
 	private boolean canDrag(int close, int r){
 		TreePath p = getPathForRow(close);
-		if(r == close) return getResource(p).canAdd(dragType, dragKey) && notSelected(p);
-		else return p.getPathCount() > 1 && ((Resource)(p.getPathComponent(p.getPathCount()-2))).canAdd(dragType, dragKey) &&
+		if(r == close) return getResource(p).canAddChildren() && notSelected(p);
+		else return p.getPathCount() > 1 && ((Resource)(p.getPathComponent(p.getPathCount()-2))).canAddChildren() &&
 			notSelected(isRowSelected(close-1)?p:p.getParentPath());
 	}
 	public void mouseDragged(MouseEvent e) {
 		scrollRectToVisible(new Rectangle(e.getX(), e.getY(), 1, 1));
-		if(dragType == Type.NONE) return;
+		if(dragType == NO_DRAG) return;
 		if(dragType == CHECK_DRAG){
 			int r = getRowForLocation(e.getX(), e.getY());
-			if(r == -1 || !isRowSelected(r)){dragType = Type.NONE; return;}
+			if(r == -1 || !isRowSelected(r)){dragType = NO_DRAG; return;}
 			Resource res = getResource(getPathForRow(r));
-			if(!res.canDelete()){dragType = Type.NONE; dragKey = null;}
-			else{dragType = res.getType(); dragKey = res.getTypeKey();}
-			if(dragType == Type.NONE){setCursor(DragSource.DefaultMoveNoDrop); return;}
+			if(!res.canDelete()){dragType = NO_DRAG;}
+			else dragType = HAS_DRAG;
+			if(dragType == NO_DRAG){setCursor(DragSource.DefaultMoveNoDrop); return;}
 		}
 		shouldSelect = -1;
         dragTo = null; dragLine = null;

@@ -20,11 +20,13 @@ package mrpg.world;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
 public class WallTilemap implements Tilemap {
-	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null;
-	public WallTilemap(BufferedImage image) throws Exception {
-		int height = image.getHeight()/Tile.tile_size;
+	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null; private final long id;
+	public WallTilemap(BufferedImage image, long _id) throws Exception {
+		id = _id; int height = image.getHeight()/Tile.tile_size;
 		if(height != 2) throw new Exception("Wall tilemap images must have a height of 2 tiles.");
 		int width = image.getWidth()/Tile.tile_size;
 		if(width%2 != 0) throw new Exception("Wall tilemap images must have multiple of 2 tiles width.");
@@ -129,6 +131,15 @@ public class WallTilemap implements Tilemap {
 			for(int i=0; i<16; i++) tiles[i] = new AnimatedTile(i2, i*Tile.tile_size, 0 , new Tile.Info(this, i));
 		} else for(int i=0; i<16; i++) tiles[i] = new Tile(i2, i*Tile.tile_size, 0, new Tile.Info(this, i));
 	}
+	public WallTilemap(DataInputStream in, BufferedImage image, long _id) throws Exception {
+		this(image, _id); walkable = in.readByte(); speed = in.readByte(); int len = in.readShort();
+		if(len == 0) frames = null; else {frames = new int[len]; for(int i=0; i<len; i++) frames[i] = in.readInt();}
+	}
+	public void write(DataOutputStream out) throws Exception {
+		out.writeByte(walkable); out.writeByte(speed); if(frames == null) out.writeShort(0);
+		else{out.writeShort(frames.length); for(int i=0; i<frames.length; i++) out.writeInt(frames[i]);}
+	}
+	public long getId(){return id;}
 	private static final void copyTile(Graphics g, BufferedImage image, int dx, int dy, int sx, int sy, int w, int h){
 		g.drawImage(image, dx, dy, dx+w, dy+h, sx, sy, sx+w, sy+h, null);
 	}

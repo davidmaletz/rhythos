@@ -23,6 +23,8 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.util.List;
 
+import mrpg.editor.resource.Project;
+
 import com.flagstone.transform.DefineData;
 import com.flagstone.transform.Movie;
 import com.flagstone.transform.MovieObject;
@@ -30,13 +32,20 @@ import com.flagstone.transform.MovieTag;
 import com.flagstone.transform.ShowFrame;
 import com.flagstone.transform.SymbolClass;
 
-public class ExportSWF {
+public class SWFTarget implements Target {
 	private Movie movie; private int id; private SymbolClass bitmaps, sounds, bytearrays;
-	public ExportSWF(Graphic font, Graphic bg, Graphic frame) throws Exception {
-		movie = new Movie(); movie.decodeFromStream(ExportSWF.class.getResourceAsStream("/base.swf"));
+	public SWFTarget(){}
+	private void init(Graphic font, Graphic bg, Graphic frame) throws Exception{
+		movie = new Movie(); movie.decodeFromStream(SWFTarget.class.getResourceAsStream("/base.swf"));
 		List<MovieTag> tags = movie.getObjects(); bitmaps = new SymbolClass(); sounds = new SymbolClass();
 		bytearrays = new SymbolClass(); tags.set(3, font.defineImage(4));
 		tags.set(4, bg.defineImage(3)); tags.set(5, frame.defineImage(2)); id = 5;
+	}
+	public void publish(Project p, File f){
+		/*
+		 * TODO: load assets from project, call init, addImage, addSound and addData to add them to the
+		 * swf, finish() to finish adding data, and finally writeToFile(f)
+		 */
 	}
 	public void addImage(Graphic b, String type) throws Exception {addImage(b, type, -1, -1);}
 	public void addImage(Graphic b, String type, int t1) throws Exception {addImage(b, type, t1, -1);}
@@ -103,7 +112,7 @@ public class ExportSWF {
 			Graphic font = loadImage(new File(FOLDER+"font.png"));
 			Graphic bg = loadImage(new File(FOLDER+"swamp.png"));
 			Graphic frame = loadImage(new File(FOLDER+"frame.png"));
-			ExportSWF swf = new ExportSWF(font, bg, frame);
+			SWFTarget swf = new SWFTarget(); swf.init(font, bg, frame);
 			swf.addImage(loadImage(new File(FOLDER+"body_m.png")), "skin", 0);
 			swf.addImage(loadImage(new File(FOLDER+"body_f.png")), "skin", 1);
 			swf.addImage(loadImage(new File(FOLDER+"body_s.png")), "skin", 2);

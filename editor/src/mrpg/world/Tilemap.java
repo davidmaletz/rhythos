@@ -18,9 +18,13 @@
  ******************************************************************************/
 package mrpg.world;
 
+import java.io.DataOutputStream;
+
 public interface Tilemap {
+	public void write(DataOutputStream out) throws Exception;
 	public Tile getTile(int idx);
 	public boolean indexNeighbors();
+	public long getId();
 	
 	public byte getWalkable(int index);
 	public void setWalkable(int index, byte w);

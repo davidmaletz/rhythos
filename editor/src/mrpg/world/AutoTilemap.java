@@ -19,12 +19,14 @@
 package mrpg.world;
 
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.util.Hashtable;
 
 public class AutoTilemap implements Tilemap {
-	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null;
-	public AutoTilemap(BufferedImage image) throws Exception {
-		int height = image.getHeight()/Tile.tile_size;
+	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null; private final long id;
+	public AutoTilemap(BufferedImage image, long _id) throws Exception {
+		id = _id; int height = image.getHeight()/Tile.tile_size;
 		if(height != 3) throw new Exception("Auto tilemap images must have a height of 3 tiles.");
 		int width = image.getWidth()/Tile.tile_size;
 		if(width%2 != 0) throw new Exception("Auto tilemap images must have multiple of 2 tiles width.");
@@ -53,6 +55,15 @@ public class AutoTilemap implements Tilemap {
 			}
 		}
 	}
+	public AutoTilemap(DataInputStream in, BufferedImage image, long _id) throws Exception {
+		this(image, _id); walkable = in.readByte(); speed = in.readByte(); int len = in.readShort();
+		if(len == 0) frames = null; else {frames = new int[len]; for(int i=0; i<len; i++) frames[i] = in.readInt();}
+	}
+	public void write(DataOutputStream out) throws Exception {
+		out.writeByte(walkable); out.writeByte(speed); if(frames == null) out.writeShort(0);
+		else{out.writeShort(frames.length); for(int i=0; i<frames.length; i++) out.writeInt(frames[i]);}
+	}
+	public long getId(){return id;}
 	private Coords getCoords(int i){
 		int half_tile = Tile.tile_size>>1, half_tile3 = Tile.tile_size+half_tile, half_tile5 = half_tile3+Tile.tile_size;
 		int x1, y1, x2, y2, x3, y3, x4, y4;

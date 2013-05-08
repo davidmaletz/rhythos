@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 
+import mrpg.editor.resource.Project;
+
 public class Cell implements Iterable<Tile> {
 	private World world; private int x, y;
 	ArrayList<Tile> tiles = null;
@@ -32,6 +34,15 @@ public class Cell implements Iterable<Tile> {
 		else tiles = new ArrayList<Tile>(c.tiles);
 	}
 	
+	public boolean refresh(Project p){
+		if(tiles != null){
+			int sz = tiles.size(); boolean u = false; for(int i=0; i<sz; i++){
+				Tile t1 = tiles.get(i); Tile t2 = t1.refresh(p); if(t1 != t2){
+					tiles.set(i, t2); u = true;
+				}
+			} return u;
+		} return false;
+	}
 	public Tile getTile(int level){return (tiles == null || level >= tiles.size())?Tile.empty:tiles.get(level);}
 	public void setTile(Tile tile, int level){setTile(tile, level, true);}
 	public void setTile(Tile tile, int level, boolean updateAdjacent){

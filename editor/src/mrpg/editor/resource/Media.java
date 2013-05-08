@@ -21,6 +21,13 @@ package mrpg.editor.resource;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -32,7 +39,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
-import javax.swing.tree.DefaultTreeModel;
 
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
@@ -43,21 +49,38 @@ import mrpg.media.MediaPlayer;
 
 public class Media extends Resource {
 	private static final long serialVersionUID = -3381982539985690245L;
+	public static final String EXT = "msnd";
 	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.MEDIA_ICON);
-	private final Properties properties; private Sound sound;
-	public Media(String name, Sound s, MapEditor editor){super(name, editor); sound = s; properties = new Properties(this);}
-	public Media(Media m){super(m.getName(), m.editor); sound = m.sound; copyChildren(m); properties = new Properties(this);}
+	private final Properties properties; private Sound sound; private long id;
+	public Media(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
 	public Audio.Clip getClip(){try{return sound.getClip();}catch(Exception e){} return null;}
 	public void contextMenu(JPopupMenu menu){
 		menu.add(editor.getBrowser().properties); menu.addSeparator();
 		super.contextMenu(menu);
 	}
+	public long getId(){return id;}
 	public boolean edit(){properties(); return true;}
 	public void properties(){properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
-	public byte getType(){return Type.MEDIA;}
 	public Icon getIcon(){return icon;}
-	public Resource copy(){return new Media(this);}
+	public void remove(boolean delete) throws Exception {
+		WorkspaceBrowser.getProject(this).removeMediaId(this, id); super.remove(delete);
+	}
+	public void save() throws Exception {
+		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
+		out.writeLong(id); sound.write(out);
+	}
+	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MEDIA);}
+	public void deferredRead(File f) throws Exception{
+		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
+		id = in.readLong(); sound = new Sound(in); long i = WorkspaceBrowser.getProject(this).setMediaId(this, id);
+		if(i != id){id = i; save();}
+	}
+	
+	public static Media importMedia(File media, File f, MapEditor e, Project p) throws Exception {
+		Sound s = Sound.decode(media); Media ret = new Media(f, e); ret.id = p.newMediaId();
+		ret.sound = s; ret.save(); p.setMediaId(ret, ret.id); return ret;
+	}
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
@@ -99,8 +122,9 @@ public class Media extends Resource {
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(command == OK){
-				media.setName(name.getText());
-				((DefaultTreeModel)media.editor.getBrowser().getModel()).nodeChanged(media);
+				try{
+					media.setName(name.getText());
+				}catch(Exception ex){}
 			}
 			setVisible(false);
 		}

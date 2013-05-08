@@ -21,9 +21,10 @@ package mrpg.world;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.ImageObserver;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
+
+import mrpg.editor.resource.Project;
+import mrpg.export.WorldIO;
 
 public class Tile {
 	public static int tile_size = 32;
@@ -34,8 +35,16 @@ public class Tile {
 	}
 	public static final Tile empty = new Tile(null, (short)0, (short)0, new Info(null, 0)); 
 	
-	public void write(DataOutputStream out, Tilemap tileIO) throws IOException {out.writeShort(info.index);}
-	public static Tile read(DataInputStream in, Tilemap tileIO) throws IOException {return tileIO.getTile(in.readShort());}
+	public Tile refresh(Project p){
+		if(info.map == null) return this;
+		try{
+			Tilemap t = p.getTilemapById(info.map.getId()).getTilemap(); if(t == info.map) return this;
+			else return t.getTile(info.index);
+		}catch(Exception e){return this;}
+	}
+	
+	public void write(WorldIO tileIO) throws IOException {tileIO.writeTile(this);}
+	public static Tile read(WorldIO tileIO) throws IOException {return tileIO.readTile();}
 	
 	public static class Info {
 		public final Tilemap map; public final short index;

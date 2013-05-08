@@ -27,7 +27,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
@@ -56,13 +58,13 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreePath;
 
 import mrpg.display.WorldPanel;
-import mrpg.editor.resource.Folder;
+import mrpg.editor.resource.AutoTile;
 import mrpg.editor.resource.Image;
 import mrpg.editor.resource.Map;
 import mrpg.editor.resource.Media;
-import mrpg.editor.resource.MediaPlayer;
 import mrpg.editor.resource.Project;
-import mrpg.editor.resource.Workspace;
+import mrpg.editor.resource.Resource;
+import mrpg.editor.resource.Tileset;
 import mrpg.editor.tools.FillTool;
 import mrpg.editor.tools.LineTool;
 import mrpg.editor.tools.PencilTool;
@@ -70,30 +72,30 @@ import mrpg.editor.tools.RectTool;
 import mrpg.editor.tools.SelectTool;
 import mrpg.editor.tools.Tool;
 import mrpg.editor.tools.ZoomTool;
-import mrpg.export.ExportSWF;
+import mrpg.export.SWFTarget;
+import mrpg.export.Target;
 import mrpg.world.Tile;
 import mrpg.world.World;
-
 
 public class MapEditor extends JFrame implements ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
 	
 	private static final long serialVersionUID = 7934438411041874443L;
 	
-	public static final String NEW = "new", OPEN = "open", SAVE = "save", SAVE_AS = "save_as", SAVE_ALL = "save_all",
-		REVERT = "revert", IMPORT = "import", TEST = "test", PUBLISH = "publish", SEARCH = "search", HELP = "help", ABOUT = "about";
-	public static final String CUT = "cut", COPY = "copy", PASTE = "paste", DELETE = "delete", SEL_ALL = "sel_all",
+	public static final String NEW = "new", OPEN = "open", SAVE = "save", SAVE_ALL = "save_all", SAVE2 = "save2",
+		IMPORT = "import", TEST = "test", PUBLISH = "publish", SEARCH = "search", HELP = "help", ABOUT = "about";
+	public static final String CUT = "cut", COPY = "copy", PASTE = "paste", DELETE = "delete", REFRESH = "refresh", REVERT = "revert", REMOVE = "remove", SEL_ALL = "sel_all",
 		DSEL_ALL = "dsel_all", SHOW_ALL = "show_all", SHOW_GRID = "grid", NEXT_LAYER = "next_l", PREV_LAYER = "prev_l";
 	public static final String RENAME = "rename";
 	public static final String UNDO = "undo", REDO = "redo", SELECT = "select", ZOOM = "zoom", PENCIL = "pencil",
 		LINE = "line", RECT = "rect", FILL = "fill", PROPERTIES = "properties", LAYER = "layer", MAP = "map";
-	public static final String OK = "ok", CANCEL = "cancel", SET = "set", M_PLAYER = "media_player"; 
+	public static final String OK = "ok", CANCEL = "cancel", SET = "set", CLEAR = "clear", M_PLAYER = "media_player"; 
 	public static final int MAX_LAYERS = 20;
 	private final ButtonGroup group = new ButtonGroup(); private WorldOverlay world_overlay;
 	private SelectTool SELECT_TOOL; private Tool ZOOM_TOOL, PENCIL_TOOL, LINE_TOOL, RECT_TOOL, FILL_TOOL;
 	private JLabel map_label; private JSpinner zoom_spinner, layer_spinner; private WorkspaceBrowser browser;
 	private String map_name = ""; private int map_x = 0, map_y = 0; public boolean browser_focus = false;
 	private AbstractButton undo1, undo2, redo1, redo2, cut, copy, paste, delete, dsel, select, showAll, pl1, pl2,
-		nl1, nl2, prop, save, save2, saveall, revert;
+		nl1, nl2, prop, save, save2, saveall, refresh, revert;
 	private final ArrayList<AbstractButton> buttons = new ArrayList<AbstractButton>(); private Map current_map;
 	
 	private final History history = new History(); private final Clipboard clipboard = new Clipboard();
@@ -178,6 +180,9 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 	public static JMenuItem createMenuItemIcon(String text, String icon, int keyCode, int modifiers, ActionListener l){
 		JMenuItem i = createMenuItemIcon(text, icon, l); i.setAccelerator(KeyStroke.getKeyStroke(keyCode, modifiers)); return i;
 	}
+	public static JMenuItem createMenuItemIcon(String text, String icon, String command, ActionListener l){
+		JMenuItem i = new JMenuItem(text, getIcon(icon)); i.setActionCommand(command); i.addActionListener(l); return i;
+	}
 	public static JMenuItem createMenuItem(String text, String command, ActionListener l){
 		JMenuItem i = new JMenuItem(text); i.setActionCommand(command); i.addActionListener(l); return i;
 	}
@@ -192,6 +197,10 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 	}
 	public static JButton createToolbarButton(String icon, String tooltip, ActionListener l){
 		JButton b = new JButton(getIcon(icon)); b.setMargin(new Insets(0,0,0,0)); b.setActionCommand(icon);
+		b.addActionListener(l); b.setToolTipText(tooltip); return b;
+	}
+	public static JButton createToolbarButton(String icon, String tooltip, ActionListener l, String command){
+		JButton b = new JButton(getIcon(icon)); b.setMargin(new Insets(0,0,0,0)); b.setActionCommand(command);
 		b.addActionListener(l); b.setToolTipText(tooltip); return b;
 	}
 	public static JToggleButton createToolbarButton(String icon, String tooltip, ButtonGroup group, ActionListener l){return createToolbarButton(icon, tooltip, group, l, false);}
@@ -214,17 +223,17 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		inner.add(createMenuItemIcon("Script", WorkspaceBrowser.SCRIPT_ICON, KeyEvent.VK_C, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, browser));
 		menu.add(inner);
 		menu.addSeparator();
-		save = createMenuItemIcon("Save", SAVE, KeyEvent.VK_S, ActionEvent.CTRL_MASK, this); menu.add(save); save.setEnabled(false);
-		AbstractButton b = createMenuItemIcon("Save As", SAVE_AS, KeyEvent.VK_S, ActionEvent.CTRL_MASK | ActionEvent.ALT_MASK, this); menu.add(b); buttons.add(b);
-		saveall = createMenuItem("Save All", SAVE_ALL, KeyEvent.VK_S, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, this); menu.add(saveall); saveall.setEnabled(false);
-		revert = createMenuItemIcon("Revert", REVERT, this); menu.add(revert); revert.setEnabled(false);
+		save = createMenuItemIcon("Save", SAVE, KeyEvent.VK_S, ActionEvent.CTRL_MASK, browser); menu.add(save); save.setEnabled(false);
+		saveall = createMenuItem("Save All", SAVE_ALL, KeyEvent.VK_S, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, browser); menu.add(saveall); saveall.setEnabled(false);
+		revert = createMenuItemIcon("Revert", REVERT, browser); menu.add(revert); revert.setEnabled(false);
 		menu.addSeparator();
 		inner = new JMenu("Import"); inner.setIcon(getIcon(IMPORT));
 		inner.add(createMenuItemIcon("Image File", WorkspaceBrowser.IMAGE_ICON, KeyEvent.VK_I, ActionEvent.CTRL_MASK, browser));
 		inner.add(createMenuItemIcon("Audio File", WorkspaceBrowser.MEDIA_ICON, KeyEvent.VK_I, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, browser));
 		menu.add(inner);
 		menu.addSeparator();
-		b = createMenuItemIcon("Rename", RENAME, KeyEvent.VK_R, ActionEvent.CTRL_MASK, browser);
+		refresh = createMenuItemIcon("Refresh", REFRESH, KeyEvent.VK_F5, 0, browser); menu.add(refresh); refresh.setEnabled(false);
+		AbstractButton b = createMenuItemIcon("Rename", RENAME, KeyEvent.VK_R, ActionEvent.CTRL_MASK, browser);
 		menu.add(b); buttons.add(b);
 		b = createMenuItemIcon("Properties", PROPERTIES, KeyEvent.VK_P, ActionEvent.CTRL_MASK, browser);
 		menu.add(b); buttons.add(b);
@@ -274,7 +283,7 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		bar.add(createToolbarButton(Project.PROJECT, "Create New Project", browser));
 		bar.add(createToolbarButton(OPEN, "Open Existing Project", browser));
 		bar.addSeparator();
-		save2 = createToolbarButton(SAVE, "Save Selected Resource", this); bar.add(save2); save2.setEnabled(false);
+		save2 = createToolbarButton(SAVE, "Save Current Map", this, SAVE2); bar.add(save2); save2.setEnabled(false);
 		AbstractButton b = createToolbarButton(RENAME, "Rename Selected Resource", browser);
 		bar.add(b); buttons.add(b);
 		bar.addSeparator();
@@ -305,65 +314,14 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		prop = createToolbarButton(PROPERTIES, "Map properties", this); prop.setEnabled(false); bar.add(prop);
 		return bar;
 	}
-	
-	/*TODO: saving/loading projects from files
-	private void saveResource(Resource r, ZipOutputStream out) throws Exception {
-		worldIO = new WorldIO();
-		out.putNextEntry(new ZipEntry(".tree"));
-		DataOutputStream pout = new DataOutputStream(new BufferedOutputStream(out));
-		pout.write(r.getType());
-		r.write(pout);
-		pout.flush(); out.closeEntry();
-		worldIO.writeWorlds(out, tileIO);
-	}
-	private Resource openResource(ZipInputStream in) throws Exception {
-		worldIO = new WorldIO(); byte[] project = null;
-		while(true){
-			ZipEntry e = in.getNextEntry();
-			if(e == null) break;
-			String name = e.getName();
-			if(name.equals(".tree")){
-				project = new byte[1024]; int offset = 0;
-				while(in.read(project, offset, 1024) == 1024){
-					offset = project.length; project = Arrays.copyOf(project, offset+1024);
-				}
-			} else if(name.startsWith("maps/")) worldIO.setWorld(Short.parseShort(name.substring(5)),
-					World.read(new DataInputStream(new BufferedInputStream(in)), tileIO));
-			in.closeEntry();
-		}
-		DataInputStream din = new DataInputStream(new ByteArrayInputStream(project));
-		byte type = (byte)din.read();
-		Resource ret = Resource.read(this, din);
-		if(ret.getType() != type){((Folder)ret).setType(type);}
-		return ret;
-	}
-	private void saveProject(Project p){
-		try{
-			ZipOutputStream out = new ZipOutputStream(new FileOutputStream("project.jar"));
-			try{
-				saveResource(p, out);
-				/*out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
-				out.write("Manifest-Version: 1.0\nClass-Path: opnwrlds.jar\nMain-Class: opnwrld.client.Client\n".getBytes());
-				out.closeEntry();*//*
-				p.setModified(false);
-			} catch(Exception e){e.printStackTrace();}
-			out.close();
-		} catch(Exception e){e.printStackTrace();}
-	}
-	public void openProject(){
-		try{
-			ZipInputStream in = new ZipInputStream(new FileInputStream("project.jar"));
-			try{browser.addProject((Project)openResource(in));}catch(Exception e){e.printStackTrace();}
-			in.close();
-		} catch(Exception e){e.printStackTrace();}
-	}*/
 
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
-		if(command == SAVE){//saveProject(WorkspaceBrowser.getProject(browser.getSelectionPath()));
-		} else if(command == CUT){if(browser_focus){browser.cut(); paste.setEnabled(browser.hasClipboardData());} else {SELECT_TOOL.copy(clipboard); SELECT_TOOL.deleteSelection();}
+		if(command == SAVE2){
+			if(current_map != null && current_map.isModified()) try{current_map.save();}catch(Exception ex){}
+		} else if(command == CUT){if(!browser_focus){SELECT_TOOL.copy(clipboard); SELECT_TOOL.deleteSelection();}
 		} else if(command == COPY){if(browser_focus){browser.copy(); paste.setEnabled(browser.hasClipboardData());} else SELECT_TOOL.copy(clipboard);
-		} else if(command == PASTE){if(browser_focus) browser.paste();
+		} else if(command == PASTE){if(browser_focus) try{browser.paste();}catch(Exception ex){}
 			else {world_overlay.setTool(SELECT_TOOL); group.setSelected(select.getModel(), true); SELECT_TOOL.paste(clipboard);
 		}} else if(command == DELETE){if(browser_focus) browser.deleteSelection(); else SELECT_TOOL.deleteSelection();
 		} else if(command == SEL_ALL){
@@ -390,9 +348,9 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		} else if(command == LINE){world_overlay.setTool(LINE_TOOL);
 		} else if(command == RECT){world_overlay.setTool(RECT_TOOL);
 		} else if(command == FILL){world_overlay.setTool(FILL_TOOL);
-		} else if(command == PROPERTIES){current_map.properties();
+		} else if(command == PROPERTIES){if(current_map != null) current_map.properties();
 		} else if(command == WorkspaceBrowser.ADD_FOLDER_ICON){
-			browser.addResource(new Folder(this));
+			browser.addFolder();
 		} else if(command == M_PLAYER){
 			if(media_player == null) media_player = new MediaPlayer(getBrowser());
 			TreePath p = browser.getSelectionPath(); if(p != null) media_player.setProject(WorkspaceBrowser.getProject(p));
@@ -404,22 +362,21 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		}
 	}
 	
+	private int lastSave;
 	public void historyChanged(){
 		boolean hasUndo = history.hasUndo(); undo1.setEnabled(hasUndo); undo2.setEnabled(hasUndo);
 		boolean hasRedo = history.hasRedo(); redo1.setEnabled(hasRedo); redo2.setEnabled(hasRedo);
-		if(current_map != null) WorkspaceBrowser.getProject(current_map).setModified(true); 
+		if(current_map != null){current_map.setModified(lastSave != history.redoPos()); updateSaveButtons();} 
 	}
 	
 	public void select(){
 		dsel.setEnabled(true);
-		if(browser_focus){delete.setText("Remove"); delete.setEnabled(browser.canDeleteSelection());}
-		else{delete.setText("Delete"); delete.setEnabled(true);}
-		cut.setEnabled(delete.isEnabled()); copy.setEnabled(delete.isEnabled());
+		if(browser_focus){delete.setEnabled(browser.canDeleteSelection()); refresh.setEnabled(browser.canRefreshSelection());}
+		else{delete.setEnabled(true); refresh.setEnabled(false);}
+		cut.setEnabled(!browser_focus); copy.setEnabled(delete.isEnabled());
 	}
 	public void deselect(){
-		delete.setEnabled(false); dsel.setEnabled(false);
-		if(browser_focus) delete.setText("Remove"); else delete.setText("Delete");
-		delete.setEnabled(false);
+		delete.setEnabled(false); dsel.setEnabled(false); refresh.setEnabled(false);
 		cut.setEnabled(delete.isEnabled()); copy.setEnabled(delete.isEnabled());
 	}
 	
@@ -432,15 +389,11 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		paste.setEnabled(clipboard.hasData());
 	}
 	private void updateSaveRevert(){
-		save.setEnabled(browser.getSelectionCount() > 0 && WorkspaceBrowser.getProject(browser.getSelectionPath()).isModified());
-		save2.setEnabled(save.isEnabled()); revert.setEnabled(save.isEnabled());
+		save.setEnabled(browser.selectionModified());
+		save2.setEnabled(current_map != null && current_map.isModified()); revert.setEnabled(save.isEnabled());
 	}
 	public void updateSaveButtons(){
-		updateSaveRevert();
-		Workspace workspace = browser.getWorkspace();
-		for(int i=0; i<workspace.getProjectCount(); i++)
-			if(workspace.getProject(i).isModified()){saveall.setEnabled(true); return;}
-		saveall.setEnabled(false);
+		updateSaveRevert(); saveall.setEnabled(browser.anyModified());
 	}
 	public void valueChanged(TreeSelectionEvent e) {
 		gainBrowserFocus();
@@ -458,15 +411,19 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 	}
 	
 	public TilesetViewer getTilesetViewer(){return tileset_viewer;}
+	public void refreshTilesets(){
+		tileset_viewer.refresh(); if(current_map != null) current_map.getWorld().refresh(WorkspaceBrowser.getProject(current_map));
+	}
 	public World getWorld(){return world_overlay.getPanel().getWorld();}
 	public void setMap(Map m){
 		World w = m.getWorld();
-		WorldPanel p = world_overlay.getPanel();
+		WorldPanel p = world_overlay.getPanel(); 
 		if(p.getWorld() == w) return;
-		current_map = m;
+		current_map = m; lastSave = 0;
 		prop.setEnabled(true);
 		p.setWorld(w); p.worldSize(w.getWidth()*Tile.tile_size, w.getHeight()*Tile.tile_size);
 		history.clearHistory(); history.world = w; setMapName(m.getName());
+		Project project = WorkspaceBrowser.getProject(m); tileset_viewer.setProject(project); w.refresh(project);
 	}
 	public void updateMap(Map m){
 		World w = m.getWorld();
@@ -474,12 +431,16 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 		if(p.getWorld() != w) return;
 		p.worldSize(w.getWidth()*Tile.tile_size, w.getHeight()*Tile.tile_size);
 	}
-	public void removeMap(Map m){
+	public boolean removeMap(Map m){
 		World w = m.getWorld();
 		WorldPanel p = world_overlay.getPanel();
-		if(p.getWorld() != w) return;
+		if(p.getWorld() != w) return false; current_map = null; lastSave = 0;
 		prop.setEnabled(false); p.setWorld(null); p.worldSize(Tile.tile_size, Tile.tile_size);
 		history.clearHistory(); history.world = null; map_label.setText("");
+		tileset_viewer.setProject(null); return true;
+	}
+	public void saveMap(Map m){
+		if(m == current_map){lastSave = history.redoPos(); updateSaveButtons();}
 	}
 	
 	public void clipboardChanged(){if(!browser_focus) paste.setEnabled(clipboard.hasData());}
@@ -514,8 +475,37 @@ public class MapEditor extends JFrame implements ActionListener, ChangeListener,
 	}
 
 	public WorkspaceBrowser getBrowser(){return browser;}
+
+	public static MapEditor instance;
+	
+	public static final int DEF_MEDIA=0, DEF_TILEMAP=1, DEF_MAP=2, N_DEF=3;
+	@SuppressWarnings("unchecked")
+	private static ArrayList<Resource> deferred[] = new ArrayList[N_DEF];
+	static {for(int i=0; i<N_DEF; i++) deferred[i] = new ArrayList<Resource>();}
+	public static void deferRead(Resource r, int type){deferred[type].add(r);}
+	public static void doDeferredRead(boolean delete){
+		for(int i=0; i<N_DEF; i++){
+			ArrayList<Resource> ar = deferred[i]; int end = ar.size(); for(int j=0; j<end; j++){
+				Resource r = ar.get(j); try{
+					r.deferredRead(r.getFile());
+				} catch(Exception e){r.editor.browser.removeResource(r,delete);}
+			} ar.clear();
+		}
+	}
+	
+	private static HashSet<Class<? extends Target>> targets = new HashSet<Class<? extends Target>>();
+	public static void registerTarget(Class<? extends Target> t){targets.add(t);}
+	public static Iterator<Class<? extends Target>> getTargets(){return targets.iterator();}
+	public static Object[] getTargetsArray(){return targets.toArray();}
+	public static Class<? extends Target> defaultTarget(){return targets.iterator().next();}
 	
 	public static void main(String[] args){
-		new MapEditor(); ExportSWF.test();
+		Resource.register(Image.EXT, Image.class);
+		Resource.register(Media.EXT, Media.class);
+		Resource.register(Map.EXT, Map.class);
+		Resource.register(Tileset.EXT, Tileset.class);
+		Resource.register(AutoTile.EXT, AutoTile.class);
+		registerTarget(SWFTarget.class);
+		instance = new MapEditor(); //SWFTarget.test();
 	}
 }

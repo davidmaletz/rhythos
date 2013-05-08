@@ -20,23 +20,11 @@ package mrpg.editor.resource;
 
 import java.io.File;
 
-import javax.swing.Icon;
-
 import mrpg.editor.MapEditor;
-import mrpg.editor.resource.Project;
+import mrpg.world.Tilemap;
 
-
-public class Workspace extends Resource {
-	private static final long serialVersionUID = -781096720788373713L;
-	public Workspace(MapEditor e){super(null, e);}
-	
-	public boolean canAddChildren(){return false;}
-	public long getId(){return 0;}
-	public Icon getIcon(){return null;}
-	public boolean canDelete(){return false;}
-	protected void read(File f) throws Exception {throw new Exception();}
-	
-	public int getProjectCount(){return getChildCount();}
-	public Project getProject(int i){return (Project)getChild(i);}
-	public File copy(File f) throws Exception {throw new Exception();}
+public abstract class TileResource extends Resource {
+	private static final long serialVersionUID = 6072902526037159097L;
+	protected TileResource(File f, MapEditor e){super(f,e);}
+	public abstract Tilemap getTilemap();
 }

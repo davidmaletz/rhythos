@@ -19,11 +19,13 @@
 package mrpg.world;
 
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
 public class BasicTilemap implements Tilemap {
-	private final int width; private final Tile tiles[]; private byte walkable[];
-	public BasicTilemap(BufferedImage image) {
-		width = image.getWidth()/Tile.tile_size;
+	private final int width; private final Tile tiles[]; private byte walkable[]; private final long id;
+	public BasicTilemap(BufferedImage image, long _id) {
+		id = _id; width = image.getWidth()/Tile.tile_size;
 		int height = image.getHeight()/Tile.tile_size;
 		tiles = new Tile[width*height];
 		walkable = new byte[width*height];
@@ -35,6 +37,13 @@ public class BasicTilemap implements Tilemap {
 				i++;
 			}
 	}
+	public BasicTilemap(DataInputStream in, BufferedImage image, long _id) throws Exception {
+		this(image, _id); for(int i=0; i<walkable.length; i++) walkable[i] = in.readByte();
+	}
+	public void write(DataOutputStream out) throws Exception {
+		for(int i=0; i<walkable.length; i++) out.writeByte(walkable[i]);
+	}
+	public long getId(){return id;}
 	public int getTilesX(){return width;}
 	public int getTilesY(){return tiles.length/width;}
 	public Tile getTile(int index){return tiles[index];}

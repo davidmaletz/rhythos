@@ -19,9 +19,18 @@
 package mrpg.editor.resource;
 
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
@@ -32,8 +41,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.tree.DefaultTreeModel;
 
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
@@ -42,20 +51,12 @@ import mrpg.export.Graphic;
 
 public class Image extends Resource {
 	private static final long serialVersionUID = -5394199071824545816L;
+	public static final String EXT = "mimg";
 	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.IMAGE_ICON);
-	public static final BufferedImage DEFAULT_THUMB = new BufferedImage(128,128,BufferedImage.TYPE_INT_ARGB);
-	private BufferedImage thumb; private final Properties properties; private Graphic graphic;
-	public Image(String name, Graphic g, MapEditor editor){super(name, editor); graphic = g; properties = new Properties(this);}
-	public Image(Image i){super(i.getName(), i.editor); graphic = i.graphic; copyChildren(i); properties = new Properties(this);}
-	private void loadThumb(){
-		try{
-			BufferedImage image = getImage();
-			thumb = new BufferedImage(128,128,image.getType());
-			thumb.getGraphics().drawImage(image, 0, 0, 128, 128, editor);
-		} catch(Exception e){}
-	}
+	private final Properties properties; private Graphic graphic; private long id;
+	public Image(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
+	public long getId(){return id;}
 	public BufferedImage getImage(){try{return graphic.getBufferedImage();}catch(Exception e){} return null;}
-	public BufferedImage getThumb(){if(thumb == null) loadThumb(); return thumb;}
 	public void contextMenu(JPopupMenu menu){
 		menu.add(editor.getBrowser().properties); menu.addSeparator();
 		super.contextMenu(menu);
@@ -63,9 +64,26 @@ public class Image extends Resource {
 	public boolean edit(){properties(); return true;}
 	public void properties(){properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
-	public byte getType(){return Type.IMAGE;}
 	public Icon getIcon(){return icon;}
-	public Resource copy(){return new Image(this);}
+	public void remove(boolean delete) throws Exception {
+		WorkspaceBrowser.getProject(this).removeImageId(this, id); super.remove(delete);
+	}
+	public void save() throws Exception {
+		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
+		out.writeLong(id); graphic.write(out);
+	}
+	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MEDIA);}
+	public void deferredRead(File f) throws Exception{
+		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
+		id = in.readLong(); graphic = new Graphic(in); long i = WorkspaceBrowser.getProject(this).setImageId(this, id);
+		if(i != id){id = i; save();}
+	}
+	
+	public static Image importImage(File img, File f, MapEditor e, Project p) throws Exception {
+		Graphic g = Graphic.decode(img); Image ret = new Image(f, e); ret.id = p.newImageId();
+		ret.graphic = g; ret.save(); p.setImageId(ret, ret.id); return ret;
+	}
+	public static Dimension THUMB_SIZE = new Dimension(150,150);
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
@@ -84,8 +102,9 @@ public class Image extends Resource {
 			dim = new JLabel("0 x 0"); inner.add(dim);
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Thumbnail"));
-			thumb = new JLabel(new ImageIcon(Image.DEFAULT_THUMB));
-			thumb.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(thumb);
+			thumb = new JLabel(new ImageIcon());
+			JScrollPane pane = new JScrollPane(thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			pane.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(pane);
 			settings.add(inner);
 			c.add(settings);
 			inner = new JPanel();
@@ -99,15 +118,16 @@ public class Image extends Resource {
 				name.setText(image.getName()); name.requestFocus(); name.selectAll();
 				BufferedImage im = image.getImage();
 				dim.setText(im.getWidth()+" x "+im.getHeight());
-				thumb.setIcon(new ImageIcon(image.getThumb()));
+				thumb.setIcon(new ImageIcon(image.getImage()));
 			}
 			super.setVisible(b);
 		}
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(command == OK){
-				image.setName(name.getText());
-				((DefaultTreeModel)image.editor.getBrowser().getModel()).nodeChanged(image);
+				try{
+					image.setName(name.getText());
+				} catch(Exception ex){}
 			}
 			setVisible(false);
 		}

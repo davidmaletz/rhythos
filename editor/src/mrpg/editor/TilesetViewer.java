@@ -31,6 +31,7 @@ import java.util.Iterator;
 import javax.swing.JPanel;
 import javax.swing.Scrollable;
 
+import mrpg.editor.resource.Project;
 import mrpg.world.BasicTilemap;
 import mrpg.world.Direction;
 import mrpg.world.Tile;
@@ -59,21 +60,39 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 		revalidate(); repaint();
 	}
 	public void setShowGrid(boolean b){show_grid = b; computeSize();}
-	public void setTilemap(BasicTilemap map){if(mainMap == map) return; selX1 = 0; selY1 = 0; selX2 = 0; selY2 = 0; mainMap = map; computeSize();}
+	private Project project = null;
+	public void setProject(Project p){
+		if(project != p){
+			if(project != null && p != null){selX1 = 0; selY1 = 0; selX2 = 0; selY2 = 0; mainMap = null; extraTiles = null; computeSize();}
+			project = p;
+		}
+	}
+	public void refresh(){
+		if(project == null) return; try{
+			if(mainMap != null) mainMap = (BasicTilemap)project.getTilemapById(mainMap.getId()).getTilemap();
+			if(extraTiles != null) for(int i=0; i<extraTiles.size(); i++) extraTiles.set(i, project.getTilemapById(extraTiles.get(i).getId()).getTilemap());
+			computeSize();
+		} catch(Exception e){}
+	}
+	public void setTilemap(BasicTilemap map, Project p){
+		if(mainMap == map || (project != null && project != p)) return; selX1 = 0; selY1 = 0; selX2 = 0; selY2 = 0; mainMap = map; computeSize();
+	}
+	public boolean removeTilemap(BasicTilemap map){
+		if(mainMap == map){selX1 = 0; selY1 = 0; selX2 = 0; selY2 = 0; mainMap = null; computeSize(); return true;} else return false;
+	}
 	public BasicTilemap getTilemap(){return mainMap;}
-	public void toggleAutoTile(Tilemap m){
-		if(!m.indexNeighbors()) return;
+	public void toggleAutoTile(Tilemap m, Project p){
+		if(!m.indexNeighbors() || (project != null && project != p)) return;
 		if(extraTiles == null) extraTiles = new ArrayList<Tilemap>();
 		int idx = extraTiles.indexOf(m); if(idx != -1) extraTiles.remove(idx); else extraTiles.add(m); computeSize();
 	}
-	public void addAutoTile(Tilemap m){
-		if(!m.indexNeighbors()) return;
+	public void addAutoTile(Tilemap m, Project p){
+		if(!m.indexNeighbors() || (project != null && project != p)) return;
 		if(extraTiles == null) extraTiles = new ArrayList<Tilemap>();
 		extraTiles.add(m); computeSize();
 	}
-	public void removeAutoTile(Tilemap m){
-		if(extraTiles == null) return;
-		extraTiles.remove(m); computeSize();
+	public boolean removeAutoTile(Tilemap m){
+		if(extraTiles == null) return false; boolean ret = extraTiles.remove(m); computeSize(); return ret;
 	}
 	public void paint(Graphics g){
 		g.getClipBounds(rect);

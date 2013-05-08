@@ -21,6 +21,13 @@ package mrpg.editor.resource;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Enumeration;
 
 import javax.swing.AbstractButton;
@@ -36,10 +43,10 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
-import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import mrpg.editor.AutoTileEditor;
+import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.world.AutoTilemap;
@@ -48,30 +55,48 @@ import mrpg.world.Tilemap;
 import mrpg.world.WallTilemap;
 
 
-public class AutoTile extends Resource implements ActionListener {
+public class AutoTile extends TileResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
 	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.TILESET);
-	public static final String DEFAULT_NAME = "New AutoTile", ADD_AUTOTILE="set-tileset";
-	private Tilemap autotile; private final Properties properties; private Image image;
+	public static final String EXT = "atm";
+	public static final String ADD_AUTOTILE="set-tileset";
+	private Tilemap autotile; private final Properties properties; private Image image; private long id;
 	private JMenuItem add_autotile = MapEditor.createMenuItemIcon("Toggle Autotile", ADD_AUTOTILE, this);
-	private AutoTile(MapEditor e){
-		super(DEFAULT_NAME, e); properties = new Properties(this);
-	}
-	public AutoTile(AutoTile m){super(m.getName(), m.editor); properties = new Properties(this); copyChildren(m);}
+	public AutoTile(File f, MapEditor e){super(f, e); properties = new Properties(this);}
 	public void contextMenu(JPopupMenu menu){
 		WorkspaceBrowser browser = editor.getBrowser(); menu.add(add_autotile); menu.add(browser.properties); menu.addSeparator();
 	}
-	public boolean edit(){if(autotile != null) editor.getTilesetViewer().toggleAutoTile(autotile); return true;}
+	public long getId(){return id;}
+	public boolean edit(){editor.getTilesetViewer().toggleAutoTile(autotile, WorkspaceBrowser.getProject(this)); return true;}
 	public void properties(){properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
-	public byte getType(){return Type.AUTOTILE;}
 	public Icon getIcon(){return icon;}
-	public Resource copy(){return new AutoTile(this);}
+	public Tilemap getTilemap(){return autotile;}
 	public void actionPerformed(ActionEvent e) {edit();}
 	
-	public static AutoTile createAutoTile(MapEditor e){
-		AutoTile ret = new AutoTile(e); ret.properties();
-		return (ret.properties.updated)?ret:null;
+	private boolean active = false;
+	public void remove(boolean delete) throws Exception {
+		WorkspaceBrowser.getProject(this).removeTilemapId(this, id); super.remove(delete);
+		active = editor.getTilesetViewer().removeAutoTile(autotile);
+	}
+	public void save() throws Exception {
+		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
+		out.writeLong(id); out.writeLong(image.getId()); autotile.write(out); out.flush(); out.close();
+	}
+	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
+	public void deferredRead(File f) throws Exception {
+		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
+		id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
+		if(image.getImage().getHeight() == Tile.tile_size*2)
+			autotile = new WallTilemap(in, image.getImage(), getId());
+		else autotile = new AutoTilemap(in, image.getImage(), getId());
+		in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
+		if(active){active = false; editor.getTilesetViewer().addAutoTile(autotile, p);}
+	}
+	public static AutoTile createAutoTile(File f, MapEditor e, Project p) throws Exception {
+		AutoTile ret = new AutoTile(f, e); ret.id = p.newTilemapId();
+		ret.properties(); if(!ret.properties.updated) throw new Exception();
+		p.setTilemapId(ret, ret.id); return ret;
 	}
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
@@ -150,11 +175,12 @@ public class AutoTile extends Resource implements ActionListener {
 					if(!updateFrames()) return;
 					tilemap.setSpeed(0, Integer.parseInt(speed.getSelection().getActionCommand()));
 				}
-				updated = true;
-				autotile.setName(name.getText());
 				autotile.image = image; autotile.autotile = tilemap;
-				((DefaultTreeModel)autotile.editor.getBrowser().getModel()).nodeChanged(autotile);
-				setVisible(false);
+				try{
+					autotile.setName(name.getText());
+				} catch(Exception ex){}
+				if(image != null && tilemap != null) try{autotile.save(); updated = true;}catch(Exception ex){}
+				setVisible(false); MapEditor.instance.refreshTilesets();
 			} else if(command == MapEditor.SET){
 				Project p = WorkspaceBrowser.getProject(autotile);
 				if(p == null){
@@ -165,14 +191,14 @@ public class AutoTile extends Resource implements ActionListener {
 					if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
 				}
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				ImageChooser c = new ImageChooser(p.getChild(2).getChild(0), image);
+				ImageChooser c = new ImageChooser(p, image);
 				c.setVisible(true);
 				Image im = c.getSelectedImage();
 				if(im != null){
 					try{
 						if(im.getImage().getHeight() == Tile.tile_size*2)
-							tilemap = new WallTilemap(im.getImage());
-						else tilemap = new AutoTilemap(im.getImage());
+							tilemap = new WallTilemap(im.getImage(), autotile.getId());
+						else tilemap = new AutoTilemap(im.getImage(), autotile.getId());
 						setTilemap(tilemap);
 						image = im; editor.setTilemap(tilemap);
 					}catch(Exception ex){JOptionPane.showMessageDialog(autotile.editor, "Unable to create AutoTile: "+ex.getMessage(), "AutoTile Creation Error", JOptionPane.ERROR_MESSAGE); updated = false; autotile.autotile = null;}

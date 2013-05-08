@@ -16,27 +16,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
-package mrpg.editor.resource;
+package mrpg.editor;
 
 import java.io.File;
 
-import javax.swing.Icon;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
 
-import mrpg.editor.MapEditor;
-import mrpg.editor.resource.Project;
+import mrpg.editor.resource.Resource;
 
-
-public class Workspace extends Resource {
-	private static final long serialVersionUID = -781096720788373713L;
-	public Workspace(MapEditor e){super(null, e);}
-	
-	public boolean canAddChildren(){return false;}
-	public long getId(){return 0;}
-	public Icon getIcon(){return null;}
-	public boolean canDelete(){return false;}
-	protected void read(File f) throws Exception {throw new Exception();}
-	
-	public int getProjectCount(){return getChildCount();}
-	public Project getProject(int i){return (Project)getChild(i);}
-	public File copy(File f) throws Exception {throw new Exception();}
+public class FilterTreeModel extends DefaultTreeModel {
+	private static final long serialVersionUID = -9003054607707078379L;
+	private final String ext;
+	public FilterTreeModel(TreeNode root, String ext){
+		super(root); this.ext = ext;
+	}
+	public Object getChild(Object parent, int index){
+		int ct = 0, end = super.getChildCount(parent); for(int i=0; i<end; i++){
+			Resource r = (Resource)super.getChild(parent, i); File f = r.getFile();
+			if(f.isDirectory() || f.getName().endsWith(ext)){
+				if(ct == index) return r; ct++;
+			}
+		} throw new ArrayIndexOutOfBoundsException();
+	}
+	public int getChildCount(Object parent){
+		int ct = 0, end = super.getChildCount(parent); for(int i=0; i<end; i++){
+			Resource r = (Resource)super.getChild(parent, i); File f = r.getFile();
+			if(f.isDirectory() || f.getName().endsWith(ext)) ct++;
+		} return ct;
+	}
 }

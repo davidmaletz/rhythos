@@ -61,6 +61,7 @@ public class History {
 	}
 	
 	public boolean hasUndo(){return redoAt > 0;}
+	public int redoPos(){return redoAt;}
 	public boolean hasRedo(){return redoAt < entries.size();}
 	
 	public static interface Listener {
