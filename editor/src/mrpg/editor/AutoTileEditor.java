@@ -116,6 +116,6 @@ public class AutoTileEditor extends JPanel implements ActionListener, MouseListe
 	public void actionPerformed(ActionEvent e) {
 		frame_num++;
 		if(tilemap != null) repaint();
-		if(!MapEditor.instance.isDisplayable()) timer.stop();
+		if(MapEditor.instance == null) timer.stop();
 	}
 }

@@ -105,7 +105,7 @@ public class World {
 	}
 	
 	public void write(WorldIO tileIO) throws IOException {
-		tileIO.write(width); tileIO.write(height); int wrap = 0; if(wrapX) wrap |= 1; if(wrapY) wrap |= 2; tileIO.write(wrap);
+		tileIO.writeShort(width); tileIO.writeShort(height); int wrap = 0; if(wrapX) wrap |= 1; if(wrapY) wrap |= 2; tileIO.write(wrap);
 		for(int i=0; i<width*height; i++){
 			Cell c = cells.get(i);
 			if(c == null) tileIO.write(0);
@@ -121,7 +121,7 @@ public class World {
 		}
 	}
 	public static World read(WorldIO tileIO) throws IOException {
-		int width = tileIO.read(); int height = tileIO.read();
+		int width = tileIO.readShort(); int height = tileIO.readShort();
 		World w = new World(width, height, true);
 		int wrap = tileIO.read(); w.wrapX = (wrap & 1) != 0; w.wrapY = (wrap & 2) != 0;
 		for(int y=0; y<height; y++)

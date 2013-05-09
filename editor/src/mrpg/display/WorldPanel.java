@@ -179,7 +179,7 @@ public class WorldPanel extends JPanel implements ActionListener, Scrollable {
 		if(isDisplayable()){
 			frame_num++;
 			if(world != null) repaint();
-		} if(!MapEditor.instance.isDisplayable()) timer.stop();
+		} if(MapEditor.instance == null) timer.stop();
 	}
 	
 	public int getFrame(){return frame_num;}

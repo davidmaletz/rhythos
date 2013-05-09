@@ -54,12 +54,13 @@ import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
 import mrpg.editor.resource.Tileset;
 import mrpg.editor.resource.Workspace;
+import mrpg.export.Target;
 
 
 public class WorkspaceBrowser extends JTree implements ActionListener, MouseListener, MouseMotionListener {
 	private static final long serialVersionUID = -2561363020096125820L;
 	public static JFileChooser imgChooser = new JFileChooser(), sndChooser = new JFileChooser();
-	private static class ExtFileFilter extends FileFilter {
+	public static class ExtFileFilter extends FileFilter {
 		private String[] ext; private String name;
 		public ExtFileFilter(String n, String[] _ext){
 			ext = _ext; StringBuilder b = new StringBuilder();
@@ -82,7 +83,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		sndChooser.setMultiSelectionEnabled(true); sndChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 	}
 	public static final String ADD_FOLDER_ICON = "add_folder", EDIT_ICON = "edit",
-		IMAGE_ICON = "image", MEDIA_ICON = "media", SCRIPT_ICON = "script", TILESET = "database", AUTOTILE = new String("database");
+		IMAGE_ICON = "image", MEDIA_ICON = "media", DB_ICON = new String("database"), SCRIPT_ICON = "script", TILESET = new String("database"), AUTOTILE = new String("database");
 	private final int NO_DRAG=0, CHECK_DRAG=1, HAS_DRAG=2;
 	private final MapEditor editor;
 	private final JPopupMenu context_menu; private Resource dragTo = null, dragLine = null;
@@ -173,6 +174,15 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			} else {
 				r = Media.importMedia(f, new File(dir+File.separator+n+"."+Media.EXT), editor, p);
 			} addResource(r, parent);
+		}catch(Exception e){}
+	}
+	private void importResource(Resource parent, File f, Project p){
+		String dir = parent.getFile().toString();
+		try{
+			if(!f.isDirectory()){
+				File f2 = new File(dir+File.separator+f.getName()); Resource.copyFile(f, f2);
+				addResource(Resource.readFile(f2, editor), parent);
+			}
 		}catch(Exception e){}
 	}
 	public void addFolder(){
@@ -311,9 +321,26 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 					MapEditor.doDeferredRead(true);
 				} catch(Exception ex){}
 			}
+		} else if(command == DB_ICON){
+			if(Resource.resourceChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+				try{
+					Resource parent = getInsertResource();
+					for(File f : Resource.resourceChooser.getSelectedFiles()) importResource(parent, f, getProject(parent));
+					MapEditor.doDeferredRead(true);
+				} catch(Exception ex){}
+			}
 		} else if(command == SCRIPT_ICON){/*TODO:addResource(new Script(Script.DEFAULT_NAME, editor));*/
 		} else if(command == TILESET){addTileset();
 		} else if(command == AUTOTILE){addAutoTile();}
+		else if(command == MapEditor.BUILD){
+			try{
+				Project p = getProject(getSelectedResource()); p.getTarget().build(p);
+			}catch(Exception ex){}
+		} else if(command == MapEditor.TEST){
+			try{
+				Project p = getProject(getSelectedResource()); Target t = p.getTarget(); t.build(p); t.run(p);
+			}catch(Exception ex){}
+		}
 	}
 	
 	public void mouseClicked(MouseEvent e) {}
@@ -505,6 +532,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		add_map = MapEditor.createMenuItemIcon("Map", MapEditor.MAP, this),
 		add_tileset = MapEditor.createMenuItemIcon("Tileset", TILESET, this),
 		add_autotile = MapEditor.createMenuItemIcon("AutoTile", AUTOTILE, this),
+		add_resource = MapEditor.createMenuItemIcon("Resource File", DB_ICON, this),
 		add_image = MapEditor.createMenuItemIcon("Image File", IMAGE_ICON, this),
 		add_media = MapEditor.createMenuItemIcon("Audio File", MEDIA_ICON, this),
 		add_script = MapEditor.createMenuItemIcon("Script", SCRIPT_ICON, this),

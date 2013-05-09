@@ -37,6 +37,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -58,7 +59,7 @@ import mrpg.world.WallTilemap;
 public class AutoTile extends TileResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
 	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.TILESET);
-	public static final String EXT = "atm";
+	public static final String EXT = "atm"; private static final short VERSION=1;
 	public static final String ADD_AUTOTILE="set-tileset";
 	private Tilemap autotile; private final Properties properties; private Image image; private long id;
 	private JMenuItem add_autotile = MapEditor.createMenuItemIcon("Toggle Autotile", ADD_AUTOTILE, this);
@@ -82,13 +83,13 @@ public class AutoTile extends TileResource implements ActionListener {
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
-			out.writeLong(id); out.writeLong(image.getId()); autotile.write(out); out.flush(); out.close();
+			out.writeShort(VERSION); out.writeLong(id); out.writeLong(image.getId()); autotile.write(out); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{
+		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
 			if(image.getImage().getHeight() == Tile.tile_size*2)
 				autotile = new WallTilemap(in, image.getImage(), getId());
@@ -106,20 +107,22 @@ public class AutoTile extends TileResource implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		public boolean updated;
 		private static final String FRAMES = "frames";
-		private final AutoTile autotile; private final JTextField name, frames; private ButtonGroup speed = new ButtonGroup();
+		private final AutoTile autotile; private final JTextField name, id, frames; private ButtonGroup speed = new ButtonGroup();
 		private final AutoTileEditor editor; private Image image; private Tilemap tilemap;
 		public Properties(AutoTile t){
 			super(JOptionPane.getFrameForComponent(t.editor), "AutoTile Properties", true); autotile = t;
 			setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
 			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name"));
+			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
 			name = new JTextField(t.getName(), 20); name.setActionCommand(MapEditor.OK); name.addActionListener(this);
-			inner.add(name);
+			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
+			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+			id.setEditable(false); p.add(id); inner.add(p);
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Auto Tile"));
 			editor = new AutoTileEditor();
-			JPanel p = new JPanel(); p.add(editor); p.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(p);
+			p = new JPanel(); p.add(editor); p.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(p);
 			JButton set = new JButton("Set"); set.setActionCommand(MapEditor.SET); set.addActionListener(this); inner.add(set);
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Frames"));
@@ -152,7 +155,7 @@ public class AutoTile extends TileResource implements ActionListener {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				updated = false;
+				updated = false; id.setText(Long.toString(autotile.id));
 				name.setText(autotile.getName()); name.requestFocus(); name.selectAll();
 				image = autotile.image; setTilemap(autotile.autotile);
 				editor.setTilemap(tilemap); editor.start();

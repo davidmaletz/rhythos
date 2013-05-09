@@ -25,12 +25,14 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
 import javax.swing.Icon;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 
 import mrpg.editor.MapEditor;
+import mrpg.editor.WorkspaceBrowser.ExtFileFilter;
 
 
 public abstract class Resource extends DefaultMutableTreeNode {
@@ -98,15 +100,17 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			if(n == null) throw new Exception(); else f = new File(dir.toString()+File.separator+n+ext);
 		} if(f.exists()) throw new Exception(); return f; 
 	}
-	public File copy(File dir) throws Exception {
-		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, true);
+	public static void copyFile(File from, File to) throws Exception {
 		FileChannel source = null, destination = null;
 		try{
-			source = new FileInputStream(file).getChannel();
-			destination = new FileOutputStream(f).getChannel();
+			source = new FileInputStream(from).getChannel();
+			destination = new FileOutputStream(to).getChannel();
 			destination.transferFrom(source, 0, source.size());
 		} finally {if(source != null) source.close(); if(destination != null) destination.close();}
-		return f;
+	}
+	public File copy(File dir) throws Exception {
+		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, true);
+		copyFile(file, f); return f;
 	}
 	public void refresh() throws Exception {
 		remove(false); removeAllChildren(); read(file);
@@ -114,8 +118,14 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	public String toString(){return getName();}
 	
 	private static final HashMap<String, Class<? extends Resource>> resources = new HashMap<String, Class<? extends Resource>>();
-	public static void register(String ext, Class<? extends Resource> r){resources.put(ext, r);}
-	public static void unregister(String ext, Class<? extends Resource> r){resources.remove(ext);}
+	public static JFileChooser resourceChooser = new JFileChooser();
+	static {
+		resourceChooser.setAcceptAllFileFilterUsed(false); resourceChooser.setMultiSelectionEnabled(true);
+		resourceChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+	}
+	public static void register(String name, String ext, Class<? extends Resource> r){
+		resources.put(ext, r); resourceChooser.addChoosableFileFilter(new ExtFileFilter(name, new String[]{ext}));
+	}
 	public static Resource readFile(File f, MapEditor e) throws Exception {
 		if(f.isDirectory()){
 			Resource ret = new Folder(f, e); ret.read(f); return ret;

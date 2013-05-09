@@ -33,6 +33,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -54,6 +55,8 @@ import javax.swing.JTextField;
 import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
+import mrpg.export.Graphic;
+import mrpg.export.Target;
 
 
 public class Project extends Folder {
@@ -63,16 +66,23 @@ public class Project extends Folder {
 		folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		folderChooser.setDialogTitle("Choose Project Directory"); 
 	}
-	public static final String PROJECT = "project";
+	public static final String PROJECT = "project"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(PROJECT);
 	private Properties properties; private String target; private Image frame, font, bg; private ArrayList<String> options;
+	private Target cache = null;
+	public Target getTarget(){
+		if(cache == null)try{cache = (Target)Class.forName(target).newInstance();}catch(Exception e){} return cache; 
+	}
+	public Graphic getFrame(){return frame.getGraphic();}
+	public Graphic getFont(){return font.getGraphic();}
+	public Graphic getBG(){return bg.getGraphic();}
 	public static Project createProject(MapEditor e) throws Exception {
 		File f; if(folderChooser.showSaveDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
 			f = folderChooser.getSelectedFile(); if(!f.exists() && !f.mkdirs()) throw new Exception();
 		} else throw new Exception();
 		if(f.listFiles().length > 0) throw new Exception();
-		Project p = new Project(f, e); p.target = MapEditor.defaultTarget().getName(); p.options = new ArrayList<String>();
-		p.save(); return p;
+		Project p = new Project(f, e); p.target = MapEditor.defaultTarget().getValue().getName();
+		p.options = new ArrayList<String>(); p.save(); return p;
 	}
 	public static Project openProject(MapEditor e, Workspace w) throws Exception {
 		File f; if(folderChooser.showOpenDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
@@ -92,7 +102,7 @@ public class Project extends Folder {
 	public void save() throws Exception {
 		File f = new File(getFile().toString()+File.separator+".project");
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-		try{
+		try{out.writeShort(VERSION);
 			out.writeUTF(target); if(frame == null) out.writeLong(0); else out.writeLong(frame.getId());
 			if(font == null) out.writeLong(0); else out.writeLong(font.getId());
 			if(bg == null) out.writeLong(0); else out.writeLong(bg.getId()); int sz = options.size();
@@ -103,8 +113,8 @@ public class Project extends Folder {
 	public void deferredRead(File _f) throws Exception {
 		File f = new File(getFile().toString()+File.separator+".project");
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{
-			target = in.readUTF(); try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
+		try{if(in.readShort() != VERSION) throw new Exception();
+			target = in.readUTF(); cache = null; try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
 			try{font = getImageById(in.readLong());}catch(Exception e){font = null;}
 			try{bg = getImageById(in.readLong());}catch(Exception e){bg = null;} int sz = in.read();
 			options = new ArrayList<String>(sz); for(int i=0; i<sz; i++) options.add(in.readUTF()); in.close();
@@ -211,7 +221,8 @@ public class Project extends Folder {
 				name.setText(project.getName()); name.requestFocus(); name.selectAll();
 				Object[] targets = MapEditor.getTargetsArray(); String data[] = new String[targets.length];
 				int selected = 0; for(int i=0; i<targets.length; i++){
-					String n = ((Class)targets[i]).getName(); if(n.equals(project.target)) selected = i; data[i] = n.substring(n.lastIndexOf('.')+1);
+					Entry<String,Class> e = (Entry<String,Class>)targets[i]; String n = e.getValue().getName();
+					if(n.equals(project.target)) selected = i; data[i] = e.getKey();
 				} target.setModel(new DefaultComboBoxModel(data)); target.setSelectedIndex(selected);
 				frame = project.frame;
 				if(frame == null) frame_thumb.setIcon(new ImageIcon()); else frame_thumb.setIcon(new ImageIcon(frame.getImage()));
@@ -228,7 +239,8 @@ public class Project extends Folder {
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(command == MapEditor.OK){
-				project.target = ((Class)MapEditor.getTargetsArray()[target.getSelectedIndex()]).getName();
+				String t = ((Entry<String,Class>)MapEditor.getTargetsArray()[target.getSelectedIndex()]).getValue().getName();
+				if(!t.equals(project.target)){project.cache = null; project.target = t;}
 				project.frame = frame; project.font = font; project.bg = bg;
 				String[] o = options.getText().split("\n");
 				project.options.clear(); for(int i=0; i<o.length; i++) project.options.add(o[i]);

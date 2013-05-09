@@ -55,7 +55,7 @@ import mrpg.world.World;
 
 public class Map extends Resource {
 	private static final long serialVersionUID = 3067630717384565840L;
-	public static final String EXT = "map";
+	public static final String EXT = "map"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(MapEditor.MAP);
 	private World world; private Properties properties; private Image background; private long id; private boolean modified = false;
 	public Map(File f, MapEditor e){super(f,e);}
@@ -85,14 +85,14 @@ public class Map extends Resource {
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
-			out.writeLong(id); if(background == null) out.writeByte(0); else {out.writeByte(1); out.writeLong(background.getId());}
+			out.writeShort(VERSION); out.writeLong(id); if(background == null) out.writeByte(0); else {out.writeByte(1); out.writeLong(background.getId());}
 			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this);
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MAP);}
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{
+		try{if(in.readShort() != VERSION) throw new Exception();
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); if(in.readByte() == 1) try{background = p.getImageById(in.readLong());}catch(Exception e){background = null;} else background = null;
 			world = World.read(new WorldIO(p, in)); in.close(); if(background != null) world.background = background.getImage();
@@ -110,16 +110,18 @@ public class Map extends Resource {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final int MIN_SIZE = 10, MAX_SIZE = 500;
 		public boolean updated;
-		private final Map map; private final JTextField name; private final JSpinner width, height;
+		private final Map map; private final JTextField name, id; private final JSpinner width, height;
 		private final JCheckBox x_wrap, y_wrap; private final JLabel image_thumb; private Image background;
 		public Properties(Map m){
 			super(JOptionPane.getFrameForComponent(m.editor), "Map Properties", true); map = m;
 			setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
 			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name"));
+			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
 			name = new JTextField(map.getName(), 20); name.setActionCommand(MapEditor.OK); name.addActionListener(this);
-			inner.add(name);
+			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
+			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+			id.setEditable(false); p.add(id); inner.add(p);
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Size"));
 			width = new JSpinner(new SpinnerNumberModel(map.world.getWidth(), MIN_SIZE, MAX_SIZE, 1));
@@ -154,7 +156,7 @@ public class Map extends Resource {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				updated = false;
+				updated = false; id.setText(Long.toString(map.id));
 				name.setText(map.getName()); name.requestFocus(); name.selectAll();
 				width.setValue(map.world.getWidth()); height.setValue(map.world.getHeight());
 				x_wrap.setSelected(map.world.wrapX); y_wrap.setSelected(map.world.wrapY);

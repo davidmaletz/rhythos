@@ -19,6 +19,7 @@
 package com.davidmaletz.mrpg;
 
 import com.davidmaletz.mrpg.equipment.Equipment;
+import com.davidmaletz.mrpg.game.Game;
 import com.davidmaletz.mrpg.transition.Mosaic;
 import com.davidmaletz.mrpg.ui.Achievements;
 import com.davidmaletz.mrpg.ui.DialogBox;
@@ -131,7 +132,7 @@ class Main extends Sprite {
 	}
 	private function transition():Void {battle = null; new Mosaic(); removeAllChildren(this);}
 	public function mainMenu():Void {transition(); addChild(new MainMenu());}
-	public function returnToTown():Void {transition(); addChild(new GameMenu());}
+	public function returnToTown():Void {transition(); addChild(new Game());}
 	public static inline function experienceToNextLevel(l:Int):Int {return l*l*250+l*1250+1000;}
 	private static inline var MAX_LEVEL:Int = 30;
 	public static inline function levelFromExperience(e:Int):Int {
@@ -192,6 +193,9 @@ class Main extends Sprite {
 	private static var SFX_VOL:Int; private static var BGM_VOL:Int; private static var bgm_vol:Float;
 	public static function getBitmap(id:String, t1:Int=-1, t2:Int=-1):BitmapData {
 		var c = getAsset(id,t1,t2); return ((c == null)?null:cast(c, Bitmap).bitmapData);
+	}
+	public static function getData(id:String, t1:Int=-1, t2:Int=-1):ByteArray {
+		var c = getAsset(id,t1,t2); return ((c == null)?null:cast(c, ByteArray));
 	}
 	public static function getBGM(id:String, t1:Int=-1, t2:Int=-1):Sound {
 		var c = getAsset(id,t1,t2); return ((c == null)?null:cast(c, Sound));

@@ -58,6 +58,7 @@ public class Media extends Resource {
 		menu.add(editor.getBrowser().properties); menu.addSeparator();
 		super.contextMenu(menu);
 	}
+	public Sound getSound(){return sound;}
 	public long getId(){return id;}
 	public boolean edit(){properties(); return true;}
 	public void properties(){properties.setVisible(true);}
@@ -89,16 +90,18 @@ public class Media extends Resource {
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final String OK = "ok", CANCEL = "cancel";
-		private final Media media; private final JTextField name; private final JLabel dur;
+		private final Media media; private final JTextField name, id; private final JLabel dur;
 		private final MediaPlayer preview;
 		public Properties(Media m){
 			super(JOptionPane.getFrameForComponent(m.editor), "Media Properties", true); media = m;
 			setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
 			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name"));
+			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
 			name = new JTextField(media.getName(), 20); name.setActionCommand(OK); name.addActionListener(this);
-			inner.add(name);
+			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
+			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+			id.setEditable(false); p.add(id); inner.add(p);
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Duration"));
 			dur = new JLabel("0:00"); inner.add(dur);
@@ -115,11 +118,11 @@ public class Media extends Resource {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				name.setText(media.getName()); name.requestFocus(); name.selectAll();
-				Audio.Clip clip = media.getClip(); long frames = clip.length(); float spf = 1.f/clip.framesPerSecond();
+				name.setText(media.getName()); name.requestFocus(); name.selectAll(); id.setText(Long.toString(media.id));
+				Audio.Clip clip = media.getClip(); if(clip != null){long frames = clip.length(); float spf = 1.f/clip.framesPerSecond();
 				int m = (int)(frames*spf/60), s = (int)(frames*spf)-m*60;
 				dur.setText(m+":"+((s < 10)?"0":"")+s);
-				preview.setClip(clip);
+				preview.setClip(clip);} else dur.setText("0:00");
 			} else preview.stop();
 			super.setVisible(b);
 		}

@@ -18,10 +18,8 @@
  ******************************************************************************/
 package mrpg.media;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedList;
 import java.util.Map;
 
 import javax.sound.sampled.AudioFormat;
@@ -31,26 +29,22 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.SourceDataLine;
 
+import mrpg.editor.MapEditor;
+import mrpg.export.Sound;
+
 import javazoom.spi.mpeg.sampled.convert.DecodedMpegAudioInputStream;
 import javazoom.spi.mpeg.sampled.convert.MpegFormatConversionProvider;
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
 
 public class Audio {
-	private static final LinkedList<Class<? extends Clip>> clips = new LinkedList<Class<? extends Clip>>();
-	
-	public static void registerClip(Class<? extends Clip> clip){clips.add(clip);}
-	public static void unregisterClip(Class<? extends Clip> clip){clips.remove(clip);}
-	
-	public static Clip getClip(byte[] bytes) throws Exception {
-		try{
-		LoopableInputStream in = new LoopableInputStream(new BufferedStream(new ByteArrayInputStream(bytes), bytes.length));
-		for(Class<? extends Clip> clip : clips) try{
-			in.resetStream();
-			return clip.getConstructor(LoopableInputStream.class).newInstance(in);
-		} catch(Exception e){}
-		in.close();
-		} catch(Exception ex){}
-		throw new Exception();
+	public static final int MP3 = 2, PCM = 3;
+	public static Clip getClip(Sound s) throws Exception {
+		switch(s.getFormat()){
+		case MP3: return new MP3Clip(new LoopableInputStream(s.getData()));
+		case PCM:
+			return new SampledClip(new LoopableInputStream(s.getData()), new AudioFormat(s.getRate(), s.getSampleSize()*8, s.getChannelCount(), true, false));
+		default: throw new Exception();
+		}
 	}
 	
 	public static interface Clip {
@@ -63,38 +57,18 @@ public class Audio {
 		public void playFrame(long frame) throws Exception;
 		public Clip clone();
 	}
-	private static class BufferedStream implements Runnable {
-		private InputStream stream; private byte bytes[]; private int read=0, length;
-		public BufferedStream(InputStream in, int len){stream = in; length = len; bytes = new byte[len]; new Thread(this).start();}
-		
-		public void run(){
-			int end = length-4096;
-			try{
-			while(read<end){
-				read += stream.read(bytes, read, 4096);
-				synchronized(this){notifyAll();}
-			}
-			while(read < length){
-				read += stream.read(bytes, read, length-read);
-				synchronized(this){notifyAll();}
-			}
-			}catch(Exception e){}
-			try{stream.close();}catch(Exception e){}
-		}
-	}
 	private static class LoopableInputStream extends InputStream {
-		private final BufferedStream stream; private int at = 0, mark = -1;
-		public LoopableInputStream(BufferedStream in){stream = in;}
+		private final byte[] stream; private int at = 0, mark = -1;
+		public LoopableInputStream(byte[] in){stream = in;}
 		public int available() throws IOException {return stream.length-at;}
 		public int length(){return stream.length;}
 		public void close() throws IOException {}
 		public synchronized void mark(int readlimit){mark = at;}
 		public boolean markSupported() {return true;}
-		private void readTo(int pos){while(pos > stream.read) try{synchronized(stream){stream.wait();}}catch(Exception e){}}
-		public int read() throws IOException {if(at == stream.length) return -1; readTo(at+1); return stream.bytes[at++] & 0xFF;}
+		public int read() throws IOException {if(at == stream.length) return -1; return stream[at++] & 0xFF;}
 		public int read(byte[] b, int off, int len) throws IOException {
-			len = Math.min(stream.length-at, len); readTo(at+len);
-			System.arraycopy(stream.bytes, at, b, off, len); at += len;
+			len = Math.min(stream.length-at, len);
+			System.arraycopy(stream, at, b, off, len); at += len;
 			return len;
 		}
 		public int read(byte[] b) throws IOException {return read(b, 0, b.length);}
@@ -103,32 +77,31 @@ public class Audio {
 		public long skip(long n) throws IOException {n = Math.min(stream.length-at, n); at += n; return n;}
 	}
 	public static class SampledClip implements Clip {
-		private AudioInputStream stream; protected LoopableInputStream input;
+		private AudioInputStream stream; protected LoopableInputStream input; private AudioFormat format;
 		private final SourceDataLine line;
 		private final byte buf[];
 		private final FloatControl volume;
 		private final boolean gain;
 		private boolean playing = false;
 		private long currentFrame = 0;
-		public SampledClip(LoopableInputStream in) throws Exception {
-			input = in; stream = getStream(in);
-			AudioFormat format = stream.getFormat();
+		public SampledClip(LoopableInputStream in, AudioFormat f) throws Exception {
+			input = in; format = f; stream = getStream(in); if(format == null) format = stream.getFormat();
 			DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 			line = (SourceDataLine)AudioSystem.getLine(info);
-			line.open(stream.getFormat());
+			line.open(format);
 			if(line.isControlSupported(FloatControl.Type.VOLUME)){gain = false; volume = (FloatControl)line.getControl(FloatControl.Type.VOLUME);}
 			else if(line.isControlSupported(FloatControl.Type.MASTER_GAIN)){gain = true; volume = (FloatControl)line.getControl(FloatControl.Type.MASTER_GAIN);}
 			else throw new Exception();
 			buf = new byte[getFrameSize()];
 		}
-		AudioInputStream getStream(LoopableInputStream in) throws Exception {return AudioSystem.getAudioInputStream(in);}
+		AudioInputStream getStream(LoopableInputStream in) throws Exception {return new AudioInputStream(in, format, in.length()/format.getFrameSize());}
 		protected void finalize(){
 			stop();
 			line.close();
 			try{stream.close();}catch(Exception e){}
 		}
 		public long length(){return stream.getFrameLength()/50;}
-		public float framesPerSecond(){return stream.getFormat().getFrameRate()/50;}
+		public float framesPerSecond(){return format.getFrameRate()/50;}
 		public void start(){if(playing) return; playing = true; line.start();}
 		public void stop(){if(!playing) return; playing = false; line.drain(); line.stop();}
 		public void pause(){if(!playing) return; playing = false; line.stop();}
@@ -139,7 +112,7 @@ public class Audio {
 			volume.setValue(vol);
 		}
 		void skipFrames(AudioInputStream stream, long f) throws Exception {stream.skip(getFrameSize()*f);}
-		int getFrameSize(){return stream.getFormat().getFrameSize()*50;}
+		int getFrameSize(){return format.getFrameSize()*50;}
 		public void playFrame(long frame) throws Exception {
 			if(frame < 0) return;
 			frame = frame%length();
@@ -159,22 +132,20 @@ public class Audio {
 			if(i == 0) return;
 			line.write(buf, 0, i);
 		}
-		public Clip clone(){try{return new SampledClip(new LoopableInputStream(input.stream));} catch(Exception e){return null;}}
+		public Clip clone(){try{return new SampledClip(new LoopableInputStream(input.stream), format);} catch(Exception e){return null;}}
 	}
 	public static class MP3Clip extends SampledClip {
 		private static final MpegFormatConversionProvider provider = new MpegFormatConversionProvider();
 		private static final MpegAudioFileReader reader = new MpegAudioFileReader();
 		private long length; private float fps; private int frameSize, bytesPerFrame;
-		public MP3Clip(LoopableInputStream in) throws Exception {
-			super(in);
-		}
+		public MP3Clip(LoopableInputStream in) throws Exception {super(in, null);}
 		void skipFrames(AudioInputStream stream, long f) throws Exception {stream.skip(f*bytesPerFrame);}
 		AudioInputStream getStream(LoopableInputStream in) throws Exception {
+			Map<String, Object> props = reader.getAudioFileFormat(in,in.length()).properties(); in.resetStream();
 			AudioInputStream stream = reader.getAudioInputStream(in);
 			AudioFormat format = stream.getFormat();
 			AudioFormat decoded = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, format.getSampleRate(), 16, format.getChannels(), format.getChannels() * 2, format.getSampleRate(), false);
 			DecodedMpegAudioInputStream s = (DecodedMpegAudioInputStream)provider.getAudioInputStream(decoded, stream);
-			Map<String, Object> props = reader.getAudioFileFormat(in, in.length()).properties();
 			length = ((Number)props.get("mp3.length.frames")).longValue();
 			fps = ((Number)props.get("mp3.framerate.fps")).floatValue();
 			frameSize = (int)(decoded.getFrameSize()*decoded.getFrameRate()/fps);
@@ -206,11 +177,8 @@ public class Audio {
 			while(true){
 				synchronized(this){if(!running || c != clip) return; f = frame; frame++; if(listener != null) listener.playFrame(f);}
 				try{c.playFrame(f);}catch(Exception e){}
+				if(MapEditor.instance == null) return;
 			}
 		}
-	}
-	static{
-		Audio.registerClip(Audio.SampledClip.class);
-		Audio.registerClip(Audio.MP3Clip.class);
 	}
 }

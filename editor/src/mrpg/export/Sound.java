@@ -47,6 +47,12 @@ public class Sound {
 	public DefineSound getSound(int i){
 		return new DefineSound(i, SoundFormat.fromInt(fmt), rate, channels, size, count, data);
 	}
+	public int getFormat(){return fmt;}
+	public int getRate(){return rate;}
+	public int getChannelCount(){return channels;}
+	public int getSampleSize(){return size;}
+	public int getSampleCount(){return count;}
+	public byte[] getData(){return data;}
 	public void write(File f) throws Exception {write(new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))));}
 	public void write(DataOutputStream out) throws Exception {
 		out.writeInt(fmt); out.writeInt(rate); out.writeInt(channels); out.writeInt(size);
@@ -54,7 +60,7 @@ public class Sound {
 		out.flush(); out.close();
 	}
 	public Audio.Clip getClip() throws Exception {
-		if(cache == null) cache = Audio.getClip(data); return cache;
+		if(cache == null) cache = Audio.getClip(this); return cache;
 	}
 	
 	private static SoundFactory snd;

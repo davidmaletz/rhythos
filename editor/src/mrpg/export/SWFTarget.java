@@ -18,8 +18,8 @@
  ******************************************************************************/
 package mrpg.export;
 
+import java.awt.Desktop;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.util.List;
 
@@ -35,17 +35,155 @@ import com.flagstone.transform.SymbolClass;
 public class SWFTarget implements Target {
 	private Movie movie; private int id; private SymbolClass bitmaps, sounds, bytearrays;
 	public SWFTarget(){}
-	private void init(Graphic font, Graphic bg, Graphic frame) throws Exception{
+	private void init(Graphic frame, Graphic font, Graphic bg) throws Exception{
 		movie = new Movie(); movie.decodeFromStream(SWFTarget.class.getResourceAsStream("/base.swf"));
 		List<MovieTag> tags = movie.getObjects(); bitmaps = new SymbolClass(); sounds = new SymbolClass();
 		bytearrays = new SymbolClass(); tags.set(3, font.defineImage(4));
 		tags.set(4, bg.defineImage(3)); tags.set(5, frame.defineImage(2)); id = 5;
 	}
-	public void publish(Project p, File f){
+	public void build(Project p){
 		/*
 		 * TODO: load assets from project, call init, addImage, addSound and addData to add them to the
 		 * swf, finish() to finish adding data, and finally writeToFile(f)
 		 */
+		try {
+			File f = new File("img"); if(!f.exists()) f.mkdir();
+			f = new File("snd"); if(!f.exists()) f.mkdir();
+			String FOLDER = "../assets/";
+			init(p.getFrame(), p.getFont(), p.getBG());
+			addImage(loadImage(new File(FOLDER+"body_m.png")), "skin", 0);
+			addImage(loadImage(new File(FOLDER+"body_f.png")), "skin", 1);
+			addImage(loadImage(new File(FOLDER+"body_s.png")), "skin", 2);
+			addImage(loadImage(new File(FOLDER+"body_o.png")), "skin", 3);
+			addImage(loadImage(new File(FOLDER+"eyes_m.png")), "eyes", 0);
+			addImage(loadImage(new File(FOLDER+"eyes_f.png")), "eyes", 1);
+			addImage(loadImage(new File(FOLDER+"hair0_m.png")), "hair", 0, 0);
+			addImage(loadImage(new File(FOLDER+"hair0_f.png")), "hair", 1, 0);
+			addImage(loadImage(new File(FOLDER+"hair1_m.png")), "hair", 0, 1);
+			addImage(loadImage(new File(FOLDER+"hair1_f.png")), "hair", 1, 1);
+			addImage(loadImage(new File(FOLDER+"hair2_m.png")), "hair", 0, 2);
+			addImage(loadImage(new File(FOLDER+"hair2_f.png")), "hair", 1, 2);
+			addImage(loadImage(new File(FOLDER+"hair3_m.png")), "hair", 0, 3);
+			addImage(loadImage(new File(FOLDER+"hair3_f.png")), "hair", 1, 3);
+			addImage(loadImage(new File(FOLDER+"hair4_m.png")), "hair", 0, 4);
+			addImage(loadImage(new File(FOLDER+"hair4_f.png")), "hair", 1, 4);
+			addImage(loadImage(new File(FOLDER+"hair5_m.png")), "hair", 0, 5);
+			addImage(loadImage(new File(FOLDER+"hair5_f.png")), "hair", 1, 5);
+			addImage(loadImage(new File(FOLDER+"hair6_m.png")), "hair", 0, 6);
+			addImage(loadImage(new File(FOLDER+"hair6_f.png")), "hair", 1, 6);
+			addImage(loadImage(new File(FOLDER+"hair7_m.png")), "hair", 0, 7);
+			addImage(loadImage(new File(FOLDER+"hair7_f.png")), "hair", 1, 7);
+			addImage(loadImage(new File(FOLDER+"head_o.png")), "hair", 3, 0);
+			
+			addImage(loadImage(new File(FOLDER+"field.png")), "bg", 0);
+			addImage(loadImage(new File(FOLDER+"desert.png")), "bg", 1);
+			
+			addImage(loadImage(new File(FOLDER+"weapons/arrow.png")), "arrow");
+			addImage(loadImage(new File(FOLDER+"weapons/dagger.png")), "weapon", 0);
+			addImage(loadImage(new File(FOLDER+"weapons/saber.png")), "weapon", 1);
+			addImage(loadImage(new File(FOLDER+"weapons/longsword.png")), "weapon", 2);
+			addImage(loadImage(new File(FOLDER+"weapons/spear.png")), "weapon", 3);
+			addImage(loadImage(new File(FOLDER+"weapons/longspear.png")), "weapon", 4);
+			addImage(loadImage(new File(FOLDER+"weapons/dragonspear.png")), "weapon", 5);
+			addImage(loadImage(new File(FOLDER+"weapons/wand.png")), "weapon", 6);
+			addImage(loadImage(new File(FOLDER+"weapons/staff.png")), "weapon", 7);
+			addImage(loadImage(new File(FOLDER+"weapons/mace.png")), "weapon", 8);
+			addImage(loadImage(new File(FOLDER+"weapons/bow.png")), "weapon", 9);
+			addImage(loadImage(new File(FOLDER+"weapons/greatbow.png")), "weapon", 10);
+			addImage(loadImage(new File(FOLDER+"weapons/recurvebow.png")), "weapon", 11);
+			
+			addImage(loadImage(new File(FOLDER+"equipment/pants_m.png")), "equip", 0, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/pants_f.png")), "equip", 0, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/boots_m.png")), "equip", 1, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/boots_f.png")), "equip", 1, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/metalboots_m.png")), "equip", 2, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/metalboots_f.png")), "equip", 2, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/greaves_m.png")), "equip", 3, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/greaves_f.png")), "equip", 3, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/goldgreaves_m.png")), "equip", 4, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/goldgreaves_f.png")), "equip", 4, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/shirt_m.png")), "equip", 5, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/shirt_f.png")), "equip", 5, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/leather_m.png")), "equip", 6, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/leather_f.png")), "equip", 6, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/chain_m.png")), "equip", 7, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/chain_f.png")), "equip", 7, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/plate_m.png")), "equip", 8, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/plate_f.png")), "equip", 8, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/gold_m.png")), "equip", 9, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/gold_f.png")), "equip", 9, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/cap_m.png")), "equip", 10, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/cap_f.png")), "equip", 10, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/clothhood_m.png")), "equip", 11, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/clothhood_f.png")), "equip", 11, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/skullcap_m.png")), "equip", 12, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/skullcap_f.png")), "equip", 12, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/chainhood_m.png")), "equip", 13, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/chainhood_f.png")), "equip", 13, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/helm_m.png")), "equip", 14, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/helm_f.png")), "equip", 14, 1);
+			addImage(loadImage(new File(FOLDER+"equipment/goldhelm_m.png")), "equip", 15, 0);
+			addImage(loadImage(new File(FOLDER+"equipment/goldhelm_f.png")), "equip", 15, 1);
+			
+			addImage(loadImage(new File(FOLDER+"spells/defend.png")), "spell", 0);
+			addImage(loadImage(new File(FOLDER+"spells/spike.png")), "spell", 1);
+			addImage(loadImage(new File(FOLDER+"spells/earth.png")), "spell", 2);
+			addImage(loadImage(new File(FOLDER+"spells/fire.png")), "spell", 3);
+			addImage(loadImage(new File(FOLDER+"spells/water.png")), "spell", 4);
+			addImage(loadImage(new File(FOLDER+"spells/wind.png")), "spell", 5);
+			addImage(loadImage(new File(FOLDER+"spells/lightning.png")), "spell", 6);
+			addImage(loadImage(new File(FOLDER+"spells/heal.png")), "spell", 7);
+			
+			addImage(loadImage(new File(FOLDER+"monsters/slime.png")), "monster", 0);
+			addImage(loadImage(new File(FOLDER+"monsters/bee.png")), "monster", 1);
+			addImage(loadImage(new File(FOLDER+"monsters/snake.png")), "monster", 2);
+			addImage(loadImage(new File(FOLDER+"monsters/bat.png")), "monster", 3);
+			addImage(loadImage(new File(FOLDER+"monsters/ghost.png")), "monster", 4);
+			addImage(loadImage(new File(FOLDER+"monsters/man_eater_flower.png")), "monster", 5);
+			addImage(loadImage(new File(FOLDER+"monsters/eyeball.png")), "monster", 6);
+			addImage(loadImage(new File(FOLDER+"monsters/big_worm.png")), "monster", 7);
+			
+			addImage(loadImage(new File(FOLDER+"achievements.png")), "achievements");
+
+			addSound(loadSound(new File(FOLDER+"bgm/menu.mp3")), "menu");
+			addSound(loadSound(new File(FOLDER+"bgm/battle1.mp3")), "battle", 1);
+			addSound(loadSound(new File(FOLDER+"bgm/battle2.mp3")), "battle", 2);
+			addSound(loadSound(new File(FOLDER+"bgm/battle3.mp3")), "battle", 3);
+			
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_achievement.mp3")), "achievement");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_change.mp3")), "change");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_click.mp3")), "click");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_select.mp3")), "select");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_close.mp3")), "close");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_hit.mp3")), "hit");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_evade.mp3")), "evade");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_death.mp3")), "death");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_Victory.mp3")), "victory");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_Defeat.mp3")), "defeat");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_point.mp3")), "point");
+			
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_sword.mp3")), "slash");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_pole.mp3")), "thrust");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_ranged.mp3")), "bow");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_wand.mp3")), "wand");
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_ranged-shot-only.mp3")), "bow_repeat");
+			
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_defend.mp3")), "spell_sfx", 0);
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_spike.mp3")), "spell_sfx", 1);
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_earth.mp3")), "spell_sfx", 2);
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_fire.mp3")), "spell_sfx", 3);
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_water.mp3")), "spell_sfx", 4);
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_wind.mp3")), "spell_sfx", 5);
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_lightning.mp3")), "spell_sfx", 6);
+			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_heal.mp3")), "spell_sfx", 7);
+			
+			finish(); writeToFile(new File("out.swf"));
+		} catch(Exception e){e.printStackTrace();}
+	}
+	public void run(Project p){
+		try{
+			Desktop.getDesktop().open(new File("out.swf"));
+		}catch(Exception e){e.printStackTrace();}
 	}
 	public void addImage(Graphic b, String type) throws Exception {addImage(b, type, -1, -1);}
 	public void addImage(Graphic b, String type, int t1) throws Exception {addImage(b, type, t1, -1);}
@@ -103,149 +241,5 @@ public class SWFTarget implements Target {
 	public static Sound loadSound(File file) throws Exception {
 		String n = file.getName(); File f = new File("snd/"+n.substring(0, n.length()-4)+".msnd");
 		Sound s; if(f.exists()) s = new Sound(f); else{s = Sound.decode(file); s.write(f);} return s;
-	}
-	public static void test(){
-		try {
-			File f = new File("img"); if(!f.exists()) f.mkdir();
-			f = new File("snd"); if(!f.exists()) f.mkdir();
-			String FOLDER = "../assets/"; System.out.println("start");
-			Graphic font = loadImage(new File(FOLDER+"font.png"));
-			Graphic bg = loadImage(new File(FOLDER+"swamp.png"));
-			Graphic frame = loadImage(new File(FOLDER+"frame.png"));
-			SWFTarget swf = new SWFTarget(); swf.init(font, bg, frame);
-			swf.addImage(loadImage(new File(FOLDER+"body_m.png")), "skin", 0);
-			swf.addImage(loadImage(new File(FOLDER+"body_f.png")), "skin", 1);
-			swf.addImage(loadImage(new File(FOLDER+"body_s.png")), "skin", 2);
-			swf.addImage(loadImage(new File(FOLDER+"body_o.png")), "skin", 3);
-			swf.addImage(loadImage(new File(FOLDER+"eyes_m.png")), "eyes", 0);
-			swf.addImage(loadImage(new File(FOLDER+"eyes_f.png")), "eyes", 1);
-			swf.addImage(loadImage(new File(FOLDER+"hair0_m.png")), "hair", 0, 0);
-			swf.addImage(loadImage(new File(FOLDER+"hair0_f.png")), "hair", 1, 0);
-			swf.addImage(loadImage(new File(FOLDER+"hair1_m.png")), "hair", 0, 1);
-			swf.addImage(loadImage(new File(FOLDER+"hair1_f.png")), "hair", 1, 1);
-			swf.addImage(loadImage(new File(FOLDER+"hair2_m.png")), "hair", 0, 2);
-			swf.addImage(loadImage(new File(FOLDER+"hair2_f.png")), "hair", 1, 2);
-			swf.addImage(loadImage(new File(FOLDER+"hair3_m.png")), "hair", 0, 3);
-			swf.addImage(loadImage(new File(FOLDER+"hair3_f.png")), "hair", 1, 3);
-			swf.addImage(loadImage(new File(FOLDER+"hair4_m.png")), "hair", 0, 4);
-			swf.addImage(loadImage(new File(FOLDER+"hair4_f.png")), "hair", 1, 4);
-			swf.addImage(loadImage(new File(FOLDER+"hair5_m.png")), "hair", 0, 5);
-			swf.addImage(loadImage(new File(FOLDER+"hair5_f.png")), "hair", 1, 5);
-			swf.addImage(loadImage(new File(FOLDER+"hair6_m.png")), "hair", 0, 6);
-			swf.addImage(loadImage(new File(FOLDER+"hair6_f.png")), "hair", 1, 6);
-			swf.addImage(loadImage(new File(FOLDER+"hair7_m.png")), "hair", 0, 7);
-			swf.addImage(loadImage(new File(FOLDER+"hair7_f.png")), "hair", 1, 7);
-			swf.addImage(loadImage(new File(FOLDER+"head_o.png")), "hair", 3, 0);
-			
-			swf.addImage(loadImage(new File(FOLDER+"field.png")), "bg", 0);
-			swf.addImage(loadImage(new File(FOLDER+"desert.png")), "bg", 1);
-			
-			swf.addImage(loadImage(new File(FOLDER+"weapons/arrow.png")), "arrow");
-			swf.addImage(loadImage(new File(FOLDER+"weapons/dagger.png")), "weapon", 0);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/saber.png")), "weapon", 1);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/longsword.png")), "weapon", 2);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/spear.png")), "weapon", 3);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/longspear.png")), "weapon", 4);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/dragonspear.png")), "weapon", 5);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/wand.png")), "weapon", 6);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/staff.png")), "weapon", 7);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/mace.png")), "weapon", 8);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/bow.png")), "weapon", 9);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/greatbow.png")), "weapon", 10);
-			swf.addImage(loadImage(new File(FOLDER+"weapons/recurvebow.png")), "weapon", 11);
-			
-			swf.addImage(loadImage(new File(FOLDER+"equipment/pants_m.png")), "equip", 0, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/pants_f.png")), "equip", 0, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/boots_m.png")), "equip", 1, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/boots_f.png")), "equip", 1, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/metalboots_m.png")), "equip", 2, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/metalboots_f.png")), "equip", 2, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/greaves_m.png")), "equip", 3, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/greaves_f.png")), "equip", 3, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/goldgreaves_m.png")), "equip", 4, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/goldgreaves_f.png")), "equip", 4, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/shirt_m.png")), "equip", 5, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/shirt_f.png")), "equip", 5, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/leather_m.png")), "equip", 6, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/leather_f.png")), "equip", 6, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/chain_m.png")), "equip", 7, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/chain_f.png")), "equip", 7, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/plate_m.png")), "equip", 8, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/plate_f.png")), "equip", 8, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/gold_m.png")), "equip", 9, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/gold_f.png")), "equip", 9, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/cap_m.png")), "equip", 10, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/cap_f.png")), "equip", 10, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/clothhood_m.png")), "equip", 11, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/clothhood_f.png")), "equip", 11, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/skullcap_m.png")), "equip", 12, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/skullcap_f.png")), "equip", 12, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/chainhood_m.png")), "equip", 13, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/chainhood_f.png")), "equip", 13, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/helm_m.png")), "equip", 14, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/helm_f.png")), "equip", 14, 1);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/goldhelm_m.png")), "equip", 15, 0);
-			swf.addImage(loadImage(new File(FOLDER+"equipment/goldhelm_f.png")), "equip", 15, 1);
-			
-			swf.addImage(loadImage(new File(FOLDER+"spells/defend.png")), "spell", 0);
-			swf.addImage(loadImage(new File(FOLDER+"spells/spike.png")), "spell", 1);
-			swf.addImage(loadImage(new File(FOLDER+"spells/earth.png")), "spell", 2);
-			swf.addImage(loadImage(new File(FOLDER+"spells/fire.png")), "spell", 3);
-			swf.addImage(loadImage(new File(FOLDER+"spells/water.png")), "spell", 4);
-			swf.addImage(loadImage(new File(FOLDER+"spells/wind.png")), "spell", 5);
-			swf.addImage(loadImage(new File(FOLDER+"spells/lightning.png")), "spell", 6);
-			swf.addImage(loadImage(new File(FOLDER+"spells/heal.png")), "spell", 7);
-			
-			swf.addImage(loadImage(new File(FOLDER+"monsters/slime.png")), "monster", 0);
-			swf.addImage(loadImage(new File(FOLDER+"monsters/bee.png")), "monster", 1);
-			swf.addImage(loadImage(new File(FOLDER+"monsters/snake.png")), "monster", 2);
-			swf.addImage(loadImage(new File(FOLDER+"monsters/bat.png")), "monster", 3);
-			swf.addImage(loadImage(new File(FOLDER+"monsters/ghost.png")), "monster", 4);
-			swf.addImage(loadImage(new File(FOLDER+"monsters/man_eater_flower.png")), "monster", 5);
-			swf.addImage(loadImage(new File(FOLDER+"monsters/eyeball.png")), "monster", 6);
-			swf.addImage(loadImage(new File(FOLDER+"monsters/big_worm.png")), "monster", 7);
-			
-			swf.addImage(loadImage(new File(FOLDER+"achievements.png")), "achievements");
-			
-			System.out.println("sounds");
-
-			swf.addSound(loadSound(new File(FOLDER+"bgm/menu.mp3")), "menu");
-			swf.addSound(loadSound(new File(FOLDER+"bgm/battle1.mp3")), "battle", 1);
-			swf.addSound(loadSound(new File(FOLDER+"bgm/battle2.mp3")), "battle", 2);
-			swf.addSound(loadSound(new File(FOLDER+"bgm/battle3.mp3")), "battle", 3);
-			
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_achievement.mp3")), "achievement");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_change.mp3")), "change");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_click.mp3")), "click");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_select.mp3")), "select");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_close.mp3")), "close");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_hit.mp3")), "hit");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_evade.mp3")), "evade");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_death.mp3")), "death");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_Victory.mp3")), "victory");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_Defeat.mp3")), "defeat");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_point.mp3")), "point");
-			
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_sword.mp3")), "slash");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_pole.mp3")), "thrust");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_ranged.mp3")), "bow");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_wand.mp3")), "wand");
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_attack_ranged-shot-only.mp3")), "bow_repeat");
-			
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_defend.mp3")), "spell_sfx", 0);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_spike.mp3")), "spell_sfx", 1);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_earth.mp3")), "spell_sfx", 2);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_fire.mp3")), "spell_sfx", 3);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_water.mp3")), "spell_sfx", 4);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_wind.mp3")), "spell_sfx", 5);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_lightning.mp3")), "spell_sfx", 6);
-			swf.addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_heal.mp3")), "spell_sfx", 7);
-			
-			ByteArrayOutputStream ar = new ByteArrayOutputStream();
-			DataOutputStream out = new DataOutputStream(ar); out.writeUTF("HELLO WORLD!");
-			swf.addData(ar, "name");
-			
-			swf.finish(); swf.printTags(); swf.writeToFile(new File("out.swf")); System.out.println("Done");
-		} catch(Exception e){e.printStackTrace();}
 	}
 }

@@ -30,9 +30,9 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Iterator;
+import java.util.Map.Entry;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
@@ -97,8 +97,8 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	
 	private static final long serialVersionUID = 7934438411041874443L;
 	
-	public static final String NEW = "new", OPEN = "open", SAVE = "save", SAVE_ALL = "save_all", SAVE2 = "save2",
-		IMPORT = "import", TEST = "test", PUBLISH = "publish", SEARCH = "search", HELP = "help", ABOUT = "about";
+	public static final String NEW = "new", OPEN = "open", SAVE = "save", SAVE_ALL = "save_all",
+		IMPORT = "import", TEST = "test", BUILD = "build", SEARCH = "search", HELP = "help", ABOUT = "about";
 	public static final String CUT = "cut", COPY = "copy", PASTE = "paste", DELETE = "delete", REFRESH = "refresh", REVERT = "revert", REMOVE = "remove", SEL_ALL = "sel_all",
 		DSEL_ALL = "dsel_all", SHOW_ALL = "show_all", SHOW_GRID = "grid", NEXT_LAYER = "next_l", PREV_LAYER = "prev_l";
 	public static final String RENAME = "rename";
@@ -111,7 +111,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	private JLabel map_label; private JSpinner zoom_spinner, layer_spinner; private WorkspaceBrowser browser;
 	private String map_name = ""; private int map_x = 0, map_y = 0; public boolean browser_focus = false;
 	private AbstractButton undo1, undo2, redo1, redo2, cut, copy, paste, delete, dsel, select, showAll, pl1, pl2,
-		nl1, nl2, prop, save, save2, saveall, refresh, revert;
+		nl1, nl2, prop, save, save2, save3, saveall, refresh, revert;
 	private final ArrayList<AbstractButton> buttons = new ArrayList<AbstractButton>(); private Map current_map;
 	
 	private final History history = new History(); private final Clipboard clipboard = new Clipboard();
@@ -215,10 +215,6 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		JButton b = new JButton(getIcon(icon)); b.setMargin(new Insets(0,0,0,0)); b.setActionCommand(icon);
 		b.addActionListener(l); b.setToolTipText(tooltip); return b;
 	}
-	public static JButton createToolbarButton(String icon, String tooltip, ActionListener l, String command){
-		JButton b = new JButton(getIcon(icon)); b.setMargin(new Insets(0,0,0,0)); b.setActionCommand(command);
-		b.addActionListener(l); b.setToolTipText(tooltip); return b;
-	}
 	public static JToggleButton createToolbarButton(String icon, String tooltip, ButtonGroup group, ActionListener l){return createToolbarButton(icon, tooltip, group, l, false);}
 	public static JToggleButton createToolbarButton(String icon, String tooltip, ButtonGroup group, ActionListener l, boolean selected){
 		JToggleButton b = new JToggleButton(getIcon(icon)); b.setMargin(new Insets(0,0,0,0)); b.setActionCommand(icon);
@@ -239,17 +235,19 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		inner.add(createMenuItemIcon("Script", WorkspaceBrowser.SCRIPT_ICON, KeyEvent.VK_C, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, browser));
 		menu.add(inner);
 		menu.addSeparator();
-		save = createMenuItemIcon("Save", SAVE, KeyEvent.VK_S, ActionEvent.CTRL_MASK, browser); menu.add(save); save.setEnabled(false);
+		save3 = createMenuItemIcon("Save Current Map", SAVE, KeyEvent.VK_S, ActionEvent.CTRL_MASK, this); menu.add(save3); save3.setEnabled(false);
+		save = createMenuItemIcon("Save Selected", SAVE, browser); menu.add(save); save.setEnabled(false);
 		saveall = createMenuItem("Save All", SAVE_ALL, KeyEvent.VK_S, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, browser); menu.add(saveall); saveall.setEnabled(false);
 		revert = createMenuItemIcon("Revert", REVERT, browser); menu.add(revert); revert.setEnabled(false);
 		menu.addSeparator();
 		inner = new JMenu("Import"); inner.setIcon(getIcon(IMPORT));
+		inner.add(createMenuItemIcon("Resource File", WorkspaceBrowser.DB_ICON, KeyEvent.VK_R, ActionEvent.CTRL_MASK, browser));
 		inner.add(createMenuItemIcon("Image File", WorkspaceBrowser.IMAGE_ICON, KeyEvent.VK_I, ActionEvent.CTRL_MASK, browser));
 		inner.add(createMenuItemIcon("Audio File", WorkspaceBrowser.MEDIA_ICON, KeyEvent.VK_I, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, browser));
 		menu.add(inner);
 		menu.addSeparator();
 		refresh = createMenuItemIcon("Refresh", REFRESH, KeyEvent.VK_F5, 0, browser); menu.add(refresh); refresh.setEnabled(false);
-		AbstractButton b = createMenuItemIcon("Rename", RENAME, KeyEvent.VK_R, ActionEvent.CTRL_MASK, browser);
+		AbstractButton b = createMenuItemIcon("Rename", RENAME, browser);
 		menu.add(b); buttons.add(b);
 		b = createMenuItemIcon("Properties", PROPERTIES, KeyEvent.VK_P, ActionEvent.CTRL_MASK, browser);
 		menu.add(b); buttons.add(b);
@@ -278,10 +276,10 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		nl1 = createMenuItemIcon("Next Layer", NEXT_LAYER, KeyEvent.VK_L, ActionEvent.CTRL_MASK, this); menu.add(nl1);
 		bar.add(menu);
 		menu = new JMenu("Tools");
-		b = createMenuItemIcon("Test Game", TEST, KeyEvent.VK_ENTER, ActionEvent.CTRL_MASK, this);
+		b = createMenuItemIcon("Test Game", TEST, KeyEvent.VK_ENTER, ActionEvent.CTRL_MASK, browser);
 		menu.add(b); buttons.add(b);
 		menu.addSeparator();
-		b = createMenuItemIcon("Publish", PUBLISH, KeyEvent.VK_ENTER, ActionEvent.ALT_MASK, this); menu.add(b); buttons.add(b);
+		b = createMenuItemIcon("Build Game", BUILD, KeyEvent.VK_ENTER, ActionEvent.ALT_MASK, browser); menu.add(b); buttons.add(b);
 		menu.addSeparator();
 		menu.add(createMenuItemIcon("Media Player", M_PLAYER, KeyEvent.VK_M, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, this));
 		menu.add(createMenuItemIcon("Search", SEARCH, KeyEvent.VK_F, ActionEvent.CTRL_MASK, this));
@@ -299,15 +297,15 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		bar.add(createToolbarButton(Project.PROJECT, "Create New Project", browser));
 		bar.add(createToolbarButton(OPEN, "Open Existing Project", browser));
 		bar.addSeparator();
-		save2 = createToolbarButton(SAVE, "Save Current Map", this, SAVE2); bar.add(save2); save2.setEnabled(false);
+		save2 = createToolbarButton(SAVE, "Save Current Map", this); bar.add(save2); save2.setEnabled(false);
 		AbstractButton b = createToolbarButton(RENAME, "Rename Selected Resource", browser);
 		bar.add(b); buttons.add(b);
 		bar.addSeparator();
 		pl2 = createToolbarButton(PREV_LAYER, "Previous Layer", this); pl2.setEnabled(false); bar.add(pl2);
 		nl2 = createToolbarButton(NEXT_LAYER, "Next Layer", this); bar.add(nl2);
 		bar.addSeparator();
-		b = createToolbarButton(TEST, "Test Game", this); bar.add(b); buttons.add(b);
-		b = createToolbarButton(PUBLISH, "Publish", this); bar.add(b); buttons.add(b);
+		b = createToolbarButton(TEST, "Test Game", browser); bar.add(b); buttons.add(b);
+		b = createToolbarButton(BUILD, "Build Game", browser); bar.add(b); buttons.add(b);
 		bar.addSeparator();
 		bar.add(createToolbarButton(SEARCH, "Search", this));
 		bar.addSeparator();
@@ -333,7 +331,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
-		if(command == SAVE2){
+		if(command == SAVE){
 			if(current_map != null && current_map.isModified()) try{current_map.save();}catch(Exception ex){}
 		} else if(command == CUT){if(!browser_focus){SELECT_TOOL.copy(clipboard); SELECT_TOOL.deleteSelection();}
 		} else if(command == COPY){if(browser_focus){browser.copy(); paste.setEnabled(browser.hasClipboardData());} else SELECT_TOOL.copy(clipboard);
@@ -406,7 +404,8 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	}
 	private void updateSaveRevert(){
 		save.setEnabled(browser.selectionModified());
-		save2.setEnabled(current_map != null && current_map.isModified()); revert.setEnabled(save.isEnabled());
+		save2.setEnabled(current_map != null && current_map.isModified());
+		save3.setEnabled(save2.isEnabled()); revert.setEnabled(save.isEnabled());
 	}
 	public void updateSaveButtons(){
 		updateSaveRevert(); saveall.setEnabled(browser.anyModified());
@@ -497,11 +496,11 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	public void windowClosing(WindowEvent e) {
 		if(saveall.isEnabled()){
 			int i = JOptionPane.showConfirmDialog(this, "Save all maps before closing?");
-			if(i == JOptionPane.NO_OPTION){writeWorkspace(); dispose();}
+			if(i == JOptionPane.NO_OPTION){writeWorkspace(); if(media_player != null) media_player.dispose(); dispose(); instance = null;}
 			else if(i == JOptionPane.YES_OPTION){
-				browser.saveAll(); writeWorkspace(); dispose();
+				browser.saveAll(); writeWorkspace(); if(media_player != null) media_player.dispose(); dispose(); instance = null;
 			}
-		} else{writeWorkspace(); dispose();}
+		} else{writeWorkspace(); if(media_player != null) media_player.dispose(); dispose(); instance = null;}
 	}
 	public void windowDeactivated(WindowEvent e) {}
 	public void windowDeiconified(WindowEvent e) {}
@@ -525,11 +524,10 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		}
 	}
 	
-	private static HashSet<Class<? extends Target>> targets = new HashSet<Class<? extends Target>>();
-	public static void registerTarget(Class<? extends Target> t){targets.add(t);}
-	public static Iterator<Class<? extends Target>> getTargets(){return targets.iterator();}
-	public static Object[] getTargetsArray(){return targets.toArray();}
-	public static Class<? extends Target> defaultTarget(){return targets.iterator().next();}
+	private static HashMap<String, Class<? extends Target>> targets = new HashMap<String, Class<? extends Target>>();
+	public static void registerTarget(String name, Class<? extends Target> t){targets.put(name, t);}
+	public static Object[] getTargetsArray(){return targets.entrySet().toArray();}
+	public static Entry<String,Class<? extends Target>> defaultTarget(){return targets.entrySet().iterator().next();}
 	
 	private static final DocumentBuilderFactory document_factory = DocumentBuilderFactory.newInstance();
 	private static final TransformerFactory transformer_factory = TransformerFactory.newInstance();
@@ -543,6 +541,8 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 			element.setTextContent(WorkspaceBrowser.imgChooser.getCurrentDirectory().toString()); root.appendChild(element);
 			element = doc.createElement("mediaDirectory");
 			element.setTextContent(WorkspaceBrowser.sndChooser.getCurrentDirectory().toString()); root.appendChild(element);
+			element = doc.createElement("resourceDirectory");
+			element.setTextContent(Resource.resourceChooser.getCurrentDirectory().toString()); root.appendChild(element);
 			Workspace w = browser.getWorkspace();
 			for(int i=0; i<w.getProjectCount(); i++){
 				element = doc.createElement("project"); Project p = w.getProject(i);
@@ -559,13 +559,21 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		} catch(Exception e){e.printStackTrace();}
 	}
 	public static void main(String[] args){
-		Resource.register(Image.EXT, Image.class);
-		Resource.register(Media.EXT, Media.class);
-		Resource.register(Map.EXT, Map.class);
-		Resource.register(Tileset.EXT, Tileset.class);
-		Resource.register(AutoTile.EXT, AutoTile.class);
-		registerTarget(SWFTarget.class);
-		instance = new MapEditor(); //SWFTarget.test();
+		Resource.register("Image Files", Image.EXT, Image.class);
+		Resource.register("Media Files", Media.EXT, Media.class);
+		Resource.register("Map Files", Map.EXT, Map.class);
+		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
+		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
+		registerTarget("SWF Version 1.0", SWFTarget.class);
+		//TODO: project output file/folder?
+		//TODO: finish map loading in haxe, and get export maps working so we can create SWF and see changes.
+		//TODO: fix up autotile management to work with the new system. Allow an autotile to be a subset in a tilemap.
+		//TODO: register create new file types. (import formats too, for tiled tilemaps?)
+		//TODO: register tools to the tool dropdown, which can change when the target changes.
+		//TODO: when target changes, script editor has to refresh, as monsters might reference DIFFERENT database entries. Register script quick commands too!
+		//TODO: read plugin directory, and install plugins.
+		//TODO: new project template
+		instance = new MapEditor();
 		File f = new File(".workspace");
 		if(f.exists()) try{
 			Document doc = document_factory.newDocumentBuilder().parse(f);
@@ -573,6 +581,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 			try{Project.folderChooser.setCurrentDirectory(new File(root.getElementsByTagName("projectDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			try{WorkspaceBrowser.imgChooser.setCurrentDirectory(new File(root.getElementsByTagName("imageDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			try{WorkspaceBrowser.sndChooser.setCurrentDirectory(new File(root.getElementsByTagName("mediaDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			try{Resource.resourceChooser.setCurrentDirectory(new File(root.getElementsByTagName("resourceDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			NodeList list = root.getElementsByTagName("project");
 			for(int i=0; i<list.getLength(); i++){
 				try{

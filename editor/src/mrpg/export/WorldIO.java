@@ -57,4 +57,6 @@ public class WorldIO {
 	}
 	public int read() throws IOException {return in.read();}
 	public void write(int b) throws IOException {obuf.write(b);}
+	public int readShort() throws IOException {return in.readShort();}
+	public void writeShort(int b) throws IOException {obuf.writeShort(b);}
 }

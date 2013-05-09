@@ -25,6 +25,7 @@ public class Folder extends Resource {
 		inner.add(browser.add_script);
 		menu.add(inner);
 		inner = new JMenu("Import"); inner.setIcon(MapEditor.getIcon(MapEditor.IMPORT));
+		inner.add(browser.add_resource);
 		inner.add(browser.add_image);
 		inner.add(browser.add_media);
 		menu.add(inner);

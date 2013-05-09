@@ -35,6 +35,7 @@ import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -52,7 +53,7 @@ import mrpg.world.BasicTilemap;
 public class Tileset extends TileResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
 	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.TILESET);
-	public static final String EXT = "btm";
+	public static final String EXT = "btm"; private static final short VERSION=1;
 	public static final String SET_TILESET="set-tileset";
 	private BasicTilemap tilemap; private final Properties properties; private Image image; private long id;
 	private JMenuItem set_tileset = MapEditor.createMenuItemIcon("Set Tileset", SET_TILESET, this);
@@ -74,14 +75,14 @@ public class Tileset extends TileResource implements ActionListener {
 	}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-		try{
+		try{out.writeShort(VERSION);
 			out.writeLong(id); out.writeLong(image.getId()); tilemap.write(out); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{
+		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
 			tilemap = new BasicTilemap(in, image.getImage(), getId());
 			in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
@@ -97,16 +98,18 @@ public class Tileset extends TileResource implements ActionListener {
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		public boolean updated;
-		private final Tileset tileset; private final JTextField name;
+		private final Tileset tileset; private final JTextField name, id;
 		private final TilesetEditor editor; private BasicTilemap tilemap; private Image image;
 		public Properties(Tileset t){
 			super(JOptionPane.getFrameForComponent(t.editor), "Tileset Properties", true); tileset = t;
 			setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
 			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name"));
+			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
 			name = new JTextField(t.getName(), 20); name.setActionCommand(MapEditor.OK); name.addActionListener(this);
-			inner.add(name);
+			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
+			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+			id.setEditable(false); p.add(id); inner.add(p);
 			settings.add(inner);
 			inner = new JPanel(new BorderLayout()); inner.setBorder(BorderFactory.createTitledBorder("Tileset"));
 			editor = new TilesetEditor();
@@ -122,7 +125,7 @@ public class Tileset extends TileResource implements ActionListener {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				updated = false;
+				updated = false; id.setText(Long.toString(tileset.id));
 				name.setText(tileset.getName()); name.requestFocus(); name.selectAll();
 				image = tileset.image; tilemap = tileset.tilemap;
 				editor.setTilemap(tilemap);

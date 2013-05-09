@@ -68,6 +68,7 @@ public class Image extends Resource {
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeImageId(this, id); super.remove(delete);
 	}
+	public Graphic getGraphic(){return graphic;}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
@@ -92,15 +93,17 @@ public class Image extends Resource {
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final String OK = "ok", CANCEL = "cancel";
-		private final Image image; private final JTextField name; private final JLabel dim, thumb;
+		private final Image image; private final JTextField name, id; private final JLabel dim, thumb;
 		public Properties(Image i){
 			super(JOptionPane.getFrameForComponent(i.editor), "Image Properties", true); image = i;
 			setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
 			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name"));
+			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
 			name = new JTextField(image.getName(), 20); name.setActionCommand(OK); name.addActionListener(this);
-			inner.add(name);
+			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
+			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+			id.setEditable(false); p.add(id); inner.add(p);
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Dimensions"));
 			dim = new JLabel("0 x 0"); inner.add(dim);
@@ -120,7 +123,7 @@ public class Image extends Resource {
 		public void setVisible(boolean b){
 			if(b == true){
 				name.setText(image.getName()); name.requestFocus(); name.selectAll();
-				BufferedImage im = image.getImage();
+				id.setText(Long.toString(image.id)); BufferedImage im = image.getImage();
 				dim.setText(im.getWidth()+" x "+im.getHeight());
 				thumb.setIcon(new ImageIcon(image.getImage()));
 			}
