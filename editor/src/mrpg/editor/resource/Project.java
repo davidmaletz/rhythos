@@ -162,6 +162,7 @@ public class Project extends Folder {
 	public long setMapId(Map r, long id) throws Exception {return setId(maps, r, id);}
 	public void removeMapId(Map r, long id) throws Exception {removeId(maps, r, id);}
 	public Map getMapById(long id) throws Exception {return (Map)getById(maps, id);}
+	public Map getFirstMap(){return (Map)maps.values().iterator().next();}
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;

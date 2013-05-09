@@ -115,10 +115,10 @@ class Main extends Sprite {
 	}
 	public static inline function getPlayer():Character {return instance.player;}
 	public static function loadCharacter(sc:SavedCharacter, s:Int):Void {
-		instance.returnToTown(); experience = sc.experience; gold = sc.gold; score = old_score = sc.score; slot = s; max_type = sc.max_type;
+		instance.transition(); experience = sc.experience; gold = sc.gold; score = old_score = sc.score; slot = s; max_type = sc.max_type;
 		weapons.setAr(sc.weapons); spells.setAr(sc.spells); helms.setAr(sc.helms); shirts.setAr(sc.shirts); pants.setAr(sc.pants);
 		achievements.setAr(sc.achievements); var len:Int = wins.length; for(i in 0...len){wins[i] = sc.wins[i]; losses[i] = sc.losses[i];}
-		instance.player = sc.getChar(); Achievements.loadAchievements();
+		instance.player = sc.getChar(); Achievements.loadAchievements(); instance.addChild(new Game());
 	}
 	public static function saveGame():Void {GameSaves.writeSlot(slot, SavedCharacter.getCurrent());}
 	public static inline function battleTime(s:Int):Void {Achievements.battleTime(s);}
@@ -132,7 +132,7 @@ class Main extends Sprite {
 	}
 	private function transition():Void {battle = null; new Mosaic(); removeAllChildren(this);}
 	public function mainMenu():Void {transition(); addChild(new MainMenu());}
-	public function returnToTown():Void {transition(); addChild(new Game());}
+	public function returnToTown():Void {transition(); addChild(new GameMenu());}
 	public static inline function experienceToNextLevel(l:Int):Int {return l*l*250+l*1250+1000;}
 	private static inline var MAX_LEVEL:Int = 30;
 	public static inline function levelFromExperience(e:Int):Int {

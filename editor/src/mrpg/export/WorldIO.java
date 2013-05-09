@@ -39,6 +39,9 @@ public class WorldIO {
 		in = null; buf = new ByteArrayOutputStream(); obuf = new DataOutputStream(buf);
 		tilemaps = new ArrayList<Long>(255); project = null;
 	}
+	public ByteArrayOutputStream getBuffer(){return buf;}
+	public void resetBuffer(){buf.reset();}
+	public ArrayList<Long> getTilemaps(){return tilemaps;}
 	public Tile readTile() throws IOException {
 		int map = in.read(); if(map == 255) return Tile.empty; short id = in.readShort();
 		try{

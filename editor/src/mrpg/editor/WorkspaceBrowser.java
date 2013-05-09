@@ -275,7 +275,8 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		else if(command == MapEditor.REVERT) revertSelection();
 		else if(command == MapEditor.OPEN){
 			try{
-				addProject(Project.openProject(editor, (Workspace)getModel().getRoot())); MapEditor.doDeferredRead(false);
+				Project p = Project.openProject(editor, (Workspace)getModel().getRoot()); addProject(p);
+				MapEditor.doDeferredRead(false); if(!editor.hasMap()) p.getFirstMap().edit();
 			}catch(Exception ex){}
 		} else if(command == MapEditor.DELETE){
 			deleteSelection();
@@ -300,7 +301,10 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		} else if(command == EDIT_ICON){getSelectedResource().edit();
 		} else if(command == MapEditor.PROPERTIES){getSelectedResource().properties();
 		} else if(command == MapEditor.MAP){addMap();
-		} else if(command == Project.PROJECT) try{addProject(Project.createProject(editor));}catch(Exception ex){}
+		} else if(command == Project.PROJECT) try{
+			Project p = Project.createProject(editor); addProject(p);
+			if(!editor.hasMap()) p.getFirstMap().edit();
+		}catch(Exception ex){ex.printStackTrace();}
 		else if(command == IMAGE_ICON){
 			if(imgChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
 				try{
@@ -334,11 +338,11 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		} else if(command == AUTOTILE){addAutoTile();}
 		else if(command == MapEditor.BUILD){
 			try{
-				Project p = getProject(getSelectedResource()); p.getTarget().build(p);
+				Project p = getProject(getSelectedResource()); innerSaveAll(p); p.getTarget().build(p);
 			}catch(Exception ex){}
 		} else if(command == MapEditor.TEST){
 			try{
-				Project p = getProject(getSelectedResource()); Target t = p.getTarget(); t.build(p); t.run(p);
+				Project p = getProject(getSelectedResource()); Target t = p.getTarget(); innerSaveAll(p); t.build(p); t.run(p);
 			}catch(Exception ex){}
 		}
 	}

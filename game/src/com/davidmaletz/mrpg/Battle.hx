@@ -51,6 +51,7 @@ class Battle extends Sprite {
 		lastTime = Std.int(length/1000.0-60.0/e.getBPM()*e.getLead()); status.time.setText(Std.string(lastTime)); status.score.setText(getScore());
 		if(player.weapon.getType() == Weapon.BOW) status.setArrows(arrows); else status.combo.setPercent(0);
 		Main.safeEnterFrame(this, enter_frame); enemyPattern = e.getPattern(); enemy.setFrame(enemy.getIdle()); spells = new Sprite(); addChild(spells);
+		p.enter_frame(null); enemy.enter_frame(null);
 	}
 	private function addBG():Void {
 		var bg:DisplayObject = null; if(etype.bg==-2) bg = new StarBG();

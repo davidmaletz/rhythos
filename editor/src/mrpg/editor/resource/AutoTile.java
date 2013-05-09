@@ -72,6 +72,7 @@ public class AutoTile extends TileResource implements ActionListener {
 	public void properties(){properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
 	public Icon getIcon(){return icon;}
+	public Image getImage(){return image;}
 	public Tilemap getTilemap(){return autotile;}
 	public void actionPerformed(ActionEvent e) {edit();}
 	

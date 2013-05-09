@@ -429,6 +429,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	public void refreshTilesets(){
 		tileset_viewer.refresh(); if(current_map != null) current_map.getWorld().refresh(WorkspaceBrowser.getProject(current_map));
 	}
+	public boolean hasMap(){return current_map != null;}
 	public World getWorld(){return world_overlay.getPanel().getWorld();}
 	public void setMap(Map m){
 		World w = m.getWorld();

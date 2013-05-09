@@ -20,10 +20,14 @@ package mrpg.export;
 
 import java.awt.Desktop;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import mrpg.editor.resource.Project;
+import mrpg.editor.resource.TileResource;
+import mrpg.world.BasicTilemap;
 
 import com.flagstone.transform.DefineData;
 import com.flagstone.transform.Movie;
@@ -177,6 +181,20 @@ public class SWFTarget implements Target {
 			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_lightning.mp3")), "spell_sfx", 6);
 			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_heal.mp3")), "spell_sfx", 7);
 			
+			WorldIO io = new WorldIO();
+			p.getFirstMap().getWorld().write(io);
+			ByteArrayOutputStream buf = io.getBuffer(); addData(buf, "map", 0);
+			ArrayList<Long> images = new ArrayList<Long>(); DataOutputStream obuf = new DataOutputStream(buf); int j=0;
+			for(Long l : io.getTilemaps()){
+				io.resetBuffer(); TileResource tileset = (TileResource)p.getTilemapById(l);
+				BasicTilemap t = (BasicTilemap)tileset.getTilemap(); long img = tileset.getImage().getId();
+				int i = images.indexOf(img); if(i == -1){
+					i = images.size(); images.add(img);
+				} obuf.writeShort(i); t.write(obuf); addData(buf, "tileset", j++);
+			}
+			j = 0; for(Long l : images){
+				addImage(p.getImageById(l).getGraphic(), "img", j++);
+			}
 			finish(); writeToFile(new File("out.swf"));
 		} catch(Exception e){e.printStackTrace();}
 	}
@@ -197,8 +215,11 @@ public class SWFTarget implements Target {
 		if(t1 >= 0) type += t1; if(t2 >= 0) type += "_"+t2; type = "assets."+type;
 		movie.add(s.getSound(id)); sounds.add(id, type); id++;
 	}
-	public void addData(ByteArrayOutputStream ar, String type) throws Exception {
-		type = "assets."+type; movie.add(new DefineData(id, ar.toByteArray())); bytearrays.add(id, type); id++;
+	public void addData(ByteArrayOutputStream ar, String type) throws Exception {addData(ar, type, -1, -1);}
+	public void addData(ByteArrayOutputStream ar, String type, int t1) throws Exception {addData(ar, type, t1, -1);}
+	public void addData(ByteArrayOutputStream ar, String type, int t1, int t2) throws Exception {
+		if(t1 >= 0) type += t1; if(t2 >= 0) type += "_"+t2; type = "assets."+type;
+		movie.add(new DefineData(id, ar.toByteArray())); bytearrays.add(id, type); id++;
 	}
 	private static int[] _bitmap = {16,0,46,0,0,0,0,12,1,122,6,97,115,115,101,116,115,6,66,105,116,109,97,112,13,102,108,97,115,104,46,100,105,115,112,108,97,121,24,97,115,115,101,116,115,58,122,58,58,97,115,115,101,116,115,58,122,36,99,105,110,105,116,10,97,115,115,101,116,115,46,122,47,122,0,6,79,98,106,101,99,116,15,69,118,101,110,116,68,105,115,112,97,116,99,104,101,114,12,102,108,97,115,104,46,101,118,101,110,116,115,13,68,105,115,112,108,97,121,79,98,106,101,99,116,5,22,2,22,4,22,7,22,10,1,6,7,1,1,7,2,3,7,3,8,7,4,9,7,2,11,3,0,0,5,0,0,0,6,0,0,0,7,0,0,1,1,2,1,0,1,0,0,0,1,2,1,1,4,0,0,3,0,1,1,6,7,3,-48,48,71,0,0,1,2,1,7,8,6,-48,48,-48,73,0,71,0,0,2,2,1,1,6,37,-48,48,101,0,93,3,102,3,48,93,4,102,4,48,93,5,102,5,48,93,2,102,2,48,93,2,102,2,88,0,29,29,29,29,104,1,71,0,0};
 	private static int[] _sound = {16,0,46,0,0,0,0,11,1,122,6,97,115,115,101,116,115,5,83,111,117,110,100,11,102,108,97,115,104,46,109,101,100,105,97,24,97,115,115,101,116,115,58,122,58,58,97,115,115,101,116,115,58,122,36,99,105,110,105,116,10,97,115,115,101,116,115,46,122,47,122,0,6,79,98,106,101,99,116,15,69,118,101,110,116,68,105,115,112,97,116,99,104,101,114,12,102,108,97,115,104,46,101,118,101,110,116,115,5,22,2,22,4,22,7,22,10,1,5,7,1,1,7,2,3,7,3,8,7,4,9,3,0,0,5,0,0,0,6,0,0,0,7,0,0,1,1,2,1,0,1,0,0,0,1,2,1,1,4,0,0,3,0,1,1,5,6,3,-48,48,71,0,0,1,2,1,6,7,6,-48,48,-48,73,0,71,0,0,2,2,1,1,5,31,-48,48,101,0,93,3,102,3,48,93,4,102,4,48,93,2,102,2,48,93,2,102,2,88,0,29,29,29,104,1,71,0,0};

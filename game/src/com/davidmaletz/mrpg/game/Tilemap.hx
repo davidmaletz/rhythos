@@ -23,7 +23,7 @@ class Tilemap {
 	}
 	public inline function getWalkable(i:Int):Int {return walkable[i];}
 	public inline function getTile(i:Int):Tile {return tiles[i];}
-	public inline function drawTiles(g:Graphics, tiles:Array<Float>):Void {g.clear(); tilesheet.drawTiles(g, tiles);}
+	public inline function drawTiles(g:Graphics, tiles:Array<Float>):Void {tilesheet.drawTiles(g, tiles);}
 	
 	private static var cache:Array<Tilemap> = new Array<Tilemap>();
 	public static function get(id:Int):Tilemap {

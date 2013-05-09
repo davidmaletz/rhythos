@@ -44,7 +44,7 @@ class CharSheet extends Sprite {
 		var s:SpellDisplay = new SpellDisplay(sId); s.x = 16; s.y = _y-4; addChild(s); _y += SPACE;
 		Frame.drawDivider(graphics, 6, _y-2, w-14); addSlot("DONE", _y-12, w);
 		arrows = new Sprite(); var t:Text = new Text(Status.YELLOW, 12, 12, 0, "\201"); t.x = 32; arrows.addChild(t);
-		t = new Text(Status.YELLOW, 12, 12, 0, "\202"); t.x = w-12-16; arrows.addChild(t); addChild(arrows); updateSel(); y = 300;
+		t = new Text(Status.YELLOW, 12, 12, 0, "\202"); t.x = w-12-16; arrows.addChild(t); addChild(arrows); updateSel(); y = 300; c.enter_frame(null);
 	}
 	public static function _addTitle(s:Sprite, title:String, _y:Int, w:Int):Void {
 		Frame.drawDivider(s.graphics, 6, _y+4, 18,false,true); var _x:Int = 40+title.length*16; Frame.drawDivider(s.graphics, _x, _y+4, w-_x-8,true);

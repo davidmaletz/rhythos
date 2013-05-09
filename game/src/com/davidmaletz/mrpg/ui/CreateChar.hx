@@ -42,7 +42,7 @@ class CreateChar extends Sprite {
 		addTitle("EYE COLOR", _y, w); addSlot(Character.EYE_COLORS[eId], _y, w); _y += SPACE;
 		arrows = new Sprite(); var t:Text = new Text(Status.YELLOW, 12, 12, 0, "\201"); t.x = 32; arrows.addChild(t);
 		t = new Text(Status.YELLOW, 12, 12, 0, "\202"); t.x = w-12-16; arrows.addChild(t); addChild(arrows);
-		Frame.drawDivider(graphics, 6, _y-2, w-14); addSlot("DONE", _y-12, w); updateSel(); y = 300;
+		Frame.drawDivider(graphics, 6, _y-2, w-14); addSlot("DONE", _y-12, w); updateSel(); y = 300; c.enter_frame(null);
 	}
 	private inline function addTitle(title:String, _y:Int, w:Int):Void {CharSheet._addTitle(this, title, _y, w);}
 	private inline function addSlot(name:String, _y:Int, w:Int):Void {CharSheet._addSlot(this, name, _y, w);}

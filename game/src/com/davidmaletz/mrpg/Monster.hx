@@ -35,7 +35,7 @@ class Monster extends Character {
 		graphics.drawRect(x2,y2,w,h); graphics.endFill();
 		if(frame >= Character.DEATH_ST){alpha = 1-(frame-Character.DEATH_ST)/(Character.N_FRAMES-1-Character.DEATH_ST);}
 	}
-	private override function enter_frame(e:Event):Void {
+	public override function enter_frame(e:Event):Void {
 		if(!Main.isPaused() && frame_ct == 1) updateFrame(); super.enter_frame(e);
 	}	
 }

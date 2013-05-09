@@ -144,7 +144,7 @@ class Character extends Sprite {
 	private static var _clear:ColorTransform = new ColorTransform(1,1,1,1,0,0,0,0);
 	public inline function clearColor():Void {transform.colorTransform = _clear; top.transform.colorTransform = _clear; flashCt = 0;}
 	public function reset():Void {
-		x = 0; y = 0; top.x = 0; top.y = 0; clearColor(); clearQueue(); resetDefense();
+		x = 0; y = 0; top.x = 0; top.y = 0; scaleX = scaleY = 2; clearColor(); clearQueue(); resetDefense();
 	}
 	public function setFrame(f:Int):Void {frame = f; updateFrame();}
 	private inline function updateFrame():Void {if(dirty == 0) dirty = 1;}
@@ -152,7 +152,7 @@ class Character extends Sprite {
 		var _x:Int = frame%19, _y:Int = Std.int(frame/19); graphics.clear(); graphics.beginBitmapFill(bitmap, new Matrix(1,0,0,1,-64*_x,-64*_y), false, false);
 		graphics.drawRect(0,0,64,64); graphics.endFill(); top.graphics.clear(); weapon.drawFrame(type, frame, top.graphics);
 	}
-	private function enter_frame(e:Event):Void {
+	public function enter_frame(e:Event):Void {
 		if(!Main.isPaused()){frame_ct--; if(frame_ct==0){
 				frame_ct = FRAME_LENGTH; var f:Int; if(anim.isEmpty()) f = (Main.battle == null || Main.battle.state != 0)?frame:getIdle(); else {
 					f = anim.removeFirst(); var _f:Character->Void = func.removeFirst(); if(_f != null) _f(this);

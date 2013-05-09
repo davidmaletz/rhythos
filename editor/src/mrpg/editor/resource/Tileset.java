@@ -66,6 +66,7 @@ public class Tileset extends TileResource implements ActionListener {
 	public void properties(){properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
 	public Icon getIcon(){return icon;}
+	public Image getImage(){return image;}
 	public BasicTilemap getTilemap(){return tilemap;}
 	public void actionPerformed(ActionEvent e) {edit();}
 	private boolean active = false;
