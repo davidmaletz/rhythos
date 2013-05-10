@@ -37,7 +37,7 @@ class EnemyType {
 		if(legs >= 0) char.equip[Character.LEGS] = Equipment.PANTS[legs]; pattern = new EnemyPattern(getBPM(), char, p);
 		if(pLow != null) pattern.lowHP = new EnemyPattern(getBPM(), char, pLow); char.updateBitmap(); char.setFrame(char.getIdle());
 	}
-	public inline function getChar():Character {char.reset(); char.scaleX = -2; char.restore(); return char;}
+	public inline function getChar():Character {char.reset(); char.restore(); return char;}
 	public inline function getSound():Sound {return Main.getBGM("battle", song);}
 	public inline function getBPM():Int {return Main.getBPM(song);}
 	public inline function getLead():Int {return Main.getLead(song);}

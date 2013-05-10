@@ -34,25 +34,19 @@ class MainMenu extends Sprite {
 		t = new Text(Status.RED, 16, 400, 1, "BETA"); t.x = 110; t.y = 100; addChild(t);
 		addChild(new ChoiceDialog(["New Character", "Load Character", "Options", "Battle Controls", "Credits", "Manual", "Fancy Fish Games"], null, handleChoice, 2, false));
 	}
-	private function saveSlot(saves:GameSaves, i:Int, c:SavedCharacter):Bool {
-		if(i == -1) return true; function createChar(c:Int):Bool {
-			var char:Character = new Character("Hero", 0, Main.BASE_HP, Main.BASE_MP);
-			char.equip[Character.LEGS] = Equipment.PANTS[0]; char.equip[Character.TORSO] = Equipment.SHIRTS[0];
-			char.setHairColor(0); char.setEyeColor(0); char.setSkinColor(0);
-			function doSave(closed:Bool, esc:Bool):Void {
-				if(closed && !esc){saves.beginClose(); var sc = new SavedCharacter(char); GameSaves.writeSlot(i,sc); startGame(sc,i);}
-			} Main.instance.addChild(new CreateChar(char, doSave));
-			return true;
-		} if(c != null){
-			var cd = new ChoiceDialog(["Overwrite?","Yes","No"],[false,true,true]);
-			cd.onSelect = function(c:Int):Bool {if(c == 1) cd.onSelect = createChar; return true;} Main.instance.addChild(cd);
-		} else createChar(0);
-		return false;
+	private function createChar():Bool {
+		var char:Character = new Character("Hero", 0, Main.BASE_HP, Main.BASE_MP);
+		char.equip[Character.LEGS] = Equipment.PANTS[0]; char.equip[Character.TORSO] = Equipment.SHIRTS[0];
+		char.setHairColor(0); char.setEyeColor(0); char.setSkinColor(0);
+		function doSave(closed:Bool, esc:Bool):Void {
+			if(closed && !esc){var sc = new SavedCharacter(char); startGame(sc);}
+		} Main.instance.addChild(new CreateChar(char, doSave));
+		return true;
 	}
 	private function loadSlot(saves:GameSaves, i:Int, c:SavedCharacter):Bool {
-		if(c != null){startGame(c,i); return true;} return i < 0;
+		if(c != null){startGame(c); return true;} return i < 0;
 	}
-	private function startGame(c:SavedCharacter, i:Int):Void {Main.loadCharacter(c, i);}
+	private function startGame(c:SavedCharacter):Void {Main.loadCharacter(c);}
 	private static function loadURL(u:String):Void {
 		function _loadURL(e:KeyboardEvent):Void {
 			if(e.keyCode == Keyboard.ENTER){
@@ -62,7 +56,7 @@ class MainMenu extends Sprite {
 	}
 	private function handleChoice(i:Int):Bool {
 		switch(i){
-			case 0: Main.instance.addChild(new GameSaves(saveSlot));
+			case 0: createChar();
 			case 1: Main.instance.addChild(new GameSaves(loadSlot));
 			case 2: Main.instance.addChild(new Options(["Game Options","Import Character",Options.BGM_VOL,Options.SFX_VOL,"Close Options"],[false,true,true,true,true], GameMenu.importChar,0));
 			case 3: Main.instance.addChild(new Instructions());

@@ -63,7 +63,7 @@ class Main extends Sprite {
 	public static inline var DOWN:Int = 3; public static inline var ENTER:Int = 4; public static inline var ESCAPE:Int = 5;
 	public static inline var BASE_HP:Int = 8000; public static inline var BASE_MP:Int = 8000;
 	private static var bgmc:SoundChannel; private static var cur_bgm:Sound; public static var experience:Int; public static var gold:Int;
-	public static var old_score:Int; public static var score:Int; public static var slot:Int; public static var max_type:Int;
+	public static var old_score:Int; public static var score:Int; public static var max_type:Int;
 	private static inline var SPACE:Int = 10; public static inline var MENU:Int = 0; private static var cur_type:Int;
 	public static var weapons:BoolArray = new BoolArray(); public static var spells:BoolArray = new BoolArray();
 	public static var helms:BoolArray = new BoolArray(); public static var shirts:BoolArray = new BoolArray(); public static var achievements:BoolArray = new BoolArray();
@@ -114,13 +114,13 @@ class Main extends Sprite {
 		if(d == null) SFX_VOL = 5; else SFX_VOL = d; instance = this; addChild(new MainMenu()); addEventListener(Event.ENTER_FRAME, enter_frame);
 	}
 	public static inline function getPlayer():Character {return instance.player;}
-	public static function loadCharacter(sc:SavedCharacter, s:Int):Void {
-		instance.transition(); experience = sc.experience; gold = sc.gold; score = old_score = sc.score; slot = s; max_type = sc.max_type;
+	private static var _game:Game;
+	public static function loadCharacter(sc:SavedCharacter):Void {
+		instance.transition(); experience = sc.experience; gold = sc.gold; score = old_score = sc.score; max_type = sc.max_type;
 		weapons.setAr(sc.weapons); spells.setAr(sc.spells); helms.setAr(sc.helms); shirts.setAr(sc.shirts); pants.setAr(sc.pants);
 		achievements.setAr(sc.achievements); var len:Int = wins.length; for(i in 0...len){wins[i] = sc.wins[i]; losses[i] = sc.losses[i];}
-		instance.player = sc.getChar(); Achievements.loadAchievements(); instance.addChild(new Game());
+		instance.player = sc.getChar(); Achievements.loadAchievements(); _game = new Game(); instance.addChild(_game);
 	}
-	public static function saveGame():Void {GameSaves.writeSlot(slot, SavedCharacter.getCurrent());}
 	public static inline function battleTime(s:Int):Void {Achievements.battleTime(s);}
 	public function battleLost():Void {
 		losses[cur_type]++; returnToTown(); Achievements.loseToEnemy(cur_type);
@@ -128,11 +128,11 @@ class Main extends Sprite {
 	public function battleComplete():Void {
 		wins[cur_type]++; returnToTown(); var first:Bool = false; if(cur_type+1 > max_type){
 			max_type = cur_type+1; first = true;
-		} Achievements.defeatEnemy(cur_type, first); saveGame();
+		} Achievements.defeatEnemy(cur_type, first);
 	}
 	private function transition():Void {battle = null; new Mosaic(); removeAllChildren(this);}
 	public function mainMenu():Void {transition(); addChild(new MainMenu());}
-	public function returnToTown():Void {transition(); addChild(new GameMenu());}
+	public function returnToTown():Void {transition(); _game.resetPlayer(); addChild(_game);}
 	public static inline function experienceToNextLevel(l:Int):Int {return l*l*250+l*1250+1000;}
 	private static inline var MAX_LEVEL:Int = 30;
 	public static inline function levelFromExperience(e:Int):Int {
@@ -148,7 +148,7 @@ class Main extends Sprite {
 	public static function finishBattle(bonus:Int):Void {
 		experience += ((score-old_score)>>3)+bonus; old_score = score; instance.player.setLevel(levelFromExperience(experience));
 	}
-	public static var instructions:Bool = true;
+	public static var instructions:Bool = false; //TODO: return to true to show instructions?
 	public function startBattle(i:Int):Void {
 		function doStartBattle(d:DialogBox=null):Bool {
 			transition(); player.restore(); cur_type = i; battle = new Battle(player, EnemyType.ENEMIES[i]); addChild(battle); return true;
@@ -161,7 +161,7 @@ class Main extends Sprite {
 			case Keyboard.UP: if(pressed[UP]%3 == 0) pressed[UP] = 2;
 			case Keyboard.LEFT: if(pressed[LEFT]%3 == 0) pressed[LEFT] = 2;
 			case Keyboard.RIGHT: if(pressed[RIGHT]%3 == 0) pressed[RIGHT] = 2;
-			case Keyboard.DOWN: if(pressed[DOWN] == 0) pressed[DOWN] = 2;
+			case Keyboard.DOWN: if(pressed[DOWN]%3 == 0) pressed[DOWN] = 2;
 			case KEY_W: if(pressed[W]%3 == 0) pressed[W] = 2;
 			case KEY_A: if(pressed[A]%3 == 0) pressed[A] = 2;
 			case KEY_D: if(pressed[D]%3 == 0) pressed[D] = 2;

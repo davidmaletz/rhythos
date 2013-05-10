@@ -30,7 +30,7 @@ class Monster extends Character {
 	private static function playDeath(c:Character):Void {Main.playSFX("death");}
 	public override function queueDeath(f:Character->Void=null):Int {var f:Int = super.queueDeath(f); setFunction(f, playDeath); return f;}
 	private override function renderFrame():Void {
-		cur++; if(cur == 4) cur = 0; var _x:Int = (cur == 3)?1:cur, _y = 1, w:Int=Std.int(bitmap.width/3), h:Int=bitmap.height>>2; graphics.clear();
+		cur++; if(cur == 4) cur = 0; var _x:Int = (cur == 3)?1:cur, _y = getDir(), w:Int=Std.int(bitmap.width/3), h:Int=bitmap.height>>2; graphics.clear(); if(_y > 3) _y = 1;
 		var x2:Int = (64-w)>>1, y2:Int = (h < 62)?62-h:64-h; graphics.beginBitmapFill(bitmap, new Matrix(1,0,0,1,-w*_x+x2,-h*_y+y2), false, false);
 		graphics.drawRect(x2,y2,w,h); graphics.endFill();
 		if(frame >= Character.DEATH_ST){alpha = 1-(frame-Character.DEATH_ST)/(Character.N_FRAMES-1-Character.DEATH_ST);}

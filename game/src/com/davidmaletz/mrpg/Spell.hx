@@ -67,7 +67,15 @@ class Spell {
 	public static var SPELL_DESC1:Array<String>;
 	public static var SPELL_DESC2:Array<String>;
 	public static var SPELL_DESC3:Array<String>;
+	
+	private static var SPELL_ICON:Array<Int> = [3,11,5,8,9,8,9];
+	private static var SPELL_X:Array<Int> = [32,-8,0,0,2,-4,2]; private static var SPELL_Y:Array<Int> = [32,10,0,6,-24,12,2];
 	public static function drawIcon(g:Graphics, id:Int):Void {
-		g.clear(); var b=Main.getBitmap("spell_icon", id); if(b!=null){g.beginBitmapFill(b); g.drawRect(0,0,48,48); g.endFill();}
+		//TODO: spell icons: g.clear(); var b=Main.getBitmap("spell_icon", id); if(b!=null){g.beginBitmapFill(b); g.drawRect(0,0,48,48); g.endFill();}
+		g.clear(); var s:Spell = SPELLS[id]; if(s == null) return; var w:Int=s.w, h:Int=s.h;
+		var frame:Int=SPELL_ICON[id], bitmap:BitmapData = Main.getBitmap("spell", s.id), ty:Int = Math.floor(frame/w), tx:Int = frame-ty*w,
+		fw:Int = Std.int(bitmap.width/w), fh:Int = Std.int(bitmap.height/h), ox:Float = SPELL_X[id], oy:Float = SPELL_Y[id];
+		g.beginBitmapFill(bitmap, new nme.geom.Matrix(0.375,0,0,0.375,ox-fw*tx,oy-fh*ty), false, false);
+		g.drawRect(ox,oy,fw,fh); g.endFill();
 	}
 }

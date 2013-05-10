@@ -25,6 +25,11 @@ class Map extends Sprite {
 			}
 		} max_level++; for(l in 0...max_level){var s:Sprite = new Sprite(); renderLevel(s.graphics, l); addChild(s);}
 	}
+	private function init():Void {
+		var end:Int = numChildren; for(i in 0...end) Main.removeAllChildren(cast(getChildAt(i), Sprite)); //TODO: setup map events on enter.
+		//TODO: also revert all changed tiles to normal (if any) - after init, the map should be in the initial state, regardless of what changes
+		//events make. If events want to make permanent changes, they have to use global variables.
+	}
 	public inline function add(c:Character):Void {cast(getChildAt(event_layer),Sprite).addChild(c);}
 	public inline function getWidth():Int {return w;}
 	public inline function getHeight():Int {return h;}
@@ -80,6 +85,6 @@ class Map extends Sprite {
 	public static function get(id:Int):Map {
 		var st:Int=cache.length, end:Int=id+1; for(i in st...end) cache.push(null);
 		var t:Map = cache[id]; if(t == null){t = new Map(Main.getData("map", id)); cache[id] = t;}
-		return t;
+		t.init(); return t;
 	}
 }

@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 package com.davidmaletz.mrpg.ui;
+import com.davidmaletz.mrpg.Character;
 import com.davidmaletz.mrpg.EnemyType;
 import flash.net.FileFilter;
 import flash.net.FileReference;
@@ -28,15 +29,12 @@ import nme.Lib;
 import nme.ui.Keyboard;
 import nme.utils.ByteArray;
 
-class GameMenu extends Sprite {
+class GameMenu extends ChoiceDialog {
 	public function new() {
-		super(); var bg:Bitmap = new Bitmap(Frame.background); bg.scaleX = bg.scaleY = 2; addChild(bg);
-		Main.playBGM(Main.getBGM("menu")); var t:Text = new Text(Status.BLUE, 32, 400, 1, "Ye Olde"); t.y = 50; addChild(t);
-		t = new Text(Status.BLUE, 32, 400, 1, "Towne Menu"); t.y = 90; addChild(t);
-		addChild(new ChoiceDialog(["Equipment", "Shop", "Save", "Next Battle", "Achievements", "Options", "Main Menu"], handleChoice, 2, false));
+		super(["Equipment", "Save", "Achievements", "Options", "Main Menu"], null, handleChoice);
 	}
 	private function quit(i:Int):Bool {
-		if(i == 1) Main.instance.mainMenu(); return true;
+		beginClose(); if(i == 1) Main.instance.mainMenu(); return true;
 	}
 	private function selectEnemy(closed:Bool, enemy:Int):Void {
 		if(closed && enemy != -1 && enemy <= Main.max_type) Main.instance.startBattle(enemy);
@@ -56,17 +54,7 @@ class GameMenu extends Sprite {
 		GameSaves.saveCharacter(SavedCharacter.getCurrent(), b); ref.save(b, Main.getPlayer().cname+".rch");
 	}
 	public static function doImport(b:ByteArray):Void {
-		function saveSlot(saves:GameSaves, i:Int, c:SavedCharacter):Bool {
-			if(i == -1) return true; function createChar(c:Int):Bool {
-				b.position = 0; saves.beginClose(); var sc = GameSaves.loadCharacter(b); if(sc != null){GameSaves.writeSlot(i,sc); Main.loadCharacter(sc, i);}
-				return true;
-			} if(c != null){
-				var cd = new ChoiceDialog(["Overwrite?","Yes","No"],[false,true,true]);
-				cd.onSelect = function(c:Int):Bool {if(c == 1) cd.onSelect = createChar; return true;} Main.instance.addChild(cd);
-			} else createChar(0);
-			return false;
-		}
-		Main.instance.addChild(new GameSaves(saveSlot));
+		b.position = 0; var sc = GameSaves.loadCharacter(b); if(sc != null) Main.loadCharacter(sc);
 	}
 	public static function doImportChar(e:KeyboardEvent):Void {
 		if(e.keyCode != Keyboard.ENTER) return; Lib.current.stage.removeEventListener(KeyboardEvent.KEY_UP, doImportChar);
@@ -83,15 +71,34 @@ class GameMenu extends Sprite {
 		} ref.addEventListener(Event.SELECT, selectFile); ref.addEventListener(Event.CANCEL, cancelFile);
 		ref.browse([new FileFilter("Rhythos Character Files (*.rch)", "*.rch")]);
 	}
+	private function saveSlot(saves:GameSaves, i:Int, c:SavedCharacter):Bool {
+		if(i == -1) return true; function doSave(c:Int):Bool {
+			saves.beginClose(); var sc = SavedCharacter.getCurrent(); GameSaves.writeSlot(i,sc); var p = Main.getPlayer(); p.scaleX = p.scaleY = 1;
+			Main.instance.addChild(new DialogBox("\300Game Saved!\300",null,true,0,24,1,1)); return true;
+		} if(c != null){
+			var cd = new ChoiceDialog(["Overwrite?","Yes","No"],[false,true,true]);
+			cd.onSelect = function(c:Int):Bool {if(c == 1) cd.onSelect = doSave; return true;} Main.instance.addChild(cd);
+		} else doSave(0);
+		return false;
+	}
+	private function changeEquipment(c:CharSheet, closed:Bool, esc:Bool):Void {
+		if(!closed){
+			var p:Character = Main.getPlayer(), char:Character = c.getChar();
+			p.weapon = char.weapon; p.spell = char.spell;
+			p.equip[Character.LEGS] = char.equip[Character.LEGS];
+			p.equip[Character.TORSO] = char.equip[Character.TORSO];
+			p.equip[Character.HEAD] = char.equip[Character.HEAD];
+			p.resetDefense(); p.updateBitmap();
+		}
+	}
 	private function handleChoice(i:Int):Bool {
 		switch(i){
-			case 0: Main.instance.addChild(new CharSheet(Main.getPlayer()));
-			case 1: Main.instance.addChild(new Shop());
-			case 2: Main.saveGame(); Main.instance.addChild(new DialogBox("\300Game Saved!\300",null,true,0,24,1,1));
-			case 3: Main.instance.addChild(new SelectEnemy(selectEnemy));
-			case 4: Main.instance.addChild(new Achievements());
-			case 5: Main.instance.addChild(new Options(["Game Options","Export Character",Options.BGM_VOL,Options.SFX_VOL,"Close Options"],[false,true,true,true,true], exportChar,0));
-			case 6: addChild(new ChoiceDialog(["Really Quit?","Yes","No"],[false,true,true],quit,0));
+			case 0: Main.instance.addChild(new CharSheet(Main.getPlayer().clone(), changeEquipment));
+			case 1: Main.instance.addChild(new GameSaves(saveSlot));
+			case 2: Main.instance.addChild(new Achievements());
+			case 3: Main.instance.addChild(new Options(["Game Options","Export Character",Options.BGM_VOL,Options.SFX_VOL,"Close Options"],[false,true,true,true,true], exportChar,0));
+			case 4: Main.instance.addChild(new ChoiceDialog(["Really Quit?","Yes","No"],[false,true,true],quit,0));
+			default: return true;
 		} return false;
 	}
 }

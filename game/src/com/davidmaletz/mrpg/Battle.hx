@@ -43,8 +43,8 @@ class Battle extends Sprite {
 	private var cur_score:Int; public var state:Int; private var arrows:Int; private var combo:Int;
 	public function new(p:Character, e:EnemyType){
 		super(); etype = e; var snd:Sound=e.getSound(); length = snd.length; channel_pos = Math.NaN;
-		addBG(); player = p; p.reset(); p.setFrame(p.getIdle()); p.x = PLAYER_X; p.y = CHAR_Y;
-		enemy = e.getChar(); enemy.x = ENEMY_X; enemy.y = CHAR_Y; enemy.scaleX = -enemy.scaleY; addChild(enemy); addChild(p);
+		addBG(); player = p; p.reset(); p.setFrame(p.getIdle()); p.x = PLAYER_X; p.y = CHAR_Y; player.scaleX = player.scaleY = 2;
+		enemy = e.getChar(); enemy.x = ENEMY_X; enemy.y = CHAR_Y; enemy.scaleX = -2; enemy.scaleY = 2; addChild(enemy); addChild(p);
 		addChild(player.getTop()); addChild(enemy.getTop()); cur_score = Main.score; state = -1; combo = 0;
 		arrows = Math.floor(Math.min(999,enemy.max_health/(((CharSheet.indexOf(EnemyType.ENEMIES,e) == 6)?1:enemy.phys_def)*0.5*(p.weapon.lowDmg+p.weapon.highDmg+2*p.level*20))+4));
 		status = new Status(); addChild(status); status.enemy.setText(enemy.cname); status.player.setText(player.cname);

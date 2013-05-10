@@ -28,8 +28,8 @@ class CharSheet extends Sprite {
 	private static inline var LEGS:Int=3; private static inline var SPELL:Int=4; private static inline var EXIT:Int=5;
 	private static inline var N_SEL:Int=6; public static inline var SPACE:Int=42;
 	private var char:Character; private var card:Sprite; private var sel:Int; private var arrows:Sprite; private var pause:Int;
-	private var wId:Int; private var sId:Int; private var lId:Int; private var tId:Int; private var hId:Int; public var func:Bool->Bool->Void;
-	public function new(c:Character, f:Bool->Bool->Void=null) {
+	private var wId:Int; private var sId:Int; private var lId:Int; private var tId:Int; private var hId:Int; public var func:CharSheet->Bool->Bool->Void;
+	public function new(c:Character, f:CharSheet->Bool->Bool->Void=null) {
 		super(); var w:Int=400,h:Int=300; func = f; c.reset(); char = c; refreshChar();
 		Frame.drawFrame(graphics,w,h); pause = Main.pause();
 		card = createCharCard(c); card.x = w-128-16; addChild(card); w -= 128+32; Frame.drawDividerV(graphics,w,6,h-12); w += 8;
@@ -58,6 +58,7 @@ class CharSheet extends Sprite {
 	public static function indexOf<T>(ar:Array<T>, e:T):Int {
 		var end:Int = ar.length; for(i in 0...end) if(ar[i] == e) return i; return -1;
 	}
+	public inline function getChar():Character {return char;}
 	public function cycleSel(d:Int):Void {
 		var l:Int; switch(sel){
 			case WEAPON: l = Equipment.WEAPONS.length; do{wId += d; if(wId >= l) wId = 0; else if(wId < 0) wId = l-1;}while(!Main.weapons.get(wId));
@@ -79,7 +80,7 @@ class CharSheet extends Sprite {
 	public function cycleGroup(d:Int):Void {
 		getSelText().setColor(Frame.TEXT); sel += d; if(sel >= N_SEL) sel = 0; else if(sel < 0) sel = N_SEL-1; updateSel(); Main.playClick();
 	}
-	private inline function callFunc(closed:Bool):Void {if(func != null) func(closed, sel == -2);}
+	private inline function callFunc(closed:Bool):Void {if(func != null) func(this, closed, sel == -2);}
 	private function exit():Void {if(pause > 0){Main.unpause(); pause = 0;} parent.removeChild(this); callFunc(true);}
 	public function handleKey(e:Event):Void {
 		var dh:Int = 75; if(sel < 0){y += dh; if(y >= 300) exit(); return;} if(y > 0){y -= dh; return;}
