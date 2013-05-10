@@ -96,12 +96,12 @@ class Main extends Sprite {
 	public static function playSFX(id:String, t1:Int=-1, t2:Int=-1):SoundChannel {
 		var c = getAsset(id,t1,t2); if(c != null){
 			var s:Sound = cast(c, Sound); var vol:Float = 1; return s.play(0,0,new SoundTransform(SFX_VOL*0.2*vol));
-		} return null;
+		} ResourceError("sfx",id,t1,t2); return null;
 	}
 	public static function loopSFX(id:String, t1:Int=-1, t2:Int=-1):SoundChannel {
 		var c = getAsset(id,t1,t2); if(c != null){
 			var s:Sound = cast(c, Sound); var vol:Float = 1; return s.play(0,0x3FFFFFFF,new SoundTransform(SFX_VOL*0.2*vol));
-		} return null;
+		} ResourceError("sfx",id,t1,t2); return null;
 	}
 	private static var settings:SharedObject;
 	private function init(e) {
@@ -111,7 +111,7 @@ class Main extends Sprite {
 		Lib.current.stage.addEventListener(KeyboardEvent.KEY_UP, key_up);
 		settings = SharedObject.getLocal("settings"); var d:Dynamic = Reflect.field(settings.data, "bgm_vol");
 		if(d == null) BGM_VOL = 5; else BGM_VOL = d; d = Reflect.field(settings.data, "sfx_vol");
-		if(d == null) SFX_VOL = 5; else SFX_VOL = d; instance = this; addChild(new MainMenu());
+		if(d == null) SFX_VOL = 5; else SFX_VOL = d; instance = this; addChild(new MainMenu()); addEventListener(Event.ENTER_FRAME, enter_frame);
 	}
 	public static inline function getPlayer():Character {return instance.player;}
 	public static function loadCharacter(sc:SavedCharacter, s:Int):Void {
@@ -192,13 +192,16 @@ class Main extends Sprite {
 	public static function playChange():Void {playSFX("change");}
 	private static var SFX_VOL:Int; private static var BGM_VOL:Int; private static var bgm_vol:Float;
 	public static function getBitmap(id:String, t1:Int=-1, t2:Int=-1):BitmapData {
-		var c = getAsset(id,t1,t2); return ((c == null)?null:cast(c, Bitmap).bitmapData);
+		var c = getAsset(id,t1,t2); if(c == null){ResourceError("image",id,t1,t2); return null;}
+		return cast(c, Bitmap).bitmapData;
 	}
 	public static function getData(id:String, t1:Int=-1, t2:Int=-1):ByteArray {
-		var c = getAsset(id,t1,t2); return ((c == null)?null:cast(c, ByteArray));
+		var c = getAsset(id,t1,t2); if(c == null){ResourceError("data",id,t1,t2); return null;}
+		return cast(c, ByteArray);
 	}
 	public static function getBGM(id:String, t1:Int=-1, t2:Int=-1):Sound {
-		var c = getAsset(id,t1,t2); return ((c == null)?null:cast(c, Sound));
+		var c = getAsset(id,t1,t2); if(c == null){ResourceError("bgm",id,t1,t2); return null;}
+		return cast(c, Sound);
 	}
 	public static function getBPM(id:Int):Int {return 149;} //TODO: load song BPM
 	public static function getLead(id:Int):Int {return 16;} //TODO: load song lead
@@ -253,5 +256,14 @@ class Main extends Sprite {
 		stage.scaleMode = nme.display.StageScaleMode.SHOW_ALL;
 		stage.align = nme.display.StageAlign.TOP;
 		Lib.current.addChild(new Main());
+	}
+	
+	private static var queue:Dequeue<String> = new Dequeue<String>();
+	private function enter_frame(e:Event):Void {
+		if(pauseCt == 0 && queue.size() != 0) addChild(new DialogBox(queue.removeFirst(), null, true, 0, 24, 2));
+	}
+	private static function ResourceError(type:String, id:String, t1:Int, t2:Int):Void {
+		if(t1 >= 0) id += Std.string(t1); if(t2 >= 0) id += "_"+Std.string(t2);
+		queue.addLast("Unable to locate "+type+":\n'"+id+"'");
 	}
 }

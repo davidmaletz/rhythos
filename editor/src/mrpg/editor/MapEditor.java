@@ -81,6 +81,7 @@ import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
 import mrpg.editor.resource.Tileset;
 import mrpg.editor.resource.Workspace;
+import mrpg.editor.tools.EraserTool;
 import mrpg.editor.tools.FillTool;
 import mrpg.editor.tools.LineTool;
 import mrpg.editor.tools.PencilTool;
@@ -102,12 +103,12 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	public static final String CUT = "cut", COPY = "copy", PASTE = "paste", DELETE = "delete", REFRESH = "refresh", REVERT = "revert", REMOVE = "remove", SEL_ALL = "sel_all",
 		DSEL_ALL = "dsel_all", SHOW_ALL = "show_all", SHOW_GRID = "grid", NEXT_LAYER = "next_l", PREV_LAYER = "prev_l";
 	public static final String RENAME = "rename";
-	public static final String UNDO = "undo", REDO = "redo", SELECT = "select", ZOOM = "zoom", PENCIL = "pencil",
+	public static final String UNDO = "undo", REDO = "redo", SELECT = "select", ZOOM = "zoom", PENCIL = "pencil", ERASER = "eraser",
 		LINE = "line", RECT = "rect", FILL = "fill", PROPERTIES = "properties", LAYER = "layer", MAP = "map";
 	public static final String OK = "ok", CANCEL = "cancel", SET = "set", CLEAR = "clear", M_PLAYER = "media_player"; 
 	public static final int MAX_LAYERS = 20;
 	private final ButtonGroup group = new ButtonGroup(); private WorldOverlay world_overlay;
-	private SelectTool SELECT_TOOL; private Tool ZOOM_TOOL, PENCIL_TOOL, LINE_TOOL, RECT_TOOL, FILL_TOOL;
+	private SelectTool SELECT_TOOL; private Tool ZOOM_TOOL, PENCIL_TOOL, ERASER_TOOL, LINE_TOOL, RECT_TOOL, FILL_TOOL;
 	private JLabel map_label; private JSpinner zoom_spinner, layer_spinner; private WorkspaceBrowser browser;
 	private String map_name = ""; private int map_x = 0, map_y = 0; public boolean browser_focus = false;
 	private AbstractButton undo1, undo2, redo1, redo2, cut, copy, paste, delete, dsel, select, showAll, pl1, pl2,
@@ -173,7 +174,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		frame.add(edit);
 		
 		SELECT_TOOL = new SelectTool(w, history); ZOOM_TOOL = new ZoomTool(w); PENCIL_TOOL = new PencilTool(w, tileset_viewer, history);
-		LINE_TOOL = new LineTool(w, tileset_viewer, history); RECT_TOOL = new RectTool(w, tileset_viewer, history); FILL_TOOL = new FillTool(w, tileset_viewer, history);
+		ERASER_TOOL = new EraserTool(w, history); LINE_TOOL = new LineTool(w, tileset_viewer, history); RECT_TOOL = new RectTool(w, tileset_viewer, history); FILL_TOOL = new FillTool(w, tileset_viewer, history);
 		SELECT_TOOL.listener = this; ((ZoomTool)ZOOM_TOOL).listener = this;
 		world_overlay.setTool(PENCIL_TOOL);
 		
@@ -321,6 +322,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		select = createToolbarButton(SELECT, "Select tiles", group, this); bar.add(select);
 		bar.add(createToolbarButton(ZOOM, "Zoom in/out", group, this));
 		bar.add(createToolbarButton(PENCIL, "Freehand drawing tool", group, this, true));
+		bar.add(createToolbarButton(ERASER, "Eraser tool", group, this, true));
 		bar.add(createToolbarButton(LINE, "Line drawing tool", group, this));
 		bar.add(createToolbarButton(RECT, "Rectangle drawing tool", group, this));
 		bar.add(createToolbarButton(FILL, "Flood fill tool", group, this));
@@ -359,6 +361,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		} else if(command == SELECT){world_overlay.setTool(SELECT_TOOL);
 		} else if(command == ZOOM){world_overlay.setTool(ZOOM_TOOL);
 		} else if(command == PENCIL){world_overlay.setTool(PENCIL_TOOL);
+		} else if(command == ERASER){world_overlay.setTool(ERASER_TOOL);
 		} else if(command == LINE){world_overlay.setTool(LINE_TOOL);
 		} else if(command == RECT){world_overlay.setTool(RECT_TOOL);
 		} else if(command == FILL){world_overlay.setTool(FILL_TOOL);
@@ -573,7 +576,11 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		//TODO: register tools to the tool dropdown, which can change when the target changes.
 		//TODO: when target changes, script editor has to refresh, as monsters might reference DIFFERENT database entries. Register script quick commands too!
 		//TODO: read plugin directory, and install plugins.
+		//TODO: Project "get by id" has to allow new types via plugins (hash map from long to table?)
+		//TODO: enable/disable resources in a project based on target.
 		//TODO: new project template
+		//TODO: built in error checking and exception handling in the client - so we know what went wrong when something goes wrong.
+		//TODO: allow moving event between layers for bridges and stuff.
 		instance = new MapEditor();
 		File f = new File(".workspace");
 		if(f.exists()) try{

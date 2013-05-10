@@ -1,4 +1,6 @@
 package com.davidmaletz.mrpg.game;
+import com.davidmaletz.mrpg.Character;
+import com.davidmaletz.mrpg.ui.DialogBox;
 import nme.display.Graphics;
 import nme.display.Sprite;
 import nme.utils.ByteArray;
@@ -9,10 +11,11 @@ import nme.utils.ByteArray;
  */
 
 class Map extends Sprite {
-	private var w:Int; private var h:Int; private var max_level:Int; private var cells:Array<Cell>; private var wrapX:Bool; private var wrapY:Bool;
+	private var w:Int; private var h:Int; private var max_level:Int; private var cells:Array<Cell>;
+	private var wrapX:Bool; private var wrapY:Bool; private var event_layer:Int;
 	public function new(d:ByteArray){
 		super(); w = d.readShort(); h = d.readShort(); var wrap:Int = d.readByte(); wrapX = (wrap & 1) != 0; wrapY = (wrap & 2) != 0;
-		cells = new Array<Cell>(); max_level = 0; for(y in 0...h) for(x in 0...w){
+		cells = new Array<Cell>(); event_layer = 2; max_level = event_layer; for(y in 0...h) for(x in 0...w){
 			var tiles:Int = d.readByte(); if(tiles == 0) cells.push(null);
 			else {
 				var c:Cell = new Cell(this, x, y); cells.push(c);
@@ -22,6 +25,14 @@ class Map extends Sprite {
 			}
 		} max_level++; for(l in 0...max_level){var s:Sprite = new Sprite(); renderLevel(s.graphics, l); addChild(s);}
 	}
+	public inline function add(c:Character):Void {cast(getChildAt(event_layer),Sprite).addChild(c);}
+	public inline function getWidth():Int {return w;}
+	public inline function getHeight():Int {return h;}
+	public inline function centerOn(_x:Float, _y:Float):Void {
+		var sw:Float = 400, sh:Float = 300, w:Float = w*Tile.tile_size, h:Float = h*Tile.tile_size;
+		x = Math.max(sw-w, Math.min(0, sw*0.5-_x)); y = Math.max(sh-h, Math.min(0, sh*0.5-_y));
+	}
+	public inline function centerChar(c:Character):Void {centerOn(c.getWorldX(), c.getWorldY());}
 	public inline function updateLevel(l:Int):Void {renderLevel(cast(getChildAt(l),Sprite).graphics, l);}
 	private inline function draw(g:Graphics, t:Tilemap, data:Array<Float>):Void {if(t != null) t.drawTiles(g, data);}
 	public function renderLevel(g:Graphics, l:Int):Void {
@@ -33,7 +44,38 @@ class Map extends Sprite {
 			data.push(c.getX()*Tile.tile_size); data.push(c.getY()*Tile.tile_size); data.push(t.getIndex());
 		} draw(g, last, data);
 	}
-	
+	public function getCell(x:Int, y:Int):Cell {
+		var oob:Bool = false;
+		if(wrapX){x = x%w; if(x < 0) x += w;} else oob = oob || x < 0 || x >= w;
+		if(wrapY){y = y%h; if(y < 0) y += h;} else oob = oob || y < 0 || y >= h;
+		return (oob)?null:cells[y*w+x];
+	}
+	private function walkable(c:Cell, l:Int):Int {
+		if(c == null) return -1; var i:Int=l; while(i >= 0){
+			var t:Tile = c.getTile(i); if(t != Tile.empty) return t.getWalkable(); i--;
+		} return -2;
+	}
+	public function canMove(c:Cell, dir:Int, l:Int):Bool {
+		if(c == null) return false; var i:Int=l; while(i >= 0){
+			var t:Tile = c.getTile(i); if(t != Tile.empty) return Direction.hasMask(t.getWalkable(), dir); i--;
+		} return true;
+	}
+	public function canMoveUp(c:Character){
+		var l:Int = event_layer; try{l = getChildIndex(c.parent);}catch(e:Dynamic){} var x:Int = c.getX(), y:Int = c.getY();
+		return canMove(getCell(x,y), Direction.UP, l) && canMove(getCell(x,y-1), Direction.DOWN, l);
+	}
+	public function canMoveDown(c:Character){
+		var l:Int = event_layer; try{l = getChildIndex(c.parent);}catch(e:Dynamic){} var x:Int = c.getX(), y:Int = c.getY();
+		return canMove(getCell(x,y), Direction.DOWN, l) && canMove(getCell(x,y+1), Direction.UP, l);
+	}
+	public function canMoveLeft(c:Character){
+		var l:Int = event_layer; try{l = getChildIndex(c.parent);}catch(e:Dynamic){} var x:Int = c.getX(), y:Int = c.getY();
+		return canMove(getCell(x,y), Direction.LEFT, l) && canMove(getCell(x-1,y), Direction.RIGHT, l);
+	}
+	public function canMoveRight(c:Character){
+		var l:Int = event_layer; try{l = getChildIndex(c.parent);}catch(e:Dynamic){} var x:Int = c.getX(), y:Int = c.getY();
+		return canMove(getCell(x,y), Direction.RIGHT, l) && canMove(getCell(x+1,y), Direction.LEFT, l);
+	}
 	private static var cache:Array<Map> = new Array<Map>();
 	public static function get(id:Int):Map {
 		var st:Int=cache.length, end:Int=id+1; for(i in st...end) cache.push(null);

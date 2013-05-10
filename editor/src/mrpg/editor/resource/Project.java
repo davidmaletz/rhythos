@@ -171,6 +171,7 @@ public class Project extends Folder {
 		private final JTextArea options;
 		private static final String SET_FRAME="set_frame", SET_FONT="set_font", SET_BG="set_bg";
 		public Properties(Project p){
+			//TODO: Break properties into tabs, including one custom one from the target?
 			super(JOptionPane.getFrameForComponent(p.editor), "Project Properties", true); project = p;
 			setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();

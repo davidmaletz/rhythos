@@ -19,6 +19,7 @@
 package com.davidmaletz.mrpg;
 
 import com.davidmaletz.mrpg.equipment.Weapon;
+import com.davidmaletz.mrpg.game.Tile;
 import com.davidmaletz.mrpg.ui.CharSheet;
 import nme.display.Bitmap;
 import nme.display.BitmapData;
@@ -50,8 +51,8 @@ class Character extends Sprite {
 		skin_mat = _clear; eyes_mat = _clear; hair_mat = _clear;
 		equip = [null,null,null]; weapon = Equipment.WEAPONS[0]; spell = Spell.SPELLS[0]; top = new Sprite(); hairId = 0;
 		if(type >= 0){
-			skin = Main.getBitmap("skin", type); eyes = Main.getBitmap("eyes", type); eyewhite = getEyeWhite(skin, type);
-			if(hairId >= 0) hair = Main.getBitmap("hair", type, hairId); else hair = null;
+			skin = Main.getBitmap("skin", type); if(type < 2){eyes = Main.getBitmap("eyes", type); eyewhite = getEyeWhite(skin, type);}
+			if(type != 2 && hairId >= 0) hair = Main.getBitmap("hair", type, hairId); else hair = null;
 		} if(b != null) skin = b; scaleX = scaleY = 2; bitmap = new BitmapData(skin.width, skin.height, true, 0); resetDefense();
 		updateBitmap(); updateFrame(); Main.safeEnterFrame(this, enter_frame, true);
 	}
@@ -98,6 +99,7 @@ class Character extends Sprite {
 	public inline function clearQueue():Void {anim.clear(); func.clear();}
 	public inline function getIdle():Int {return weapon.startFrame();}
 	public inline function restore():Void {health = max_health; mana = max_mana;}
+	public inline function queueFrame(f:Int, _func:Character->Void=null):Void {anim.addLast(f); func.addLast(_func);}
 	public function queueIdle(n:Int,f:Character->Void=null):Int {var ret:Int = queueLength(); for(i in 0...n){anim.addLast(getIdle()); func.addLast(f);} return ret;}
 	public function queueWalk(dir:Int, f:Character->Void=null):Int {
 		var ret:Int = queueLength(), st:Int = WALK_ST+WALK_LEN*dir, end:Int = st+WALK_LEN; for(i in st...end){anim.addLast(i); func.addLast(f);} return ret;
@@ -172,4 +174,13 @@ class Character extends Sprite {
 		if(eyewhites == null) eyewhites = new Array<BitmapData>();
 		if(eyewhites[type] == null) eyewhites[type] = getEyeWhites(base); return eyewhites[type];
 	}
+	
+	public inline function setX(_x:Int):Void {x = _x*Tile.tile_size-16;}
+	public inline function setY(_y:Int):Void {y = _y*Tile.tile_size-32;}
+	public inline function setPos(_x:Int, _y:Int):Void {setX(_x); setY(_y);}
+	public inline function getX():Int {return Math.floor((x+16)/Tile.tile_size+0.5);}
+	public inline function getY():Int {return Math.floor((y+32)/Tile.tile_size+0.5);}
+	public inline function getWorldX():Float {return x+16;}
+	public inline function getWorldY():Float {return y+32;}
+	public inline function getDir():Int {return Math.floor((frame-Character.WALK_ST)/Character.WALK_LEN);}
 }

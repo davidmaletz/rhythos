@@ -25,6 +25,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+
+import mrpg.editor.MapEditor;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.TileResource;
 import mrpg.world.BasicTilemap;
@@ -49,12 +52,17 @@ public class SWFTarget implements Target {
 		/*
 		 * TODO: load assets from project, call init, addImage, addSound and addData to add them to the
 		 * swf, finish() to finish adding data, and finally writeToFile(f)
+		 * TODO: save and load assets by ID instead of trying to reindex them as packed shorts. Haxe can probably load them as hex strings.
 		 */
 		try {
 			File f = new File("img"); if(!f.exists()) f.mkdir();
 			f = new File("snd"); if(!f.exists()) f.mkdir();
 			String FOLDER = "../assets/";
-			init(p.getFrame(), p.getFont(), p.getBG());
+			Graphic frame, font, bg;
+			try{frame = p.getFrame();}catch(Exception e){JOptionPane.showMessageDialog(MapEditor.instance, "Unable to build "+p.getName()+"!\nThe project has no frame graphic specified.", "Build Error", JOptionPane.ERROR_MESSAGE); throw e;}
+			try{font = p.getFont();}catch(Exception e){JOptionPane.showMessageDialog(MapEditor.instance, "Unable to build "+p.getName()+"!\nThe project has no font graphic specified.", "Build Error", JOptionPane.ERROR_MESSAGE); throw e;}
+			try{bg = p.getBG();}catch(Exception e){JOptionPane.showMessageDialog(MapEditor.instance, "Unable to build "+p.getName()+"!\nThe project has no background graphic specified.", "Build Error", JOptionPane.ERROR_MESSAGE); throw e;}
+			init(frame, font, bg);
 			addImage(loadImage(new File(FOLDER+"body_m.png")), "skin", 0);
 			addImage(loadImage(new File(FOLDER+"body_f.png")), "skin", 1);
 			addImage(loadImage(new File(FOLDER+"body_s.png")), "skin", 2);
@@ -201,7 +209,9 @@ public class SWFTarget implements Target {
 	public void run(Project p){
 		try{
 			Desktop.getDesktop().open(new File("out.swf"));
-		}catch(Exception e){e.printStackTrace();}
+		}catch(Exception e){
+			JOptionPane.showMessageDialog(MapEditor.instance, "Unable to run "+p.getName()+"!\nMake sure you have Flash Player installed.", "Run Error", JOptionPane.ERROR_MESSAGE);
+		}
 	}
 	public void addImage(Graphic b, String type) throws Exception {addImage(b, type, -1, -1);}
 	public void addImage(Graphic b, String type, int t1) throws Exception {addImage(b, type, t1, -1);}

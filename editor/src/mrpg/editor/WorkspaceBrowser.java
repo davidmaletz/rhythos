@@ -201,6 +201,8 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 	public void addMap(){
 		try{
 			Resource parent = getInsertResource();
+			//TODO: we don't need to ask for name here, as it's set in the properties dialog (same deal for tilesets). Make sure it can set the name in the properties dialog first time without crashing.
+			//TODO: instead of closing properties if name is in use, bring up error message, and let them change name or cancel.
 			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new map:", "Create New Map", JOptionPane.PLAIN_MESSAGE, null, null, "New Map");
 			if(name == null) throw new Exception();
 			String dir = parent.getFile().toString();
