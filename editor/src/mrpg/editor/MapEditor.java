@@ -119,7 +119,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	private TilesetViewer tileset_viewer; private MediaPlayer media_player = null;
 
 	public MapEditor(){
-		super("Rhythos! Game Maker");
+		super("Rhythos! Game Builder");
 		InputMap im = (InputMap)UIManager.getDefaults().get("Button.focusInputMap");
         Object pressedAction = im.get(KeyStroke.getKeyStroke("pressed SPACE"));
         Object releasedAction = im.get(KeyStroke.getKeyStroke("released SPACE"));
@@ -569,6 +569,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
 		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
 		registerTarget("SWF Version 1.0", SWFTarget.class);
+		//TODO: If map is missing tileset, load all Tile.empty for that tileset, don't throw exception!
 		//TODO: project output file/folder?
 		//TODO: finish map loading in haxe, and get export maps working so we can create SWF and see changes.
 		//TODO: fix up autotile management to work with the new system. Allow an autotile to be a subset in a tilemap.

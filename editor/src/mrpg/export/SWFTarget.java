@@ -23,11 +23,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JOptionPane;
 
 import mrpg.editor.MapEditor;
+import mrpg.editor.resource.Map;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.TileResource;
 import mrpg.world.BasicTilemap;
@@ -190,7 +192,8 @@ public class SWFTarget implements Target {
 			addSound(loadSound(new File(FOLDER+"sfx/sfx_spell_heal.mp3")), "spell_sfx", 7);
 			
 			WorldIO io = new WorldIO();
-			p.getFirstMap().getWorld().write(io);
+			Iterator<Map> maps = p.getMaps();
+			maps.next().getWorld().write(io);
 			ByteArrayOutputStream buf = io.getBuffer(); addData(buf, "map", 0);
 			ArrayList<Long> images = new ArrayList<Long>(); DataOutputStream obuf = new DataOutputStream(buf); int j=0;
 			for(Long l : io.getTilemaps()){

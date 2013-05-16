@@ -49,6 +49,7 @@ class Map extends Sprite {
 		//events make. If events want to make permanent changes, they have to use global variables.
 	}
 	public inline function add(c:Character):Void {cast(getChildAt(event_layer),Sprite).addChild(c);}
+	public inline function setLayer(c:Character, l:Int):Void {cast(getChildAt(l),Sprite).addChild(c);}
 	public inline function getWidth():Int {return w;}
 	public inline function getHeight():Int {return h;}
 	public inline function centerOn(_x:Float, _y:Float):Void {

@@ -32,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Map.Entry;
 
@@ -128,41 +129,44 @@ public class Project extends Folder {
 	public Icon getIcon(){return icon;}
 	
 	private static Random random;
-	private static long newId(HashMap<Long,Resource> table){
+	private static <E extends Resource> long newId(HashMap<Long,E> table){
 		if(random == null) random = new Random();
 		long l; do{l = random.nextLong();}while(table.containsKey(l)); return l;
 	}
-	private static long setId(HashMap<Long,Resource> table, Resource r, long id) throws Exception {
+	private static <E extends Resource> long setId(HashMap<Long,E> table, E r, long id) throws Exception {
 		if(r == null) throw new Exception(); Resource old = table.get(id); if(r == old) return id;
 		if(old != null) id = newId(table); table.put(id, r); return id;
 	}
-	private static void removeId(HashMap<Long,Resource> table, Resource r, long id) throws Exception {
+	private static <E extends Resource> void removeId(HashMap<Long,E> table, E r, long id) throws Exception {
 		if(r == null) return; Resource old = table.get(id); if(r == old) table.remove(id);
 	}
-	private static Resource getById(HashMap<Long,Resource> table, long id) throws Exception {
-		Resource r = table.get(id); if(r == null) throw new Exception(); else return r;
+	private static <E extends Resource> E getById(HashMap<Long,E> table, long id) throws Exception {
+		E r = table.get(id); if(r == null) throw new Exception(); else return r;
 	}
-	private HashMap<Long,Resource> images = new HashMap<Long,Resource>();
+	private HashMap<Long,Image> images = new HashMap<Long,Image>();
 	public long newImageId(){return newId(images);}
 	public long setImageId(Image r, long id) throws Exception {return setId(images, r, id);}
 	public void removeImageId(Image r, long id) throws Exception {removeId(images, r, id);}
-	public Image getImageById(long id) throws Exception {return (Image)getById(images, id);}
-	private HashMap<Long,Resource> media = new HashMap<Long,Resource>();
+	public Image getImageById(long id) throws Exception {return getById(images, id);}
+	public Iterator<Image> getImages(){return images.values().iterator();}
+	private HashMap<Long,Media> media = new HashMap<Long,Media>();
 	public long newMediaId(){return newId(media);}
 	public long setMediaId(Media r, long id) throws Exception {return setId(media, r, id);}
 	public void removeMediaId(Media r, long id) throws Exception {removeId(media, r, id);}
-	public Media getMediaById(long id) throws Exception {return (Media)getById(media, id);}
-	private HashMap<Long,Resource> tilemaps = new HashMap<Long,Resource>();
+	public Media getMediaById(long id) throws Exception {return getById(media, id);}
+	public Iterator<Media> getMedia(){return media.values().iterator();}
+	private HashMap<Long,TileResource> tilemaps = new HashMap<Long,TileResource>();
 	public long newTilemapId(){return newId(tilemaps);}
 	public long setTilemapId(TileResource r, long id) throws Exception {return setId(tilemaps, r, id);}
 	public void removeTilemapId(TileResource r, long id) throws Exception {removeId(tilemaps, r, id);}
-	public TileResource getTilemapById(long id) throws Exception {return (TileResource)getById(tilemaps, id);}
-	private HashMap<Long,Resource> maps = new HashMap<Long,Resource>();
+	public TileResource getTilemapById(long id) throws Exception {return getById(tilemaps, id);}
+	public Iterator<TileResource> getTilemaps(){return tilemaps.values().iterator();}
+	private HashMap<Long,Map> maps = new HashMap<Long,Map>();
 	public long newMapId(){return newId(maps);}
 	public long setMapId(Map r, long id) throws Exception {return setId(maps, r, id);}
 	public void removeMapId(Map r, long id) throws Exception {removeId(maps, r, id);}
-	public Map getMapById(long id) throws Exception {return (Map)getById(maps, id);}
-	public Map getFirstMap(){return (Map)maps.values().iterator().next();}
+	public Map getMapById(long id) throws Exception {return getById(maps, id);}
+	public Iterator<Map> getMaps(){return maps.values().iterator();}
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
