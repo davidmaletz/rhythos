@@ -3,6 +3,11 @@ package mrpg.script;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 
+import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
+import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
+
 import mrpg.editor.resource.Script;
 
 public class ScriptEditor extends JFrame {
@@ -18,4 +23,9 @@ public class ScriptEditor extends JFrame {
 	public static void show(Script script){
 		if(instance == null) instance = new ScriptEditor(); instance.setVisible(true); //TODO: set script text/save/load
 	}
+	public static void init(){
+		((AbstractTokenMakerFactory)TokenMakerFactory.getDefaultInstance()).putMapping(ScriptTextPane.SYNTAX_STYLE_HAXE, "org.fife.ui.rsyntaxtextarea.modes.HaxeTokenMaker");
+		FoldParserManager.get().addFoldParserMapping(ScriptTextPane.SYNTAX_STYLE_HAXE, new CurlyFoldParser());
+	}
+	public static void destroy(){if(instance != null) instance.dispose();}
 }

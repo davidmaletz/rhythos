@@ -81,6 +81,7 @@ import mrpg.editor.resource.Map;
 import mrpg.editor.resource.Media;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
+import mrpg.editor.resource.Script;
 import mrpg.editor.resource.Tileset;
 import mrpg.editor.resource.Workspace;
 import mrpg.editor.tools.EraserTool;
@@ -93,7 +94,7 @@ import mrpg.editor.tools.Tool;
 import mrpg.editor.tools.ZoomTool;
 import mrpg.export.SWFTarget;
 import mrpg.export.Target;
-import mrpg.script.ScriptTextPane;
+import mrpg.script.ScriptEditor;
 import mrpg.world.World;
 
 public class MapEditor extends JFrame implements Runnable, WindowListener, ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
@@ -500,14 +501,19 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	
 	public void windowActivated(WindowEvent e) {}
 	public void windowClosed(WindowEvent e) {}
+	public void dispose(){
+		if(media_player != null) media_player.dispose(); 
+		ScriptEditor.destroy();
+		super.dispose();
+	}
 	public void windowClosing(WindowEvent e) {
 		if(saveall.isEnabled()){
 			int i = JOptionPane.showConfirmDialog(this, "Save all maps before closing?");
-			if(i == JOptionPane.NO_OPTION){writeWorkspace(); if(media_player != null) media_player.dispose(); dispose(); instance = null;}
+			if(i == JOptionPane.NO_OPTION){writeWorkspace(); dispose(); instance = null;}
 			else if(i == JOptionPane.YES_OPTION){
-				browser.saveAll(); writeWorkspace(); if(media_player != null) media_player.dispose(); dispose(); instance = null;
+				browser.saveAll(); writeWorkspace(); dispose(); instance = null;
 			}
-		} else{writeWorkspace(); if(media_player != null) media_player.dispose(); dispose(); instance = null;}
+		} else{writeWorkspace(); dispose(); instance = null;}
 	}
 	public void windowDeactivated(WindowEvent e) {}
 	public void windowDeiconified(WindowEvent e) {}
@@ -609,12 +615,13 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		} catch(Exception e){e.printStackTrace();}
 	}
 	public static void main(String[] args){
-		ScriptTextPane.init();
+		ScriptEditor.init();
 		Resource.register("Image Files", Image.EXT, Image.class);
 		Resource.register("Media Files", Media.EXT, Media.class);
 		Resource.register("Map Files", Map.EXT, Map.class);
 		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
 		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
+		Resource.register("Script", Script.EXT, Script.class);
 		registerTarget("SWF Version 1.0", SWFTarget.class);
 		//TODO: player twitch when hitting two arrow keys rapidly?
 		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.

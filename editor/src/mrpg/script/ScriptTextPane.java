@@ -31,18 +31,14 @@ import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
-import org.fife.ui.rsyntaxtextarea.AbstractTokenMakerFactory;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
-import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
-import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.SearchEngine;
 
 public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener, ActionListener {
 	private static final long serialVersionUID = 9050172784894489328L;
-	private static final String SYNTAX_STYLE_HAXE = "text/haxe";
+	public static final String SYNTAX_STYLE_HAXE = "text/haxe";
 	private RSyntaxTextArea textArea;
 	
 	public ScriptTextPane(int w, int h){
@@ -326,9 +322,5 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 			}
 			replaceDialog.setVisible(true);
 		}
-	}
-	public static void init(){
-		((AbstractTokenMakerFactory)TokenMakerFactory.getDefaultInstance()).putMapping(SYNTAX_STYLE_HAXE, "org.fife.ui.rsyntaxtextarea.modes.HaxeTokenMaker");
-		FoldParserManager.get().addFoldParserMapping(SYNTAX_STYLE_HAXE, new CurlyFoldParser());
 	}
 }
