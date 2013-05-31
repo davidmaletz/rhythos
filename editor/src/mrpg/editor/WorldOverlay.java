@@ -27,7 +27,6 @@ import java.awt.event.MouseMotionListener;
 import mrpg.display.Overlay;
 import mrpg.display.WorldPanel;
 import mrpg.editor.tools.Tool;
-import mrpg.world.Tile;
 
 
 public class WorldOverlay implements MouseListener, MouseMotionListener, Overlay {
@@ -37,8 +36,10 @@ public class WorldOverlay implements MouseListener, MouseMotionListener, Overlay
 	public WorldOverlay(MapEditor e, WorldPanel w){
 		editor = e; world = w; world.setAutoscrolls(true); w.addMouseListener(this); w.addMouseMotionListener(this);
 	}
-	public void paintOverlay(Graphics g, Rectangle r) {
-		if(world.getWorld() != null) tool.paint(g, stX, stY, mouseX, mouseY);
+	public void paintOverlay(Graphics g, Rectangle r, Graphics gold, double scale) {
+		if(world.getWorld() != null){
+			tool.paint(g, stX, stY, mouseX, mouseY); tool.paintTop(gold, scale, stX, stY, mouseX, mouseY);
+		}
 	}
 	public WorldPanel getPanel(){return world;}
 	public MapEditor getEditor(){return editor;}
@@ -50,8 +51,8 @@ public class WorldOverlay implements MouseListener, MouseMotionListener, Overlay
 		world.scrollRectToVisible(new Rectangle(e.getX(), e.getY(), 1, 1));
 		tool.mouseDragged(mouseX, mouseY, e.getX(), e.getY());
 		double s = world.getScale();
-		int x = Math.max(0, Math.min((int)Math.floor(e.getX()/(s*Tile.tile_size)), world.getWorld().getWidth()-1)),
-		y = Math.max(0, Math.min((int)Math.floor(e.getY()/(s*Tile.tile_size)), world.getWorld().getHeight()-1));
+		int x = Math.max(0, Math.min((int)Math.floor(e.getX()/(s*world.tile_size)), world.getWorld().getWidth()-1)),
+		y = Math.max(0, Math.min((int)Math.floor(e.getY()/(s*world.tile_size)), world.getWorld().getHeight()-1));
 		if(x == mouseX && y == mouseY) return;
 		int ox = mouseX, oy = mouseY;
 		mouseX = x; mouseY = y;
@@ -61,8 +62,8 @@ public class WorldOverlay implements MouseListener, MouseMotionListener, Overlay
 	public void mouseMoved(MouseEvent e) {
 		if(world.getWorld() == null) return;
 		double s = world.getScale();
-		int x = Math.max(0, Math.min((int)Math.floor(e.getX()/(s*Tile.tile_size)), world.getWorld().getWidth()-1)),
-		y = Math.max(0, Math.min((int)Math.floor(e.getY()/(s*Tile.tile_size)), world.getWorld().getHeight()-1));
+		int x = Math.max(0, Math.min((int)Math.floor(e.getX()/(s*world.tile_size)), world.getWorld().getWidth()-1)),
+		y = Math.max(0, Math.min((int)Math.floor(e.getY()/(s*world.tile_size)), world.getWorld().getHeight()-1));
 		if(x == mouseX && y == mouseY) return;
 		int ox = mouseX, oy = mouseY;
 		stX = x; stY = y; mouseX = x; mouseY = y;
@@ -76,8 +77,8 @@ public class WorldOverlay implements MouseListener, MouseMotionListener, Overlay
 		if(world.getWorld() == null) return;
 		editor.removeFocus();
 		double s = world.getScale();
-		int x = Math.max(0, Math.min((int)Math.floor(e.getX()/(s*Tile.tile_size)), world.getWorld().getWidth()-1)),
-		y = Math.max(0, Math.min((int)Math.floor(e.getY()/(s*Tile.tile_size)), world.getWorld().getHeight()-1));
+		int x = Math.max(0, Math.min((int)Math.floor(e.getX()/(s*world.tile_size)), world.getWorld().getWidth()-1)),
+		y = Math.max(0, Math.min((int)Math.floor(e.getY()/(s*world.tile_size)), world.getWorld().getHeight()-1));
 		stX = x; stY = y; mouseX = x; mouseY = y;
 		tool.mousePressed(mouseX, mouseY, e.getX(), e.getY());
 	}

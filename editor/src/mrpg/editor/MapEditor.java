@@ -30,6 +30,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map.Entry;
@@ -54,6 +55,7 @@ import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -91,10 +93,10 @@ import mrpg.editor.tools.Tool;
 import mrpg.editor.tools.ZoomTool;
 import mrpg.export.SWFTarget;
 import mrpg.export.Target;
-import mrpg.world.Tile;
+import mrpg.script.ScriptTextPane;
 import mrpg.world.World;
 
-public class MapEditor extends JFrame implements WindowListener, ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
+public class MapEditor extends JFrame implements Runnable, WindowListener, ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
 	
 	private static final long serialVersionUID = 7934438411041874443L;
 	
@@ -111,7 +113,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	private SelectTool SELECT_TOOL; private Tool ZOOM_TOOL, PENCIL_TOOL, ERASER_TOOL, LINE_TOOL, RECT_TOOL, FILL_TOOL;
 	private JLabel map_label; private JSpinner zoom_spinner, layer_spinner; private WorkspaceBrowser browser;
 	private String map_name = ""; private int map_x = 0, map_y = 0; public boolean browser_focus = false;
-	private AbstractButton undo1, undo2, redo1, redo2, cut, copy, paste, delete, dsel, select, showAll, pl1, pl2,
+	private AbstractButton undo1, undo2, redo1, redo2, cut, copy, paste, delete, dsel, select, showGrid, showAll, pl1, pl2,
 		nl1, nl2, prop, save, save2, save3, saveall, refresh, revert;
 	private final ArrayList<AbstractButton> buttons = new ArrayList<AbstractButton>(); private Map current_map;
 	
@@ -127,7 +129,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
         im.put(KeyStroke.getKeyStroke("released ENTER"), releasedAction);
         
 		history.listener = this; clipboard.listener = this;
-		WorldPanel w = new WorldPanel(Tile.tile_size,Tile.tile_size);
+		WorldPanel w = new WorldPanel(TilesetViewer.TILE_SIZE,TilesetViewer.TILE_SIZE);
 		browser = new WorkspaceBrowser(this); browser.addTreeSelectionListener(this);
 		setJMenuBar(createMenuBar(browser));
 		Container c = getContentPane(); c.setLayout(new BorderLayout());
@@ -147,13 +149,13 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		tileset.add(new JScrollPane(tileset_viewer), BorderLayout.CENTER);
 		pane.add(tileset);
 		pane.add(new JScrollPane(browser));
-		pane.setDividerLocation(Tile.tile_size*8);
+		pane.setDividerLocation(TilesetViewer.TILE_SIZE*8);
 		JScrollPane sp = new JScrollPane(w); Insets i = sp.getInsets(); sp.getViewport().setBackground(new Color(30,30,30));
 		int sw = sp.getVerticalScrollBar().getPreferredSize().width+i.left+i.right;
 		i = pane.getInsets();
-		frame.setDividerLocation(Tile.tile_size*8+1+sw+i.left+i.right+1);
+		frame.setDividerLocation(TilesetViewer.TILE_SIZE*8+1+sw+i.left+i.right+1);
 		frame.add(pane);
-		sp.setMinimumSize(new Dimension(Tile.tile_size+sw,Tile.tile_size+sp.getHorizontalScrollBar().getPreferredSize().height));
+		sp.setMinimumSize(new Dimension(TilesetViewer.TILE_SIZE+sw,TilesetViewer.TILE_SIZE+sp.getHorizontalScrollBar().getPreferredSize().height));
 		JPanel edit = new JPanel(new BorderLayout());
 		edit.add(sp, BorderLayout.CENTER);
 		JPanel options = new JPanel(new BorderLayout());
@@ -268,7 +270,8 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		bar.add(menu);
 		menu = new JMenu("View");
 		menu.setMnemonic(KeyEvent.VK_V);
-		menu.add(createCheckboxMenuItem("Show Grid", SHOW_GRID, KeyEvent.VK_G, ActionEvent.CTRL_MASK, this));
+		showGrid = createCheckboxMenuItem("Show Grid", SHOW_GRID, KeyEvent.VK_G, ActionEvent.CTRL_MASK, this);
+		menu.add(showGrid);
 		showAll = createCheckboxMenuItem("Show All Layers", SHOW_ALL, KeyEvent.VK_A, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, this);
 		menu.add(showAll);
 		menu.addSeparator();
@@ -438,23 +441,23 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		World w = m.getWorld();
 		WorldPanel p = world_overlay.getPanel(); 
 		if(p.getWorld() == w) return;
-		current_map = m; lastSave = 0;
-		prop.setEnabled(true);
-		p.setWorld(w); p.worldSize(w.getWidth()*Tile.tile_size, w.getHeight()*Tile.tile_size);
+		current_map = m; lastSave = (m.isModified())?-1:0;
+		prop.setEnabled(true); Project project = WorkspaceBrowser.getProject(m);
+		p.setWorld(w, project.tile_size); p.worldSize(w.getWidth()*project.tile_size, w.getHeight()*project.tile_size);
 		history.clearHistory(); history.world = w; setMapName(m.getName());
-		Project project = WorkspaceBrowser.getProject(m); tileset_viewer.setProject(project); w.refresh(project);
+		tileset_viewer.setProject(project); w.refresh(project);
 	}
 	public void updateMap(Map m){
 		World w = m.getWorld();
 		WorldPanel p = world_overlay.getPanel();
 		if(p.getWorld() != w) return;
-		p.worldSize(w.getWidth()*Tile.tile_size, w.getHeight()*Tile.tile_size);
+		p.worldSize(w.getWidth()*p.tile_size, w.getHeight()*p.tile_size);
 	}
 	public boolean removeMap(Map m){
 		World w = m.getWorld();
 		WorldPanel p = world_overlay.getPanel();
-		if(p.getWorld() != w) return false; current_map = null; lastSave = 0;
-		prop.setEnabled(false); p.setWorld(null); p.worldSize(Tile.tile_size, Tile.tile_size);
+		if(p.getWorld() != w) return false; current_map = null; lastSave = (m.isModified())?-1:0;
+		prop.setEnabled(false); p.setWorld(null, 0); p.worldSize(p.tile_size, p.tile_size);
 		history.clearHistory(); history.world = null; map_label.setText("");
 		tileset_viewer.setProject(null); return true;
 	}
@@ -513,7 +516,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 
 	public static MapEditor instance;
 	
-	public static final int DEF_MEDIA=0, DEF_TILEMAP=1, DEF_MAP=2, N_DEF=3;
+	public static final int DEF_MEDIA=0, DEF_PROJECT=1, DEF_TILEMAP=2, DEF_MAP=3, N_DEF=4;
 	@SuppressWarnings("unchecked")
 	private static ArrayList<Resource> deferred[] = new ArrayList[N_DEF];
 	static {for(int i=0; i<N_DEF; i++) deferred[i] = new ArrayList<Resource>();}
@@ -535,6 +538,10 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 	
 	private static final DocumentBuilderFactory document_factory = DocumentBuilderFactory.newInstance();
 	private static final TransformerFactory transformer_factory = TransformerFactory.newInstance();
+	public static int getSelectedIndex(ButtonGroup g) throws Exception {
+		Enumeration<AbstractButton> e = g.getElements(); int i = 0;
+		while(e.hasMoreElements()){if(g.isSelected(e.nextElement().getModel())) return i; i++;} throw new Exception();
+	}
 	private void writeWorkspace(){
 		try{
 			Document doc = document_factory.newDocumentBuilder().newDocument();
@@ -547,6 +554,14 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 			element.setTextContent(WorkspaceBrowser.sndChooser.getCurrentDirectory().toString()); root.appendChild(element);
 			element = doc.createElement("resourceDirectory");
 			element.setTextContent(Resource.resourceChooser.getCurrentDirectory().toString()); root.appendChild(element);
+			if(showGrid.isSelected()) root.appendChild(doc.createElement("showGrid"));
+			if(showAll.isSelected()) root.appendChild(doc.createElement("showAllLayers"));
+			element = doc.createElement("layer");
+			element.setTextContent(layer_spinner.getValue().toString()); root.appendChild(element);
+			element = doc.createElement("zoom");
+			element.setTextContent(zoom_spinner.getValue().toString()); root.appendChild(element);
+			try{element = doc.createElement("tool");
+			element.setTextContent(Integer.toString(getSelectedIndex(group))); root.appendChild(element);}catch(Exception ex){}
 			Workspace w = browser.getWorkspace();
 			for(int i=0; i<w.getProjectCount(); i++){
 				element = doc.createElement("project"); Project p = w.getProject(i);
@@ -562,15 +577,50 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 			transformer.transform(new DOMSource(doc), result);
 		} catch(Exception e){e.printStackTrace();}
 	}
+	public static <T> T getByIndex(Enumeration<T> e, int i) throws Exception {
+		while(i > 0){e.nextElement(); i--;} return e.nextElement();
+	}
+	public void run(){
+		File f = new File(".workspace");
+		if(f.exists()) try{
+			Document doc = document_factory.newDocumentBuilder().parse(f);
+			Element root = doc.getDocumentElement();
+			try{Project.folderChooser.setCurrentDirectory(new File(root.getElementsByTagName("projectDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			try{WorkspaceBrowser.imgChooser.setCurrentDirectory(new File(root.getElementsByTagName("imageDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			try{WorkspaceBrowser.sndChooser.setCurrentDirectory(new File(root.getElementsByTagName("mediaDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			try{Resource.resourceChooser.setCurrentDirectory(new File(root.getElementsByTagName("resourceDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			if(root.getElementsByTagName("showGrid").getLength() > 0) showGrid.doClick();
+			if(root.getElementsByTagName("showAllLayers").getLength() > 0) showAll.doClick();
+			try{layer_spinner.setValue(Integer.parseInt(root.getElementsByTagName("layer").item(0).getTextContent()));}catch(Exception ex){}
+			try{zoom_spinner.setValue(Double.parseDouble(root.getElementsByTagName("zoom").item(0).getTextContent()));}catch(Exception ex){}
+			try{getByIndex(group.getElements(), Integer.parseInt(root.getElementsByTagName("tool").item(0).getTextContent())).doClick();}catch(Exception ex){}
+			NodeList list = root.getElementsByTagName("project");
+			for(int i=0; i<list.getLength(); i++){
+				try{
+					Element element = (Element)list.item(i);
+					Project p = browser.addProject(new File(element.getAttribute("directory")));
+					try{p.getMapById(Long.parseLong(element.getElementsByTagName("map").item(0).getTextContent())).edit();}catch(Exception exx){}
+					try{p.getTilemapById(Long.parseLong(element.getElementsByTagName("tileset").item(0).getTextContent())).edit();}catch(Exception exx){}
+					NodeList n = element.getElementsByTagName("autotile");
+					for(int j=0; j<n.getLength(); j++)
+						try{p.getTilemapById(Long.parseLong(n.item(j).getTextContent())).edit();}catch(Exception exx){}
+				}catch(Exception ex){}
+			}			
+		} catch(Exception e){e.printStackTrace();}
+	}
 	public static void main(String[] args){
+		ScriptTextPane.init();
 		Resource.register("Image Files", Image.EXT, Image.class);
 		Resource.register("Media Files", Media.EXT, Media.class);
 		Resource.register("Map Files", Map.EXT, Map.class);
 		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
 		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
 		registerTarget("SWF Version 1.0", SWFTarget.class);
+		//TODO: player twitch when hitting two arrow keys rapidly?
+		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.
 		//TODO: If map is missing tileset, load all Tile.empty for that tileset, don't throw exception!
 		//TODO: project output file/folder?
+		//TODO: GUI UI Form Builder
 		//TODO: finish map loading in haxe, and get export maps working so we can create SWF and see changes.
 		//TODO: fix up autotile management to work with the new system. Allow an autotile to be a subset in a tilemap.
 		//TODO: register create new file types. (import formats too, for tiled tilemaps?)
@@ -583,26 +633,6 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		//TODO: built in error checking and exception handling in the client - so we know what went wrong when something goes wrong.
 		//TODO: allow moving event between layers for bridges and stuff.
 		instance = new MapEditor();
-		File f = new File(".workspace");
-		if(f.exists()) try{
-			Document doc = document_factory.newDocumentBuilder().parse(f);
-			Element root = doc.getDocumentElement();
-			try{Project.folderChooser.setCurrentDirectory(new File(root.getElementsByTagName("projectDirectory").item(0).getTextContent()));}catch(Exception ex){}
-			try{WorkspaceBrowser.imgChooser.setCurrentDirectory(new File(root.getElementsByTagName("imageDirectory").item(0).getTextContent()));}catch(Exception ex){}
-			try{WorkspaceBrowser.sndChooser.setCurrentDirectory(new File(root.getElementsByTagName("mediaDirectory").item(0).getTextContent()));}catch(Exception ex){}
-			try{Resource.resourceChooser.setCurrentDirectory(new File(root.getElementsByTagName("resourceDirectory").item(0).getTextContent()));}catch(Exception ex){}
-			NodeList list = root.getElementsByTagName("project");
-			for(int i=0; i<list.getLength(); i++){
-				try{
-					Element element = (Element)list.item(i);
-					Project p = instance.browser.addProject(new File(element.getAttribute("directory")));
-					try{p.getMapById(Long.parseLong(element.getElementsByTagName("map").item(0).getTextContent())).edit();}catch(Exception exx){}
-					try{p.getTilemapById(Long.parseLong(element.getElementsByTagName("tileset").item(0).getTextContent())).edit();}catch(Exception exx){}
-					NodeList n = element.getElementsByTagName("autotile");
-					for(int j=0; j<n.getLength(); j++)
-						try{p.getTilemapById(Long.parseLong(n.item(j).getTextContent())).edit();}catch(Exception exx){}
-				}catch(Exception ex){}
-			}			
-		} catch(Exception e){e.printStackTrace();}
+		SwingUtilities.invokeLater(instance);
 	}
 }

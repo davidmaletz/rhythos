@@ -19,6 +19,7 @@
 package com.davidmaletz.mrpg;
 import com.davidmaletz.mrpg.equipment.Equipment;
 import com.davidmaletz.mrpg.equipment.Weapon;
+import com.davidmaletz.mrpg.game.Tile;
 import nme.geom.ColorTransform;
 
 class Project {
@@ -58,6 +59,7 @@ class Project {
 		ret.setWeapon(new Weapon(-1, Weapon.SLASH, 0, 0, -76, 2000, 2800, 11, Weapon.CRITICAL_HIT)); return ret;
 	}
 	public static function load():Void {//TODO: load from database.
+		Tile.tile_size = 16; Main.instance.scaleX = Main.instance.scaleY = 2;
 		Character.GENDERS = ["Male", "Female"];
 		Character.SKIN_COLORS = ["Light", "Tanned", "Dark", "Darker", "Darkest"];
 		Character.HAIR_STYLES =  [["Normal", "Short", "Long", "Messy 1", "Messy 2", "Mohawk", "Page", "Parted", "Bald"],

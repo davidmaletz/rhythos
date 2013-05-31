@@ -23,7 +23,7 @@ import nme.events.Event;
 class LearnSpell extends Sprite {
 	private var spell:SpellDisplay; private var sel:Int; private var pause:Int; private var func:Bool->Int->Void;
 	public function new(f:Bool->Int->Void=null) {
-		super(); var w:Int=248, h:Int=100; Frame.drawFrame(graphics, w, h); var _y:Int=16; x = (400-w)>>1; y = 300;
+		super(); var w:Int=248, h:Int=100; Frame.drawFrame(graphics, w, h); var _y:Int=16; x = (Main.width-w)>>1; y = Main.height;
 		func = f; Main.safeEnterFrame(this, handleKey); pause = Main.pause();
 		CharSheet._addTitle(this, "LEARN SPELL", _y, w+2); CharSheet._addSlot(this, Spell.SPELL_NAMES[0], _y, w); _y += CharSheet.SPACE;
 		spell = new SpellDisplay(0); spell.x = 16; spell.y = _y-4; addChild(spell); var s:Text = getTitle(); s.setColor(Status.YELLOW);
@@ -38,7 +38,7 @@ class LearnSpell extends Sprite {
 		getTitle().setText(Spell.SPELL_NAMES[sel]); spell.setSpell(sel); if(sfx && Spell.SPELLS[sel] != null) Spell.SPELLS[sel].playSFX();
 	}
 	public function handleKey(e:Event):Void {
-		var dh:Int = 50; if(spell == null){y += dh; if(y >= 300) exit(); return;} if(y > 100){y -= dh; return;}
+		var dh:Int = (Main.height-100)>>2; if(spell == null){y += dh; if(y >= Main.height) exit(); return;} if(y > 100){y -= dh; return;}
 		if(Main.isPressed(Main.ENTER, pause)){Main.resetPressed(pause); Main.playSelect(); spell = null; callFunc(false); return;}
 		var r:Bool = Main.isPressed(Main.RIGHT, pause), l:Bool = Main.isPressed(Main.LEFT, pause);
 		if(r && !l) cycleSel(1); if(l && !r) cycleSel(-1);

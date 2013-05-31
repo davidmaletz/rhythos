@@ -30,7 +30,7 @@ class Achievements extends Sprite {
 	public static inline var SCROLL_Y:Int=24+16+10; private var sel:Int; private var arrow:Text; private var up_arrow:Text;
 	private var down_arrow:Text; private var pause:Int; private var scroll:Sprite; private var blink_ct:Int;
 	public function new() {
-		super(); var w:Int=400,h:Int=300; Frame.drawFrame(graphics,w,h); pause = Main.pause();
+		super(); var w:Int=Main.width,h:Int=Main.height; Frame.drawFrame(graphics,w,h); pause = Main.pause();
 		CharSheet._addTitle(this, "ACHIEVEMENTS ("+getCount()+"/23)", 16, w);
 		Main.safeEnterFrame(this, handleKey); sel = 0; arrow = new Text(Status.YELLOW, 12, 12, 0, "\202"); arrow.x = 10; addChild(arrow);
 		up_arrow = new Text(Status.YELLOW, 16, w, 1, "\200"); up_arrow.y = SCROLL_Y-16; addChild(up_arrow);
@@ -38,7 +38,7 @@ class Achievements extends Sprite {
 		var end:Int = achievements.length; scroll = new Sprite(); for(i in 0...end){
 			var t:Achievement = new Achievement(i); t.y = ITEM_HT*i; scroll.addChild(t);
 		} var m:Sprite = new Sprite(); m.graphics.beginFill(0); m.graphics.drawRect(24,SCROLL_Y,w,SCROLL_H); m.graphics.endFill();
-		addChild(m); scroll.mask = m; scroll.x = 24; scroll.y = SCROLL_Y; addChild(scroll); updateSel(); y = 300; blink_ct = MAX_BLINK;
+		addChild(m); scroll.mask = m; scroll.x = 24; scroll.y = SCROLL_Y; addChild(scroll); updateSel(); y = Main.height; blink_ct = MAX_BLINK;
 	}
 	public inline function getSel():Achievement {return cast(scroll.getChildAt(sel), Achievement);}
 	private inline function updateSel():Void {
@@ -52,7 +52,7 @@ class Achievements extends Sprite {
 	}
 	private function exit():Void {if(pause > 0){Main.unpause(); pause = 0;} parent.removeChild(this);}
 	public function handleKey(e:Event):Void {
-		var dh:Int = 75; if(sel < 0){y += dh; if(y >= 300) exit(); return;} if(y > 0){y -= dh;
+		var dh:Int = Main.height>>2; if(sel < 0){y += dh; if(y >= Main.height) exit(); return;} if(y > 0){y -= dh;
 			if(y <= 0 && Main.score == 0 && Main.gold == 200 && Shop.firstShop){
 				parent.addChild(new DialogBox("Hit '\004ESC\000' to exit.",null,true,0,24,1,1));
 			} if(y <= 0) Shop.firstShop = false; return;

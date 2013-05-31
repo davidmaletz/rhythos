@@ -35,9 +35,9 @@ public class AnimatedTile extends Tile {
 		}
 	}
 	public static class Horiz extends AnimatedTile {
-		public final int x2, y2;
-		public Horiz(Image _image, int _x1, int _y1, int _x2, int _y2, Tile.Info info){
-			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2;
+		public final int x2, y2, tile_size;
+		public Horiz(Image _image, int _x1, int _y1, int _x2, int _y2, Tile.Info info, int ts){
+			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2; tile_size = ts;
 		}
 		
 		public void paint(Graphics g, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
@@ -45,7 +45,7 @@ public class AnimatedTile extends Tile {
 				frame /= info.getSpeed();
 				int[] frames = info.getFrames();
 				frame %= (frames.length); int _x = frames[frame];
-				int half_tile = Tile.tile_size>>1;
+				int half_tile = tile_size>>1;
 				int _h = Math.min(sy+h, half_tile)-sy;
 				if(_h > 0){
 					g.drawImage(image, dx, dy, dx+w, dy+_h, x+sx+_x, y+sy, x+sx+_x+w, y+sy+_h, observer);
@@ -57,9 +57,9 @@ public class AnimatedTile extends Tile {
 		}
 	}
 	public static class Vert extends AnimatedTile {
-		public final int x2, y2;
-		public Vert(Image _image, int _x1, int _y1, int _x2, int _y2, Tile.Info info){
-			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2;
+		public final int x2, y2, tile_size;
+		public Vert(Image _image, int _x1, int _y1, int _x2, int _y2, Tile.Info info, int ts){
+			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2; tile_size = ts;
 		}
 		
 		public void paint(Graphics g, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
@@ -67,7 +67,7 @@ public class AnimatedTile extends Tile {
 				frame /= info.getSpeed();
 				int[] frames = info.getFrames();
 				frame %= (frames.length); int _x = frames[frame];
-				int half_tile = Tile.tile_size>>1;
+				int half_tile = tile_size>>1;
 				int _w = Math.min(sx+w, half_tile)-sx;
 				if(_w > 0){
 					g.drawImage(image, dx, dy, dx+_w, dy+h, x+sx+_x, y+sy, x+sx+_x+_w, y+sy+h, observer);
@@ -79,9 +79,9 @@ public class AnimatedTile extends Tile {
 		}
 	}
 	public static class Quad extends AnimatedTile {
-		public final int x2, y2, x3, y3, x4, y4;
-		public Quad(Image _image, int _x1, int _y1, int _x2, int _y2, int _x3, int _y3, int _x4, int _y4, Tile.Info info){
-			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2; x3 = _x3; y3 = _y3; x4 = _x4; y4 = _y4;
+		public final int x2, y2, x3, y3, x4, y4, tile_size;
+		public Quad(Image _image, int _x1, int _y1, int _x2, int _y2, int _x3, int _y3, int _x4, int _y4, Tile.Info info, int ts){
+			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2; x3 = _x3; y3 = _y3; x4 = _x4; y4 = _y4; tile_size = ts;
 		}
 		
 		public void paint(Graphics g, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
@@ -89,7 +89,7 @@ public class AnimatedTile extends Tile {
 				frame /= info.getSpeed();
 				int[] frames = info.getFrames();
 				frame %= (frames.length); int _x = frames[frame];
-				int half_tile = Tile.tile_size>>1;
+				int half_tile = tile_size>>1;
 				int _w = Math.min(sx+w, half_tile)-sx, _h = Math.min(sy+h, half_tile)-sy;
 				int odx = dx, osx = sx, ow = w, _ow = _w;
 				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x+sx+_x, y+sy, x+sx+_x+_w, y+sy+_h, observer);
@@ -106,14 +106,14 @@ public class AnimatedTile extends Tile {
 			}
 		}
 		
-		public static AnimatedTile createTile(Image image, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, Tile.Info info){
-			int half_tile = Tile.tile_size>>1;
+		public static AnimatedTile createTile(Image image, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, Tile.Info info, int tile_size){
+			int half_tile = tile_size>>1;
 			boolean x = x1+half_tile == x2 && x3+half_tile == x4 && y1 == y2 && y3 == y4;
 			boolean y = y1+half_tile == y3 && y2+half_tile == y4 && x1 == x3 && x2 == x4;
 			if(x && y) return new AnimatedTile(image, x1, y1, info);
-			if(x) return new AnimatedTile.Horiz(image, x1, y1, x3, y3, info);
-			if(y) return new AnimatedTile.Vert(image, x1, y1, x2, y2, info);
-			return new AnimatedTile.Quad(image, x1, y1, x2, y2, x3, y3, x4, y4, info);
+			if(x) return new AnimatedTile.Horiz(image, x1, y1, x3, y3, info, tile_size);
+			if(y) return new AnimatedTile.Vert(image, x1, y1, x2, y2, info, tile_size);
+			return new AnimatedTile.Quad(image, x1, y1, x2, y2, x3, y3, x4, y4, info, tile_size);
 		}
 	}
 }

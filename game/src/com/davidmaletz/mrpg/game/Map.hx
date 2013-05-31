@@ -53,7 +53,7 @@ class Map extends Sprite {
 	public inline function getWidth():Int {return w;}
 	public inline function getHeight():Int {return h;}
 	public inline function centerOn(_x:Float, _y:Float):Void {
-		var sw:Float = 400, sh:Float = 300, w:Float = w*Tile.tile_size, h:Float = h*Tile.tile_size;
+		var sw:Float = Main.width, sh:Float = Main.height, w:Float = w*Tile.tile_size, h:Float = h*Tile.tile_size;
 		x = Math.max(sw-w, Math.min(0, sw*0.5-_x)); y = Math.max(sh-h, Math.min(0, sh*0.5-_y));
 	}
 	public inline function centerChar(c:Character):Void {centerOn(c.getWorldX(), c.getWorldY());}

@@ -22,5 +22,5 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 
 public interface Overlay {
-	public void paintOverlay(Graphics g, Rectangle r);
+	public void paintOverlay(Graphics g, Rectangle r, Graphics gold, double scale);
 }

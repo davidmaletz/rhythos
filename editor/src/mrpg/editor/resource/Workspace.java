@@ -38,5 +38,5 @@ public class Workspace extends Resource {
 	
 	public int getProjectCount(){return getChildCount();}
 	public Project getProject(int i){return (Project)getChild(i);}
-	public File copy(File f) throws Exception {throw new Exception();}
+	public File copy(File f, Project p) throws Exception {throw new Exception();}
 }

@@ -53,21 +53,21 @@ import mrpg.export.WorldIO;
 import mrpg.world.World;
 
 
-public class Map extends Resource {
+public class Map extends Modifiable {
 	private static final long serialVersionUID = 3067630717384565840L;
 	public static final String EXT = "map"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(MapEditor.MAP);
-	private World world; private Properties properties; private Image background; private long id; private boolean modified = false;
+	private World world; private Properties properties; private Image background; private long id;
 	public Map(File f, MapEditor e){super(f,e);}
 	public void contextMenu(JPopupMenu menu){
 		WorkspaceBrowser browser = editor.getBrowser(); menu.add(browser.edit); menu.add(browser.properties); menu.addSeparator();
-		browser.save.setEnabled(isModified()); menu.add(browser.save);
-		browser.revert.setEnabled(isModified()); menu.add(browser.revert); menu.addSeparator();
+		super.contextMenu(menu);
 	}
 	public long getId(){return id;}
 	public void setName(String n) throws Exception {
 		super.setName(n); if(editor.getWorld() == world) editor.setMapName(getName());
 	}
+	public boolean isCompatible(Project p){return p.tile_size == WorkspaceBrowser.getProject(this).tile_size;}
 	public World getWorld(){return world;}
 	public boolean edit(){editor.setMap(this); return true;}
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
@@ -76,12 +76,7 @@ public class Map extends Resource {
 		WorkspaceBrowser.getProject(this).removeMapId(this, id); super.remove(delete); active = editor.removeMap(this);
 	}
 	public boolean hasProperties(){return true;}
-	public boolean isModified(){return modified;}
-	public void setModified(boolean m){if(m != modified){modified = m; updateName();}}
-	public String toString(){if(modified) return "*"+super.toString(); else return super.toString();}
 	public Icon getIcon(){return icon;}
-	public void refresh() throws Exception {if(!modified) super.refresh();}
-	public void revert() throws  Exception {super.refresh();}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
@@ -101,8 +96,10 @@ public class Map extends Resource {
 		}catch(Exception e){in.close(); throw e;}
 	}
 	
-	public static Map createMap(File f, MapEditor e, Project p) throws Exception{
-		Map ret = new Map(f,e); ret.world = new World(20,15); ret.id = p.newMapId(); ret.properties();
+	public static Map createMap(Resource parent, MapEditor e, Project p) throws Exception{
+		String dir = parent.getFile().toString();
+		File f = new File(dir+File.separator+"New Map"+"."+EXT);
+		Map ret = new Map(f,e); ret._setName(null); ret.world = new World(20,15); ret.id = p.newMapId(); ret.properties();
 		if(!ret.properties.updated) throw new Exception();
 		p.setMapId(ret, ret.id); return ret;
 	}
@@ -177,8 +174,9 @@ public class Map extends Resource {
 				map.editor.updateMap(map);
 				try{
 					map.setName(name.getText());
-				}catch(Exception ex){}
-				try{map.save(); updated = true;}catch(Exception ex){}
+				}catch(Exception ex){
+					name.setText(map.getName()); return;
+				} try{map.save(); updated = true;}catch(Exception ex){}
 				setVisible(false);
 			} else if(command == MapEditor.SET){
 				Project p = WorkspaceBrowser.getProject(map);

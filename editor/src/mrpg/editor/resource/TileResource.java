@@ -21,6 +21,7 @@ package mrpg.editor.resource;
 import java.io.File;
 
 import mrpg.editor.MapEditor;
+import mrpg.editor.WorkspaceBrowser;
 import mrpg.world.Tilemap;
 
 public abstract class TileResource extends Resource {
@@ -28,4 +29,5 @@ public abstract class TileResource extends Resource {
 	protected TileResource(File f, MapEditor e){super(f,e);}
 	public abstract Image getImage();
 	public abstract Tilemap getTilemap();
+	public boolean isCompatible(Project p){return p.tile_size == WorkspaceBrowser.getProject(this).tile_size;}
 }

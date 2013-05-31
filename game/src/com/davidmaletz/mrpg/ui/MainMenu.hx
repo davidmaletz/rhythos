@@ -29,9 +29,9 @@ import nme.ui.Keyboard;
 class MainMenu extends Sprite {
 	public function new() {
 		super(); var bg:Bitmap = new Bitmap(Frame.background); bg.scaleX = bg.scaleY = 2; addChild(bg);
-		Main.playBGM(Main.getBGM("menu")); var t:Text = new Text(Status.BLUE, 40, 400, 1, "Rhythos!"); t.y = 50; addChild(t);
-		t = new Text(Status.YELLOW, 24, 400, 1, "ARCADE"); t.x = 0; t.y = 100; addChild(t);
-		t = new Text(Status.RED, 16, 400, 1, "BETA"); t.x = 110; t.y = 100; addChild(t);
+		Main.playBGM(Main.getBGM("menu")); var t:Text = new Text(Status.BLUE, 40, Main.width, 1, "Rhythos!"); t.y = 50; addChild(t);
+		t = new Text(Status.YELLOW, 24, Main.width, 1, "ARCADE"); t.x = 0; t.y = 100; addChild(t);
+		t = new Text(Status.RED, 16, Main.width, 1, "BETA"); t.x = 110; t.y = 100; addChild(t);
 		addChild(new ChoiceDialog(["New Character", "Load Character", "Options", "Battle Controls", "Credits", "Manual", "Fancy Fish Games"], null, handleChoice, 2, false));
 	}
 	private function createChar():Bool {

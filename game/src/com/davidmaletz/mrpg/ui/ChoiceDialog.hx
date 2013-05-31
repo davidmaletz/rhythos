@@ -25,11 +25,11 @@ class ChoiceDialog extends Sprite {
 	public function new(choices:Array<String>, selectable:Array<Bool>=null, func:Int->Bool=null, _align:Int=1, modal:Bool=true, ew:Int=16) {
 		super(); var w:Int=0, _x:Float=28+ew*0.5, _y:Float=8, len:Int=choices.length, t:Text; ids = new Array<Int>(); align = _align+1;
 		for(i in 0...len){
-			var s:Bool = selectable == null || selectable[i]; t = new Text((s)?Status.GRAY:Frame.TEXT, 16, 400, 0, choices[i]);
+			var s:Bool = selectable == null || selectable[i]; t = new Text((s)?Status.GRAY:Frame.TEXT, 16, Main.width, 0, choices[i]);
 			if(s) ids.push(i); t.x = _x; t.y = _y; if(t.length()*16 > w) w = t.length()*16; addChild(t); _y += 20;
 		} w += ew+36; var h:Int = len*20+12; Frame.drawFrame(graphics,w,h,true); if(modal) pause = Main.pause(); else pause = 0;
 		arrow = new Sprite(); t = new Text(Status.YELLOW, 16, 16, 0, "\202"); t.x = 8+ew*0.5; arrow.addChild(t); addChild(arrow);
-		x = (400-w)*0.5; y = (align == 1)?-len*20+4:284; onSelect = func; sel = 0; updateSel(); Main.safeEnterFrame(this, handleKey);
+		x = (Main.width-w)*0.5; y = (align == 1)?-len*20+4:Main.height-16; onSelect = func; sel = 0; updateSel(); Main.safeEnterFrame(this, handleKey);
 	}
 	public inline function getSelText():Text {return cast(getChildAt(ids[sel]), Text);}
 	private inline function updateSel():Void {var t:Text = getSelText(); t.setColor(Status.YELLOW); arrow.y = t.y;}
@@ -43,8 +43,8 @@ class ChoiceDialog extends Sprite {
 		var dh:Float, len:Int = ids.length; if(a == 1){
 			dh = len*5; if(align < 0){y -= dh; if(y <= -len*20+4){if(onSelect != null) onSelect(-2); if(parent != null) parent.removeChild(this);} return;} if(y < 4){y += dh; return;}
 		} else {
-			var h:Float = 300-len*20; h = ((a == 2)?(h-12)*0.5:h-12); dh = (a == 3)?len*5:(284-h)*0.25;
-			if(align < 0){y += dh; if(y >= 284){if(onSelect != null) onSelect(-2); if(parent != null) parent.removeChild(this);} return;} if(y > h){y -= dh; return;}
+			var h:Float = Main.height-len*20; h = ((a == 2)?(h-12)*0.5:h-12); dh = (a == 3)?len*5:((Main.height-16)-h)*0.25;
+			if(align < 0){y += dh; if(y >= (Main.height-16)){if(onSelect != null) onSelect(-2); if(parent != null) parent.removeChild(this);} return;} if(y > h){y -= dh; return;}
 		} if(Main.isPressed(Main.ESCAPE, pause)){Main.resetPressed(pause); select(-1); if(align < 0) Main.playCancel(); return;}
 		var u:Bool = Main.isPressed(Main.UP, pause), d:Bool = Main.isPressed(Main.DOWN, pause);
 		if(u && !d) changeSel(-1); if(d && !u) changeSel(1); var ent:Bool = Main.isPressed(Main.ENTER, pause);

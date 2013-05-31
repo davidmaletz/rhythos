@@ -61,7 +61,7 @@ class Main extends Sprite {
 	private static var pressed:Array<Int> = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; public static var battle:Battle; public static var instance:Main; private var player:Character;
 	public static inline var UP:Int = 0; public static inline var LEFT:Int = 1; public static inline var RIGHT:Int = 2;
 	public static inline var DOWN:Int = 3; public static inline var ENTER:Int = 4; public static inline var ESCAPE:Int = 5;
-	public static inline var BASE_HP:Int = 8000; public static inline var BASE_MP:Int = 8000;
+	public static inline var BASE_HP:Int = 8000; public static inline var BASE_MP:Int = 8000; public static var width:Int; public static var height:Int;
 	private static var bgmc:SoundChannel; private static var cur_bgm:Sound; public static var experience:Int; public static var gold:Int;
 	public static var old_score:Int; public static var score:Int; public static var max_type:Int;
 	private static inline var SPACE:Int = 10; public static inline var MENU:Int = 0; private static var cur_type:Int;
@@ -105,13 +105,13 @@ class Main extends Sprite {
 	}
 	private static var settings:SharedObject;
 	private function init(e) {
-		removeEventListener(Event.ADDED_TO_STAGE, init); Project.load();
-		Lib.current.stage.addEventListener(KeyboardEvent.KEY_DOWN, key_down);
+		instance = this; removeEventListener(Event.ADDED_TO_STAGE, init); Project.load(); Main.width = Std.int(stage.stageWidth/scaleX);
+		Main.height = Std.int(stage.stageHeight/scaleY); Lib.current.stage.addEventListener(KeyboardEvent.KEY_DOWN, key_down);
 		var len:Int = EnemyType.ENEMIES.length; wins = new Array<Int>(); losses = new Array<Int>(); for(i in 0...len){wins.push(0); losses.push(0);}
 		Lib.current.stage.addEventListener(KeyboardEvent.KEY_UP, key_up);
 		settings = SharedObject.getLocal("settings"); var d:Dynamic = Reflect.field(settings.data, "bgm_vol");
 		if(d == null) BGM_VOL = 5; else BGM_VOL = d; d = Reflect.field(settings.data, "sfx_vol");
-		if(d == null) SFX_VOL = 5; else SFX_VOL = d; instance = this; addChild(new MainMenu()); addEventListener(Event.ENTER_FRAME, enter_frame);
+		if(d == null) SFX_VOL = 5; else SFX_VOL = d; addChild(new MainMenu()); addEventListener(Event.ENTER_FRAME, enter_frame);
 	}
 	public static inline function getPlayer():Character {return instance.player;}
 	private static var _game:Game;

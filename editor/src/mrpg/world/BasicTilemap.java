@@ -24,21 +24,24 @@ import java.io.DataOutputStream;
 
 public class BasicTilemap implements Tilemap {
 	private final int width; private final Tile tiles[]; private byte walkable[]; private final long id;
-	public BasicTilemap(BufferedImage image, long _id) {
-		id = _id; width = image.getWidth()/Tile.tile_size;
-		int height = image.getHeight()/Tile.tile_size;
+	public BasicTilemap(BufferedImage image, long _id, int tile_size) throws Exception {
+		id = _id;
+		if(image.getWidth()%tile_size != 0 || image.getHeight()%tile_size != 0)
+			throw new Exception("Tilemap dimensions must be divisible by the tile size ("+tile_size+" px).");
+		width = image.getWidth()/tile_size;
+		int height = image.getHeight()/tile_size;
 		tiles = new Tile[width*height];
 		walkable = new byte[width*height];
 		int i=0;
-		for(int y=0; y<height*Tile.tile_size; y+=Tile.tile_size)
-			for(int x=0; x<width*Tile.tile_size; x+=Tile.tile_size){
+		for(int y=0; y<height*tile_size; y+=tile_size)
+			for(int x=0; x<width*tile_size; x+=tile_size){
 				tiles[i] = new Tile(image, x, y, new Tile.Info(this, i));
 				walkable[i] = (byte)Direction.LINEAR;
 				i++;
 			}
 	}
-	public BasicTilemap(DataInputStream in, BufferedImage image, long _id) throws Exception {
-		this(image, _id); for(int i=0; i<walkable.length; i++) walkable[i] = in.readByte();
+	public BasicTilemap(DataInputStream in, BufferedImage image, long _id, int tile_size) throws Exception {
+		this(image, _id, tile_size); for(int i=0; i<walkable.length; i++) walkable[i] = in.readByte();
 	}
 	public void write(DataOutputStream out) throws Exception {
 		for(int i=0; i<walkable.length; i++) out.writeByte(walkable[i]);

@@ -30,7 +30,7 @@ class CharSheet extends Sprite {
 	private var char:Character; private var card:Sprite; private var sel:Int; private var arrows:Sprite; private var pause:Int;
 	private var wId:Int; private var sId:Int; private var lId:Int; private var tId:Int; private var hId:Int; public var func:CharSheet->Bool->Bool->Void;
 	public function new(c:Character, f:CharSheet->Bool->Bool->Void=null) {
-		super(); var w:Int=400,h:Int=300; func = f; c.reset(); char = c; refreshChar();
+		super(); var w:Int=Main.width,h:Int=Main.height; func = f; c.reset(); char = c; refreshChar();
 		Frame.drawFrame(graphics,w,h); pause = Main.pause();
 		card = createCharCard(c); card.x = w-128-16; addChild(card); w -= 128+32; Frame.drawDividerV(graphics,w,6,h-12); w += 8;
 		wId = indexOf(Equipment.WEAPONS, c.weapon); sId = indexOf(Spell.SPELLS, c.spell);
@@ -44,7 +44,7 @@ class CharSheet extends Sprite {
 		var s:SpellDisplay = new SpellDisplay(sId); s.x = 16; s.y = _y-4; addChild(s); _y += SPACE;
 		Frame.drawDivider(graphics, 6, _y-2, w-14); addSlot("DONE", _y-12, w);
 		arrows = new Sprite(); var t:Text = new Text(Status.YELLOW, 12, 12, 0, "\201"); t.x = 32; arrows.addChild(t);
-		t = new Text(Status.YELLOW, 12, 12, 0, "\202"); t.x = w-12-16; arrows.addChild(t); addChild(arrows); updateSel(); y = 300; c.enter_frame(null);
+		t = new Text(Status.YELLOW, 12, 12, 0, "\202"); t.x = w-12-16; arrows.addChild(t); addChild(arrows); updateSel(); y = Main.height; c.enter_frame(null);
 	}
 	public static function _addTitle(s:Sprite, title:String, _y:Int, w:Int):Void {
 		Frame.drawDivider(s.graphics, 6, _y+4, 18,false,true); var _x:Int = 40+title.length*16; Frame.drawDivider(s.graphics, _x, _y+4, w-_x-8,true);
@@ -83,7 +83,7 @@ class CharSheet extends Sprite {
 	private inline function callFunc(closed:Bool):Void {if(func != null) func(this, closed, sel == -2);}
 	private function exit():Void {if(pause > 0){Main.unpause(); pause = 0;} parent.removeChild(this); callFunc(true);}
 	public function handleKey(e:Event):Void {
-		var dh:Int = 75; if(sel < 0){y += dh; if(y >= 300) exit(); return;} if(y > 0){y -= dh; return;}
+		var dh:Int = Main.height>>2; if(sel < 0){y += dh; if(y >= Main.height) exit(); return;} if(y > 0){y -= dh; return;}
 		if(Main.isPressed(Main.ESCAPE, pause)){Main.resetPressed(pause); Main.playCancel(); sel = -2; callFunc(false); return;}
 		if(sel == EXIT && Main.isPressed(Main.ENTER, pause)){Main.resetPressed(pause); Main.playSelect(); sel = -1; callFunc(false); return;}
 		var r:Bool = Main.isPressed(Main.RIGHT, pause), l:Bool = Main.isPressed(Main.LEFT, pause), u:Bool = Main.isPressed(Main.UP, pause), d:Bool = Main.isPressed(Main.DOWN, pause);
@@ -91,7 +91,7 @@ class CharSheet extends Sprite {
 		Main.resetPressed(pause);
 	}
 	public static function createCharCard(c:Character):Sprite {
-		var s:Sprite = new Sprite(); Frame.drawFrame(s.graphics, 128, 128, true); s.addChild(c); s.addChild(c.getTop()); s.y = (300-128-16)*0.5;
+		var s:Sprite = new Sprite(); Frame.drawFrame(s.graphics, 128, 128, true); s.addChild(c); s.addChild(c.getTop()); s.y = (Main.height-128-16)*0.5;
 		var t:Text = new Text(Frame.TEXT, 16, 128, 1, c.cname), _y:Int = -64; t.y = _y; _y += 16+4; Frame.drawDivider(s.graphics, 0, _y-2, 128,true,true); _y += 8; s.addChild(t);
 		t = new Text(Status.RED, 8, 128, 1, "HP: "+Battle.format(Std.string(c.max_health))); t.y = _y; _y += 8+4; s.addChild(t);
 		t = new Text(Status.BLUE, 8, 128, 1, "MP: "+Battle.format(Std.string(c.max_mana))); t.y = _y; _y += 8+4; s.addChild(t);

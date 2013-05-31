@@ -48,29 +48,30 @@ public class FillTool implements Tool {
 			int dx = (i.deltaX()+stX-mouseX)%selWidth; if(dx < 0) dx += selWidth;
 			int dy = (i.deltaY()+stY-mouseY)%selHeight; if(dy < 0) dy += selHeight;
 			int x = mouseX+dx, y = mouseY+dy; Tile tile = i.next();
-			tile.paint(g, 0, x*Tile.tile_size, y*Tile.tile_size, 0, 0, Tile.tile_size, Tile.tile_size, viewer);
+			tile.paint(g, 0, x*world.tile_size, y*world.tile_size, 0, 0, world.tile_size, world.tile_size, viewer);
 		}
 		((Graphics2D)g).setComposite(c);
-
-		g.setColor(Color.black);
-		g.drawRect(mouseX*Tile.tile_size, mouseY*Tile.tile_size, selWidth*Tile.tile_size, selHeight*Tile.tile_size);
-		g.drawRect(mouseX*Tile.tile_size+3, mouseY*Tile.tile_size+3, selWidth*Tile.tile_size-6, selHeight*Tile.tile_size-6);
+	}
+	public void paintTop(Graphics g, double scale, int stX, int stY, int mouseX, int mouseY){
+		g.setColor(Color.black); int selWidth = viewer.getSelectionWidth(), selHeight = viewer.getSelectionHeight(), ts = (int)Math.floor(world.tile_size*scale);
+		g.drawRect(mouseX*ts, mouseY*ts, selWidth*ts, selHeight*ts);
+		g.drawRect(mouseX*ts+3, mouseY*ts+3, selWidth*ts-6, selHeight*ts-6);
 		g.setColor(TilesetViewer.selectColor2);
-		g.drawRect(mouseX*Tile.tile_size+1, mouseY*Tile.tile_size+1, selWidth*Tile.tile_size-2, selHeight*Tile.tile_size-2);
+		g.drawRect(mouseX*ts+1, mouseY*ts+1, selWidth*ts-2, selHeight*ts-2);
 		g.setColor(TilesetViewer.selectColor1);
-		g.drawRect(mouseX*Tile.tile_size+2, mouseY*Tile.tile_size+2, selWidth*Tile.tile_size-4, selHeight*Tile.tile_size-4);
+		g.drawRect(mouseX*ts+2, mouseY*ts+2, selWidth*ts-4, selHeight*ts-4);
 	}
 	public void repaint(int stX, int stY, int mouseX, int mouseY){
 		double s = world.getScale();
-		world.repaint((int)Math.floor((mouseX*Tile.tile_size-1)*s-1), (int)Math.floor((mouseY*Tile.tile_size-1)*s-1),
-				(int)Math.ceil((viewer.getSelectionWidth()*Tile.tile_size+2)*s+2),
-				(int)Math.ceil((viewer.getSelectionHeight()*Tile.tile_size+2)*s+2));
+		world.repaint((int)Math.floor((mouseX*world.tile_size-1)*s-1), (int)Math.floor((mouseY*world.tile_size-1)*s-1),
+				(int)Math.ceil((viewer.getSelectionWidth()*world.tile_size+2)*s+2),
+				(int)Math.ceil((viewer.getSelectionHeight()*world.tile_size+2)*s+2));
 	}
 	public void updateSelection(int mouseX, int mouseY, int oldSelWidth, int oldSelHeight){
 		double s = world.getScale();
-		world.repaint((int)Math.floor((mouseX*Tile.tile_size-1)*s-1), (int)Math.floor((mouseY*Tile.tile_size-1)*s-1),
-				(int)Math.ceil((Math.max(oldSelWidth, viewer.getSelectionWidth())*Tile.tile_size+2)*s+2),
-				(int)Math.ceil((Math.max(oldSelHeight, viewer.getSelectionHeight())*Tile.tile_size+2)*s+2));
+		world.repaint((int)Math.floor((mouseX*world.tile_size-1)*s-1), (int)Math.floor((mouseY*world.tile_size-1)*s-1),
+				(int)Math.ceil((Math.max(oldSelWidth, viewer.getSelectionWidth())*world.tile_size+2)*s+2),
+				(int)Math.ceil((Math.max(oldSelHeight, viewer.getSelectionHeight())*world.tile_size+2)*s+2));
 	}
 	
 	public void mouseDragged(int mouseX, int mouseY, int x, int y){}

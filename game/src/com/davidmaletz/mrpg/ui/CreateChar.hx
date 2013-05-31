@@ -30,7 +30,7 @@ class CreateChar extends Sprite {
 	private var char:Character; private var card:Sprite; private var sel:Int; private var arrows:Sprite; private var pause:Int;
 	private var gId:Int; private var sId:Int; private var hsId:Int; private var hcId:Int; private var eId:Int; public var func:Bool->Bool->Void;
 	public function new(c:Character, f:Bool->Bool->Void=null) {
-		super(); var w:Int=400,h:Int=300; func = f; c.reset(); char = c; c.setFrame(c.getIdle());
+		super(); var w:Int=Main.width,h:Int=Main.height; func = f; c.reset(); char = c; c.setFrame(c.getIdle());
 		Frame.drawFrame(graphics,w,h); pause = Main.pause();
 		card = CharSheet.createCharCard(c); card.x = w-128-16; addChild(card); w -= 128+32; Frame.drawDividerV(graphics,w,6,h-12); w += 8;
 		gId = c.getType(); sId = 0; hsId = c.getHairStyle(); hcId = 0; eId = 0; Main.safeEnterFrame(this, handleKey); sel = NAME;
@@ -42,7 +42,7 @@ class CreateChar extends Sprite {
 		addTitle("EYE COLOR", _y, w); addSlot(Character.EYE_COLORS[eId], _y, w); _y += SPACE;
 		arrows = new Sprite(); var t:Text = new Text(Status.YELLOW, 12, 12, 0, "\201"); t.x = 32; arrows.addChild(t);
 		t = new Text(Status.YELLOW, 12, 12, 0, "\202"); t.x = w-12-16; arrows.addChild(t); addChild(arrows);
-		Frame.drawDivider(graphics, 6, _y-2, w-14); addSlot("DONE", _y-12, w); updateSel(); y = 300; c.enter_frame(null);
+		Frame.drawDivider(graphics, 6, _y-2, w-14); addSlot("DONE", _y-12, w); updateSel(); y = Main.height; c.enter_frame(null);
 	}
 	private inline function addTitle(title:String, _y:Int, w:Int):Void {CharSheet._addTitle(this, title, _y, w);}
 	private inline function addSlot(name:String, _y:Int, w:Int):Void {CharSheet._addSlot(this, name, _y, w);}
@@ -82,7 +82,7 @@ class CreateChar extends Sprite {
 	private inline function callFunc(closed:Bool):Void {if(func != null) func(closed, sel == -2);}
 	private function exit():Void {if(pause > 0){Main.unpause(); pause = 0;} parent.removeChild(this); callFunc(true);}
 	public function handleKey(e:Event):Void {
-		var dh:Int = 75; if(sel < 0){y += dh; if(y >= 300) exit(); return;} if(y > 0){y -= dh; return;}
+		var dh:Int = Main.height>>2; if(sel < 0){y += dh; if(y >= Main.height) exit(); return;} if(y > 0){y -= dh; return;}
 		if(Main.isPressed(Main.ESCAPE, pause)){Main.resetPressed(pause); Main.playCancel(); sel = -2; callFunc(false); return;}
 		if(sel == EXIT && Main.isPressed(Main.ENTER, pause)){Main.resetPressed(pause); Main.playSelect(); sel = -1; callFunc(false); return;}
 		var r:Bool = Main.isPressed(Main.RIGHT, pause), l:Bool = Main.isPressed(Main.LEFT, pause), u:Bool = Main.isPressed(Main.UP, pause), d:Bool = Main.isPressed(Main.DOWN, pause);

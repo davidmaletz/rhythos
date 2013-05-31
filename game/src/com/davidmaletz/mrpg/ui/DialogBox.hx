@@ -37,10 +37,10 @@ class DialogBox extends Sprite {
 	private var num_lines:Int; private var alignh:Int;
 	public function new(t:String=null, func:DialogBox->Bool=null, modal:Bool=true, _align:Int=0, lineWidth:Int=24, rows:Int=4, _alignh:Int=0, dialog:Bool=true) {
 		super(); lw = lineWidth*16; num_lines = rows; Frame.drawFrame(graphics, lw+16, num_lines*20+12, dialog); onClose = func;
-		if(modal) pause = Main.pause(); else pause = 0; align = _align; alignh = _alignh; x = (400-lw-16)*0.5;
+		if(modal) pause = Main.pause(); else pause = 0; align = _align; alignh = _alignh; x = (Main.width-lw-16)*0.5;
 		for(i in 0...num_lines){var s:Sprite = new Sprite(); s.x = 8; s.y = 8+20*i; addChild(s);}
 		arrow = new Text(Status.YELLOW, 16, lw+16, 1, "\177"); arrow.visible = false; arrow.y = num_lines*20+2; addChild(arrow);
-		if(t != null) setText(t); y = (align == 0)?-num_lines*20+4:284; Main.safeEnterFrame(this, enter_frame);
+		if(t != null) setText(t); y = (align == 0)?-num_lines*20+4:Main.height-16; Main.safeEnterFrame(this, enter_frame);
 	}
 	public function setText(t:String):Void {
 		text = t; cur = 0; line = 0; col = colors[0]; wait = 0; arrow.visible = false; arrowCt = ARROW_CT;
@@ -74,8 +74,8 @@ class DialogBox extends Sprite {
 		var dh:Float; if(align == 0){
 			dh = num_lines*5; if(wait == -1){y -= dh; if(y <= -num_lines*20+4){callFunc(); parent.removeChild(this);} return;} if(y < 4){y += dh; return;}
 		} else {
-			var h:Float = 300-num_lines*20; h = ((align == 1)?(h-12)*0.5:h-12); dh = (align == 2)?num_lines*5:(284-h)*0.25;
-			if(wait == -1){y += dh; if(y >= 284){callFunc(); parent.removeChild(this);} return;} if(y > h){y -= dh; return;}
+			var h:Float = Main.height-num_lines*20; h = ((align == 1)?(h-12)*0.5:h-12); dh = (align == 2)?num_lines*5:((Main.height-16)-h)*0.25;
+			if(wait == -1){y += dh; if(y >= (Main.height-16)){callFunc(); parent.removeChild(this);} return;} if(y > h){y -= dh; return;}
 		} var esc:Bool = Main.isHeld(Main.ESCAPE, pause); if(esc) wait = 0; else if(wait > 0){wait--; return;} if(text == null || cur >= text.length || line >= num_lines){
 			if(text != null){
 				arrowCt--; if(arrowCt <= 0){arrowCt = ARROW_CT; arrow.visible = !arrow.visible;}

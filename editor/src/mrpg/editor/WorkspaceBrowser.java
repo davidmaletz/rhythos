@@ -50,8 +50,10 @@ import mrpg.editor.resource.Folder;
 import mrpg.editor.resource.Image;
 import mrpg.editor.resource.Map;
 import mrpg.editor.resource.Media;
+import mrpg.editor.resource.Modifiable;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
+import mrpg.editor.resource.Script;
 import mrpg.editor.resource.Tileset;
 import mrpg.editor.resource.Workspace;
 import mrpg.export.Target;
@@ -201,44 +203,34 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 	public void addMap(){
 		try{
 			Resource parent = getInsertResource();
-			//TODO: we don't need to ask for name here, as it's set in the properties dialog (same deal for tilesets). Make sure it can set the name in the properties dialog first time without crashing.
-			//TODO: instead of closing properties if name is in use, bring up error message, and let them change name or cancel.
-			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new map:", "Create New Map", JOptionPane.PLAIN_MESSAGE, null, null, "New Map");
+			Map m = Map.createMap(parent, editor, getProject(parent)); addResource(m, parent);
+			if(editor.getWorld() == null) m.edit();
+		}catch(Exception e){}
+	}
+	public void addScript(){
+		try{
+			Resource parent = getInsertResource();
+			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new script:", "Create Script", JOptionPane.PLAIN_MESSAGE, null, null, "New Script");
 			if(name == null) throw new Exception();
 			String dir = parent.getFile().toString();
-			File f = new File(dir+File.separator+name+"."+Map.EXT);
+			File f = new File(dir+File.separator+name+"."+Script.EXT);
 			if(f.exists()){
-				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create New Map", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create Script", JOptionPane.ERROR_MESSAGE);
 				throw new Exception();
-			} Map m = Map.createMap(f, editor, getProject(parent)); addResource(m, parent);
-			if(editor.getWorld() == null) m.edit();
-		}catch(Exception e){e.printStackTrace();}
+			} addResource(Script.createScript(f, editor, getProject(parent)), parent);
+		}catch(Exception e){}
 	}
 	public void addTileset(){
 		try{
 			Resource parent = getInsertResource();
-			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new tileset:", "Create New Tileset", JOptionPane.PLAIN_MESSAGE, null, null, "New Tileset");
-			if(name == null) throw new Exception();
-			String dir = parent.getFile().toString();
-			File f = new File(dir+File.separator+name+"."+Tileset.EXT);
-			if(f.exists()){
-				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create New Tileset", JOptionPane.ERROR_MESSAGE);
-				throw new Exception();
-			} Tileset t = Tileset.createTileset(f, editor, getProject(parent)); addResource(t, parent);
+			Tileset t = Tileset.createTileset(parent, editor, getProject(parent)); addResource(t, parent);
 			if(editor.getTilesetViewer().getTilemap() == null) editor.getTilesetViewer().setTilemap(t.getTilemap(), getProject(t));
 		}catch(Exception e){}
 	}
 	public void addAutoTile(){
 		try{
 			Resource parent = getInsertResource();
-			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new autotile:", "Create Autotile", JOptionPane.PLAIN_MESSAGE, null, null, "New Autotile");
-			if(name == null) throw new Exception();
-			String dir = parent.getFile().toString();
-			File f = new File(dir+File.separator+name+"."+AutoTile.EXT);
-			if(f.exists()){
-				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create Autotile", JOptionPane.ERROR_MESSAGE);
-				throw new Exception();
-			} addResource(AutoTile.createAutoTile(f, editor, getProject(parent)), parent);
+			addResource(AutoTile.createAutoTile(parent, editor, getProject(parent)), parent);
 		}catch(Exception e){}
 	}
 	private static final Border underline=BorderFactory.createMatteBorder(1,0,0,0,Color.black),
@@ -306,7 +298,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		} else if(command == Project.PROJECT) try{
 			Project p = Project.createProject(editor); addProject(p);
 			if(!editor.hasMap()) p.getMaps().next().edit();
-		}catch(Exception ex){ex.printStackTrace();}
+		}catch(Exception ex){}
 		else if(command == IMAGE_ICON){
 			if(imgChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
 				try{
@@ -335,7 +327,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 					MapEditor.doDeferredRead(true);
 				} catch(Exception ex){}
 			}
-		} else if(command == SCRIPT_ICON){/*TODO:addResource(new Script(Script.DEFAULT_NAME, editor));*/
+		} else if(command == SCRIPT_ICON){addScript();
 		} else if(command == TILESET){addTileset();
 		} else if(command == AUTOTILE){addAutoTile();}
 		else if(command == MapEditor.BUILD){
@@ -404,20 +396,20 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		DefaultTreeModel m = (DefaultTreeModel)getModel();
 		for(TreePath p : getSelectionPathsTrimChildren()){
 			if(p == null) continue;
-			try{Map r = (Map)getResource(p); if(r.isModified()){r.revert(); m.reload(r);}}catch(Exception e){}
+			try{Modifiable r = (Modifiable)getResource(p); if(r.isModified()){r.revert(); m.reload(r);}}catch(Exception e){}
 		} MapEditor.doDeferredRead(false);
 	}
 	public void saveSelection(){
 		for(TreePath p : getSelectionPathsTrimChildren()){
 			if(p == null) continue;
-			try{Map r = (Map)getResource(p); if(r.isModified()) r.save();}catch(Exception e){}
+			try{Modifiable r = (Modifiable)getResource(p); if(r.isModified()) r.save();}catch(Exception e){}
 		} MapEditor.doDeferredRead(false);
 	}
 	
 	private void innerSaveAll(Resource r){
 		for(int i=0; i<r.getChildCount(); i++){
 			Resource c = r.getChild(i); innerSaveAll(c);
-			try{Map m = (Map)c; if(m.isModified()) m.save();}catch(Exception e){}
+			try{Modifiable m = (Modifiable)c; if(m.isModified()) m.save();}catch(Exception e){}
 		}
 	}
 	public void saveAll(){innerSaveAll(getWorkspace());}
@@ -425,16 +417,16 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		int ct = getSelectionCount(); if(ct == 0) return false;
 		if(ct > 1){
 			for(TreePath p : getSelectionPaths()){
-				Resource r = getResource(p); if(r instanceof Map && ((Map)r).isModified()) return true;
+				Resource r = getResource(p); if(r instanceof Modifiable && ((Modifiable)r).isModified()) return true;
 			} return false;
 		} else{
-			Resource r = getResource(getSelectionPath()); return r instanceof Map && ((Map)r).isModified();
+			Resource r = getResource(getSelectionPath()); return r instanceof Modifiable && ((Modifiable)r).isModified();
 		}
 	}
 	private boolean innerAnyModified(Resource r){
 		for(int i=0; i<r.getChildCount(); i++){
 			Resource c = r.getChild(i); if(innerAnyModified(c)) return true;
-			if(c instanceof Map && ((Map)c).isModified()) return true;
+			if(c instanceof Modifiable && ((Modifiable)c).isModified()) return true;
 		} return false;
 	}
 	public boolean anyModified(){return innerAnyModified(getWorkspace());}
@@ -450,7 +442,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			TreePath path = getSelectionPath();
 			Resource parent = getInsertResource();
 			for(int i=0; i<clipboard.length; i++){
-				addResource(Resource.readFile(clipboard[i].copy(parent.getFile()),editor), parent);
+				addResource(Resource.readFile(clipboard[i].copy(parent.getFile(), getProject(parent)),editor), parent);
 				if(path == null) clearSelection(); else setSelectionPath(path);
 			}
 		} MapEditor.doDeferredRead(true);
@@ -465,7 +457,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 					if(p == null) continue;
 					Resource r = getResource(p);
 					try{
-						r.rename(r.changeDirectory(dragTo.getFile(),false));
+						r.rename(r.changeDirectory(dragTo.getFile(),getProject(dragTo),false));
 						m.removeNodeFromParent(r); m.insertNodeInto(r, dragTo, dragTo.getChildCount());
 					} catch(Exception ex){}
 				}
@@ -476,7 +468,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 						if(p == null) continue;
 						Resource r = getResource(p);
 						try{
-							r.rename(r.changeDirectory(parent.getFile(),false));
+							r.rename(r.changeDirectory(parent.getFile(),getProject(parent),false));
 							m.removeNodeFromParent(r); m.insertNodeInto(r, parent, parent.getIndex(dragLine));
 						} catch(Exception ex){}
 					}

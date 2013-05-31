@@ -29,7 +29,7 @@ class Status extends Sprite {
 		enemy_hp = new Bar(Bar.HP,false); enemy_hp.x = 8; enemy_hp.y = 10; addChild(enemy_hp);
 		player_mp = new Bar(Bar.MP,true); player_mp.x = 278; player_mp.y = 20; addChild(player_mp);
 		enemy_mp = new Bar(Bar.MP,false); enemy_mp.x = 8; enemy_mp.y = 20; addChild(enemy_mp);
-		var t:Text = new Text(YELLOW,16,400,1,"TIME"); t.y = 8; addChild(t); time = new Text(0xebb453,24,400,1); time.y = 30; addChild(time);
+		var t:Text = new Text(YELLOW,16,Main.width,1,"TIME"); t.y = 8; addChild(t); time = new Text(0xebb453,24,Main.width,1); time.y = 30; addChild(time);
 		player = new Text(BLUE,16,160,2); player.x = 228; player.y = 36; addChild(player);
 		arrows = new Text(GRAY,16,160,2); arrows.x = 228; arrows.y = 56; arrows.visible = false; addChild(arrows);
 		combo = new Bar(Bar.COMBO,true); combo.x = 268; combo.y = 58; addChild(combo);

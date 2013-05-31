@@ -42,37 +42,37 @@ public class TilesetEditor extends JPanel implements MouseListener, MouseMotionL
 	private static final long serialVersionUID = -2758279297055018804L;
 	public static Color dirColor = new Color(255,255,255,200), dirSelColor = new Color(250,248,160,200), dirColorOutline = new Color(0,0,0,200);
 	public static final Polygon arrow = new Polygon(new int[]{0,0,-3,2,7,4,4}, new int[]{6,2,2,-4,2,2,6}, 7);
-	private BasicTilemap tilemap; private final Rectangle rect = new Rectangle(); private int selX, selY, edge=0;
-	public TilesetEditor(){setPreferredSize(new Dimension(8*Tile.tile_size+1, 8*Tile.tile_size+1)); addMouseListener(this); addMouseMotionListener(this);}
+	private BasicTilemap tilemap; private final Rectangle rect = new Rectangle(); private int selX, selY, edge=0, tile_size;
+	public TilesetEditor(int ts){tile_size = ts; setPreferredSize(new Dimension(8*TilesetViewer.TILE_SIZE+1, 8*TilesetViewer.TILE_SIZE+1)); addMouseListener(this); addMouseMotionListener(this);}
 	public void setTilemap(BasicTilemap t){
 		tilemap = null; Dimension d;
-		if(t == null) d = new Dimension(8*Tile.tile_size+1, 8*Tile.tile_size+1);
-		else {tilemap = t; d = new Dimension(t.getTilesX()*Tile.tile_size+1, t.getTilesY()*Tile.tile_size+1);}
+		if(t == null) d = new Dimension(8*TilesetViewer.TILE_SIZE+1, 8*TilesetViewer.TILE_SIZE+1);
+		else {tilemap = t; d = new Dimension(t.getTilesX()*TilesetViewer.TILE_SIZE+1, t.getTilesY()*TilesetViewer.TILE_SIZE+1);}
 		setMinimumSize(d); setPreferredSize(d);
 		revalidate(); repaint();
 	}
 	public void paint(Graphics g){
-		Graphics2D g2d = (Graphics2D)g;
-		g.getClipBounds(rect);
-		g.clearRect(rect.x, rect.y, rect.width, rect.height);
+		Graphics2D g2d = (Graphics2D)g; Graphics2D g2 = (Graphics2D)g.create(); double s = ((double)TilesetViewer.TILE_SIZE)/tile_size;
+		g2.scale(s,s); g2.getClipBounds(rect); g2.clearRect(rect.x, rect.y, rect.width, rect.height);
 		if(tilemap != null){
 			BufferedImage image = (BufferedImage)tilemap.getTile(0).image;
 			int w = Math.min(rect.x+rect.width, image.getWidth())-rect.x;
 			int h = Math.min(rect.y+rect.height, image.getHeight())-rect.y;
 			if(w > 0 && h > 0){
-				g.drawImage(image, rect.x, rect.y, rect.x+w, rect.y+h, rect.x, rect.y, rect.x+w, rect.y+h, this);
-				int stx = (int)Math.floor(((double)(rect.x))/Tile.tile_size),
-				sty = (int)Math.floor(((double)(rect.y))/Tile.tile_size),
-				endx = Math.min(tilemap.getTilesX()-1, (int)Math.floor(((double)(rect.x+w))/Tile.tile_size)),
-				endy = Math.min(tilemap.getTilesY()-1, (int)Math.floor(((double)(rect.y+h))/Tile.tile_size));
-				int d = 4, first = (Tile.tile_size-(5*d))/2+1;
+				g2.drawImage(image, rect.x, rect.y, rect.x+w, rect.y+h, rect.x, rect.y, rect.x+w, rect.y+h, this);
+				g.getClipBounds(rect);
+				int stx = (int)Math.floor(((double)(rect.x))/TilesetViewer.TILE_SIZE),
+				sty = (int)Math.floor(((double)(rect.y))/TilesetViewer.TILE_SIZE),
+				endx = Math.min(tilemap.getTilesX()-1, (int)Math.floor(((double)(rect.x+w*s))/TilesetViewer.TILE_SIZE)),
+				endy = Math.min(tilemap.getTilesY()-1, (int)Math.floor(((double)(rect.y+h*s))/TilesetViewer.TILE_SIZE));
+				int d = 4, first = (TilesetViewer.TILE_SIZE-(5*d))/2+1;
 				for(int y=sty; y<=endy; y++)
 					for(int x=stx; x<=endx; x++){
 						int e = 0;
 						if(selX == x && selY == y) e = edge;
 						byte walkable = tilemap.getTile(x, y).info.getWalkable();
 						AffineTransform t = g2d.getTransform();
-						g2d.translate(x*Tile.tile_size+first+d*2-1, y*Tile.tile_size+first-1);
+						g2d.translate(x*TilesetViewer.TILE_SIZE+first+d*2-1, y*TilesetViewer.TILE_SIZE+first-1);
 						g.setColor((Direction.up(e))?dirSelColor:dirColor);
 						if(Direction.up(walkable)) g2d.fillPolygon(arrow); else g2d.fillRect(0, 0, d, d);
 						g.setColor(dirColorOutline);
@@ -94,27 +94,27 @@ public class TilesetEditor extends JPanel implements MouseListener, MouseMotionL
 						if(Direction.left(walkable)) g2d.drawPolygon(arrow); else g2d.drawRect(0, 0, d, d);
 						g2d.setTransform(t);
 					}
-			}
-		}
+			} else g.getClipBounds(rect);
+		} else g.getClipBounds(rect);
 		g.setColor(Color.black);
 		Dimension dim = getPreferredSize();
 		int rw = Math.min(dim.width, rect.x+rect.width), rh = Math.min(dim.height, rect.y+rect.height);
-		for(int y=(int)Math.ceil(rect.y*1.0/Tile.tile_size)*Tile.tile_size; y<rh; y+=Tile.tile_size)
+		for(int y=(int)Math.ceil(rect.y*1.0/TilesetViewer.TILE_SIZE)*TilesetViewer.TILE_SIZE; y<rh; y+=TilesetViewer.TILE_SIZE)
 			g.drawLine(rect.x, y, rw-1, y);
-		for(int x=(int)Math.ceil(rect.x*1.0/Tile.tile_size)*Tile.tile_size; x<rw; x+=Tile.tile_size)
+		for(int x=(int)Math.ceil(rect.x*1.0/TilesetViewer.TILE_SIZE)*TilesetViewer.TILE_SIZE; x<rw; x+=TilesetViewer.TILE_SIZE)
 			g.drawLine(x, rect.y, x, rh-1);
 	}
 	
-	public int getScrollableUnitIncrement(Rectangle r, int o, int d){return Tile.tile_size;}
-	public int getScrollableBlockIncrement(Rectangle r, int o, int d){return Tile.tile_size;}
+	public int getScrollableUnitIncrement(Rectangle r, int o, int d){return TilesetViewer.TILE_SIZE;}
+	public int getScrollableBlockIncrement(Rectangle r, int o, int d){return TilesetViewer.TILE_SIZE;}
 	public Dimension getPreferredScrollableViewportSize(){return getPreferredSize();}
 	public boolean getScrollableTracksViewportWidth(){return false;}
 	public boolean getScrollableTracksViewportHeight(){return false;}
 	
 	public void mouseDragged(MouseEvent e) {}
 	public void mouseMoved(MouseEvent e) {
-		int x = e.getX()/Tile.tile_size, y = e.getY()/Tile.tile_size, dx = e.getX()-x*Tile.tile_size, dy = e.getY()-y*Tile.tile_size;
-		int d = 4, first = (Tile.tile_size-(5*d))/2+1;
+		int x = e.getX()/TilesetViewer.TILE_SIZE, y = e.getY()/TilesetViewer.TILE_SIZE, dx = e.getX()-x*TilesetViewer.TILE_SIZE, dy = e.getY()-y*TilesetViewer.TILE_SIZE;
+		int d = 4, first = (TilesetViewer.TILE_SIZE-(5*d))/2+1;
 		boolean inxc = dx >= first+d && dx <= first+d*3, inyc = dy >= first+d && dy <= first+d*3;
 		int ed = 0;
 		if(inxc && dy < first+d) ed = Direction.UP;
@@ -122,7 +122,7 @@ public class TilesetEditor extends JPanel implements MouseListener, MouseMotionL
 		if(inyc && dx < first+d) ed = Direction.LEFT;
 		if(inyc && dx > first+3*d) ed = Direction.RIGHT;
 		if(inxc && inyc) ed = Direction.LINEAR;
-		if(x != selX || y != selY || ed != edge){repaint(selX*Tile.tile_size,selY*Tile.tile_size,Tile.tile_size,Tile.tile_size); selX = x; selY = y; edge = ed; repaint(selX*Tile.tile_size,selY*Tile.tile_size,Tile.tile_size,Tile.tile_size);}
+		if(x != selX || y != selY || ed != edge){repaint(selX*TilesetViewer.TILE_SIZE,selY*TilesetViewer.TILE_SIZE,TilesetViewer.TILE_SIZE,TilesetViewer.TILE_SIZE); selX = x; selY = y; edge = ed; repaint(selX*TilesetViewer.TILE_SIZE,selY*TilesetViewer.TILE_SIZE,TilesetViewer.TILE_SIZE,TilesetViewer.TILE_SIZE);}
 	}
 	public void mouseClicked(MouseEvent e) {}
 	public void mouseEntered(MouseEvent e) {}
@@ -132,7 +132,7 @@ public class TilesetEditor extends JPanel implements MouseListener, MouseMotionL
 		if(selX >= 0 && selX < tilemap.getTilesX() && selY >= 0 && selY < tilemap.getTilesY() && edge != 0){
 			Tile.Info info = tilemap.getTile(selX, selY).info;
 			info.setWalkable((byte)(info.getWalkable() ^ edge));
-			repaint(selX*Tile.tile_size,selY*Tile.tile_size,Tile.tile_size,Tile.tile_size);
+			repaint(selX*TilesetViewer.TILE_SIZE,selY*TilesetViewer.TILE_SIZE,TilesetViewer.TILE_SIZE,TilesetViewer.TILE_SIZE);
 		}
 	}
 	public void mouseReleased(MouseEvent e) {}

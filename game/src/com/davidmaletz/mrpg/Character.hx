@@ -175,12 +175,12 @@ class Character extends Sprite {
 		if(eyewhites[type] == null) eyewhites[type] = getEyeWhites(base); return eyewhites[type];
 	}
 	
-	public inline function setX(_x:Int):Void {x = _x*Tile.tile_size-16;}
-	public inline function setY(_y:Int):Void {y = _y*Tile.tile_size-32;}
+	public inline function setX(_x:Int):Void {x = _x*Tile.tile_size-(64-Tile.tile_size)*0.5;}
+	public inline function setY(_y:Int):Void {y = _y*Tile.tile_size-(64-Tile.tile_size);}
 	public inline function setPos(_x:Int, _y:Int):Void {setX(_x); setY(_y);}
-	public inline function getX():Int {return Math.floor((x+16)/Tile.tile_size+0.5);}
-	public inline function getY():Int {return Math.floor((y+32)/Tile.tile_size+0.5);}
-	public inline function getWorldX():Float {return x+16;}
-	public inline function getWorldY():Float {return y+32;}
+	public inline function getX():Int {return Math.floor((x+(64-Tile.tile_size)*0.5)/Tile.tile_size+0.5);}
+	public inline function getY():Int {return Math.floor((y+(64-Tile.tile_size))/Tile.tile_size+0.5);}
+	public inline function getWorldX():Float {return x+(64-Tile.tile_size)*0.5;}
+	public inline function getWorldY():Float {return y+(64-Tile.tile_size);}
 	public inline function getDir():Int {return Math.floor((frame-Character.WALK_ST)/Character.WALK_LEN);}
 }

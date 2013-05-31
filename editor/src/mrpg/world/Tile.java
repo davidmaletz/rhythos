@@ -27,7 +27,6 @@ import mrpg.editor.resource.Project;
 import mrpg.export.WorldIO;
 
 public class Tile {
-	public static int tile_size = 32;
 	public final Image image; public final int x, y; public final Info info;
 	public Tile(Image _image, int _x, int _y, Info _info){image = _image; x = _x; y = _y; info = _info;}
 	public void paint(Graphics g, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){

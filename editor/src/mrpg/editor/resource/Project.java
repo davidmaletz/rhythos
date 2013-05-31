@@ -55,6 +55,7 @@ import javax.swing.JTextField;
 
 import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
+import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.export.Graphic;
 import mrpg.export.Target;
@@ -70,7 +71,7 @@ public class Project extends Folder {
 	public static final String PROJECT = "project"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(PROJECT);
 	private Properties properties; private String target; private Image frame, font, bg; private ArrayList<String> options;
-	private Target cache = null;
+	private Target cache = null; public int tile_size;
 	public Target getTarget(){
 		if(cache == null)try{cache = (Target)Class.forName(target).newInstance();}catch(Exception e){} return cache; 
 	}
@@ -82,7 +83,7 @@ public class Project extends Folder {
 			f = folderChooser.getSelectedFile(); if(!f.exists() && !f.mkdirs()) throw new Exception();
 		} else throw new Exception();
 		if(f.listFiles().length > 0) throw new Exception();
-		Project p = new Project(f, e); p.target = MapEditor.defaultTarget().getValue().getName();
+		Project p = new Project(f, e); p.target = MapEditor.defaultTarget().getValue().getName(); p.tile_size = TilesetViewer.TILE_SIZE;
 		p.options = new ArrayList<String>(); p.save(); return p;
 	}
 	public static Project openProject(MapEditor e, Workspace w) throws Exception {
@@ -104,18 +105,18 @@ public class Project extends Folder {
 		File f = new File(getFile().toString()+File.separator+".project");
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{out.writeShort(VERSION);
-			out.writeUTF(target); if(frame == null) out.writeLong(0); else out.writeLong(frame.getId());
+			out.writeUTF(target); out.writeShort(tile_size); if(frame == null) out.writeLong(0); else out.writeLong(frame.getId());
 			if(font == null) out.writeLong(0); else out.writeLong(font.getId());
 			if(bg == null) out.writeLong(0); else out.writeLong(bg.getId()); int sz = options.size();
 			out.write(sz); for(int i=0; i<sz; i++) out.writeUTF(options.get(i)); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
-	protected void read(File f) throws Exception {super.read(f); MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
+	protected void read(File f) throws Exception {super.read(f); MapEditor.deferRead(this, MapEditor.DEF_PROJECT);}
 	public void deferredRead(File _f) throws Exception {
 		File f = new File(getFile().toString()+File.separator+".project");
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			target = in.readUTF(); cache = null; try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
+			target = in.readUTF(); tile_size = in.readShort(); cache = null; try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
 			try{font = getImageById(in.readLong());}catch(Exception e){font = null;}
 			try{bg = getImageById(in.readLong());}catch(Exception e){bg = null;} int sz = in.read();
 			options = new ArrayList<String>(sz); for(int i=0; i<sz; i++) options.add(in.readUTF()); in.close();
@@ -170,7 +171,7 @@ public class Project extends Folder {
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
-		private final Project project; private final JTextField name; private final JComboBox target;
+		private final Project project; private final JTextField name; private final JComboBox target, tile_size;
 		private final JLabel frame_thumb, font_thumb, bg_thumb; private Image frame, font, bg;
 		private final JTextArea options;
 		private static final String SET_FRAME="set_frame", SET_FONT="set_font", SET_BG="set_bg";
@@ -186,6 +187,9 @@ public class Project extends Folder {
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Target"));
 			target = new JComboBox(); inner.add(target);
+			settings.add(inner);
+			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Tile Size:"));
+			tile_size = new JComboBox(new String[]{"16","32","64"}); tile_size.setEditable(true); inner.add(tile_size);
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Frame"));
 			frame_thumb = new JLabel(new ImageIcon());
@@ -230,6 +234,7 @@ public class Project extends Folder {
 					Entry<String,Class> e = (Entry<String,Class>)targets[i]; String n = e.getValue().getName();
 					if(n.equals(project.target)) selected = i; data[i] = e.getKey();
 				} target.setModel(new DefaultComboBoxModel(data)); target.setSelectedIndex(selected);
+				tile_size.setSelectedItem(Integer.toString(project.tile_size));
 				frame = project.frame;
 				if(frame == null) frame_thumb.setIcon(new ImageIcon()); else frame_thumb.setIcon(new ImageIcon(frame.getImage()));
 				font = project.font;
@@ -247,6 +252,14 @@ public class Project extends Folder {
 			if(command == MapEditor.OK){
 				String t = ((Entry<String,Class>)MapEditor.getTargetsArray()[target.getSelectedIndex()]).getValue().getName();
 				if(!t.equals(project.target)){project.cache = null; project.target = t;}
+				try{
+					int ts = Integer.parseInt(tile_size.getSelectedItem().toString());
+					if(ts != project.tile_size){
+						if(project.getTilemaps().hasNext() || project.getMaps().hasNext()){
+							JOptionPane.showMessageDialog(this, "You cannot change the tilesize of a project already containing maps and tilesets (as it would break them).\nIf you really wish to change the tile size, delete all maps and tilesets and try again.", "Unable to change Tile Size", JOptionPane.ERROR_MESSAGE);
+						} else project.tile_size = ts;
+					}
+				}catch(Exception ex){}
 				project.frame = frame; project.font = font; project.bg = bg;
 				String[] o = options.getText().split("\n");
 				project.options.clear(); for(int i=0; i<o.length; i++) project.options.add(o[i]);

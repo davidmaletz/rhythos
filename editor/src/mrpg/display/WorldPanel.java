@@ -33,6 +33,7 @@ import javax.swing.Scrollable;
 import javax.swing.Timer;
 
 import mrpg.editor.MapEditor;
+import mrpg.editor.TilesetViewer;
 import mrpg.world.Cell;
 import mrpg.world.Tile;
 import mrpg.world.World;
@@ -45,6 +46,7 @@ public class WorldPanel extends JPanel implements ActionListener, Scrollable {
 	private World world = null; public int left = 0, top = 0, bgleft = 0, bgtop = 0; private int width, height;
 	private int frame_num = 0; private Timer timer; private boolean show_grid = false; private double scale = 1;
 	private int edit_level = 0, show_level = -1; private static final Color transparent = new Color(0, 0, 0, 80);
+	public int tile_size = TilesetViewer.TILE_SIZE;
 	public WorldPanel(int _width, int _height){worldSize(_width, _height); timer = new Timer(100, this);}
 	public void startAnim(){timer.start();}
 	public void worldSize(int _width, int _height){
@@ -60,31 +62,32 @@ public class WorldPanel extends JPanel implements ActionListener, Scrollable {
 	public int getEditLevel(){return edit_level;}
 	public void setEditLevel(int level){edit_level = level;}
 	public void showLevel(int level){if(level != show_level){show_level = level; repaint();}}
-	public void setWorld(World w){world = w; repaint();}
+	public void setWorld(World w, int ts){world = w; if(ts != 0) tile_size = ts; repaint();}
 	public World getWorld(){return world;}
 	public void setShowGrid(boolean b){show_grid = b; worldSize(width, height);}
 	public void paint(Graphics g){
-		if(scale != 1){
+		Graphics gold=g; if(scale != 1){
 			g = g.create();
 			((Graphics2D)g).scale(scale, scale);
-		}
-		g.getClipBounds(rect);
+		} g.getClipBounds(rect);
 		if(rect.x+rect.width > width) rect.width = width-rect.x; if(rect.y+rect.height > height) rect.height = height-rect.y;
 		g.clearRect(rect.x, rect.y, rect.width, rect.height);
 		if(world == null) return;
-		if(!world.wrapX){left = Math.min(world.getWidth()*Tile.tile_size-width, Math.max(0, left));}
-		if(!world.wrapY){top = Math.min(world.getHeight()*Tile.tile_size-height, Math.max(0, top));}
+		if(!world.wrapX){left = Math.min(world.getWidth()*tile_size-width, Math.max(0, left));}
+		if(!world.wrapY){top = Math.min(world.getHeight()*tile_size-height, Math.max(0, top));}
 		if(world.background != null) renderBG(g);
 		renderCells(g);
 		if(show_grid){
-			g.setColor(Color.black);
+			gold.setColor(Color.black);
 			int rw = rect.x+rect.width, rh = rect.y+rect.height;
-			for(int y=(int)Math.ceil(rect.y*1.0/Tile.tile_size)*Tile.tile_size; y<=rh; y+=Tile.tile_size)
-				g.drawLine(rect.x, y, rw-1, y);
-			for(int x=(int)Math.ceil(rect.x*1.0/Tile.tile_size)*Tile.tile_size; x<=rw; x+=Tile.tile_size)
-				g.drawLine(x, rect.y, x, rh);
+			for(int y=(int)Math.ceil(rect.y*1.0/tile_size)*tile_size; y<=rh; y+=tile_size){
+				int y2 = (int)Math.floor(y*scale); gold.drawLine((int)Math.floor(rect.x*scale), y2, (int)Math.ceil((rw-1)*scale), y2);
+			}
+			for(int x=(int)Math.ceil(rect.x*1.0/tile_size)*tile_size; x<=rw; x+=tile_size){
+				int x2 = (int)Math.floor(x*scale); gold.drawLine(x2, (int)Math.floor(rect.y*scale), x2, (int)Math.ceil(rh*scale));
+			}
 		}
-		if(overlay != null) overlay.paintOverlay(g, rect);
+		if(overlay != null) overlay.paintOverlay(g, rect, gold, scale);
 	}
 	private void lowerLevel(Graphics g, int dx, int dy, int w, int h){
 		Color old = g.getColor(); g.setColor(transparent);
@@ -115,28 +118,28 @@ public class WorldPanel extends JPanel implements ActionListener, Scrollable {
 		renderCell(g, x, y, dx, dy, sx, sy, w, h);
 	}
 	private final void renderCells(Graphics g){
-		int stx = (int)Math.floor(((double)(rect.x+left))/Tile.tile_size),
-			sty = (int)Math.floor(((double)(rect.y+top))/Tile.tile_size),
-			endx = (int)Math.floor(((double)(rect.x+rect.width+left))/Tile.tile_size),
-			endy = (int)Math.floor(((double)(rect.y+rect.height+top))/Tile.tile_size);
-		int dl = rect.x-(stx*Tile.tile_size-left);
-		int dr = rect.x+rect.width-(endx*Tile.tile_size-left);
-		int dt = rect.y-(sty*Tile.tile_size-top);
-		int db = rect.y+rect.height-(endy*Tile.tile_size-top);
-		renderCellClamped(g, stx, sty, rect.x, rect.y, dl, dt, Tile.tile_size-dl, Tile.tile_size-dt);
+		int stx = (int)Math.floor(((double)(rect.x+left))/tile_size),
+			sty = (int)Math.floor(((double)(rect.y+top))/tile_size),
+			endx = (int)Math.floor(((double)(rect.x+rect.width+left))/tile_size),
+			endy = (int)Math.floor(((double)(rect.y+rect.height+top))/tile_size);
+		int dl = rect.x-(stx*tile_size-left);
+		int dr = rect.x+rect.width-(endx*tile_size-left);
+		int dt = rect.y-(sty*tile_size-top);
+		int db = rect.y+rect.height-(endy*tile_size-top);
+		renderCellClamped(g, stx, sty, rect.x, rect.y, dl, dt, tile_size-dl, tile_size-dt);
 		for(int x=stx+1; x<endx; x++)
-			renderCellClamped(g, x, sty, x*Tile.tile_size-left, rect.y, 0, dt, Tile.tile_size, Tile.tile_size-dt);
-		if(stx != endx) renderCellClamped(g, endx, sty, rect.x+rect.width-dr, rect.y, 0, dt, dr, Tile.tile_size-dt);
+			renderCellClamped(g, x, sty, x*tile_size-left, rect.y, 0, dt, tile_size, tile_size-dt);
+		if(stx != endx) renderCellClamped(g, endx, sty, rect.x+rect.width-dr, rect.y, 0, dt, dr, tile_size-dt);
 		for(int y=sty+1; y<endy; y++){
-			renderCellClamped(g, stx, y, rect.x, y*Tile.tile_size-top, dl, 0, Tile.tile_size-dl, Tile.tile_size);
+			renderCellClamped(g, stx, y, rect.x, y*tile_size-top, dl, 0, tile_size-dl, tile_size);
 			for(int x=stx+1; x<endx; x++)
-				renderCell(g, x, y, x*Tile.tile_size-left, y*Tile.tile_size-top, 0, 0, Tile.tile_size, Tile.tile_size);
-			if(stx != endx) renderCellClamped(g, endx, y, rect.x+rect.width-dr, y*Tile.tile_size-top, 0, 0, dr, Tile.tile_size);
+				renderCell(g, x, y, x*tile_size-left, y*tile_size-top, 0, 0, tile_size, tile_size);
+			if(stx != endx) renderCellClamped(g, endx, y, rect.x+rect.width-dr, y*tile_size-top, 0, 0, dr, tile_size);
 		}
 		if(sty != endy){
-			renderCellClamped(g, stx, endy, rect.x, rect.y+rect.height-db, dl, 0, Tile.tile_size-dl, db);
+			renderCellClamped(g, stx, endy, rect.x, rect.y+rect.height-db, dl, 0, tile_size-dl, db);
 			for(int x=stx+1; x<endx; x++)
-				renderCellClamped(g, x, endy, x*Tile.tile_size-left, rect.y+rect.height-db, 0, 0, Tile.tile_size, db);
+				renderCellClamped(g, x, endy, x*tile_size-left, rect.y+rect.height-db, 0, 0, tile_size, db);
 			if(stx != endx) renderCellClamped(g, endx, endy, rect.x+rect.width-dr, rect.y+rect.height-db, 0, 0, dr, db);
 		}
 	}
@@ -184,8 +187,8 @@ public class WorldPanel extends JPanel implements ActionListener, Scrollable {
 	
 	public int getFrame(){return frame_num;}
 	
-	public int getScrollableUnitIncrement(Rectangle r, int o, int d){return (int)Math.floor(Tile.tile_size*scale);}
-	public int getScrollableBlockIncrement(Rectangle r, int o, int d){return (int)Math.floor(Tile.tile_size*scale);}
+	public int getScrollableUnitIncrement(Rectangle r, int o, int d){return (int)Math.floor(tile_size*scale);}
+	public int getScrollableBlockIncrement(Rectangle r, int o, int d){return (int)Math.floor(tile_size*scale);}
 	public Dimension getPreferredScrollableViewportSize(){return getPreferredSize();}
 	public boolean getScrollableTracksViewportWidth(){return false;}
 	public boolean getScrollableTracksViewportHeight(){return false;}

@@ -48,6 +48,7 @@ public class ZoomTool implements Tool {
 		}
 		if(rect != null){world.scrollRectToVisible(rect); rect = null;}
 	}
+	public void paintTop(Graphics g, double scale, int stX, int stY, int mouseX, int mouseY){}
 	public void repaint(int stX, int stY, int mouseX, int mouseY){}
 	public void updateSelection(int mouseX, int mouseY, int oldSelWidth, int oldSelHeight){}
 	

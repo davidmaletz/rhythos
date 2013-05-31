@@ -24,9 +24,9 @@ class SpellDisplay extends Sprite{
 	public function new(sId:Int) {
 		super(); Frame.drawFrame(graphics, 36, 36, true);
 		var i:Sprite = new Sprite(); i.x = -6; i.y = -6; Spell.drawIcon(i.graphics, sId); addChild(i);
-		var t:Text = new Text(Frame.TEXT, 8, 400, 0, Spell.SPELL_DESC1[sId]); t.x = 40; t.y = 4; addChild(t);
-		t = new Text(Frame.TEXT, 8, 400, 0, Spell.SPELL_DESC2[sId]); t.x = 40; t.y = 14; addChild(t);
-		t = new Text(Frame.TEXT, 8, 400, 0, Spell.SPELL_DESC3[sId]); t.x = 40; t.y = 24; addChild(t);
+		var t:Text = new Text(Frame.TEXT, 8, Main.width, 0, Spell.SPELL_DESC1[sId]); t.x = 40; t.y = 4; addChild(t);
+		t = new Text(Frame.TEXT, 8, Main.width, 0, Spell.SPELL_DESC2[sId]); t.x = 40; t.y = 14; addChild(t);
+		t = new Text(Frame.TEXT, 8, Main.width, 0, Spell.SPELL_DESC3[sId]); t.x = 40; t.y = 24; addChild(t);
 	}
 	public function setSpell(sId:Int):Void {
 		Spell.drawIcon(cast(getChildAt(0),Sprite).graphics, sId); cast(getChildAt(1), Text).setText(Spell.SPELL_DESC1[sId]);

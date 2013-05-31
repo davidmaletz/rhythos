@@ -36,16 +36,19 @@ import mrpg.world.BasicTilemap;
 
 import com.flagstone.transform.DefineData;
 import com.flagstone.transform.Movie;
+import com.flagstone.transform.MovieHeader;
 import com.flagstone.transform.MovieObject;
 import com.flagstone.transform.MovieTag;
 import com.flagstone.transform.ShowFrame;
 import com.flagstone.transform.SymbolClass;
+import com.flagstone.transform.datatype.Bounds;
 
 public class SWFTarget implements Target {
 	private Movie movie; private int id; private SymbolClass bitmaps, sounds, bytearrays;
 	public SWFTarget(){}
-	private void init(Graphic frame, Graphic font, Graphic bg) throws Exception{
+	private void init(int w, int h, Graphic frame, Graphic font, Graphic bg) throws Exception{
 		movie = new Movie(); movie.decodeFromStream(SWFTarget.class.getResourceAsStream("/base.swf"));
+		((MovieHeader)movie.getObjects().get(0)).setFrameSize(new Bounds(0,0,w*20,h*20));
 		List<MovieTag> tags = movie.getObjects(); bitmaps = new SymbolClass(); sounds = new SymbolClass();
 		bytearrays = new SymbolClass(); tags.set(3, font.defineImage(4));
 		tags.set(4, bg.defineImage(3)); tags.set(5, frame.defineImage(2)); id = 5;
@@ -64,7 +67,7 @@ public class SWFTarget implements Target {
 			try{frame = p.getFrame();}catch(Exception e){JOptionPane.showMessageDialog(MapEditor.instance, "Unable to build "+p.getName()+"!\nThe project has no frame graphic specified.", "Build Error", JOptionPane.ERROR_MESSAGE); throw e;}
 			try{font = p.getFont();}catch(Exception e){JOptionPane.showMessageDialog(MapEditor.instance, "Unable to build "+p.getName()+"!\nThe project has no font graphic specified.", "Build Error", JOptionPane.ERROR_MESSAGE); throw e;}
 			try{bg = p.getBG();}catch(Exception e){JOptionPane.showMessageDialog(MapEditor.instance, "Unable to build "+p.getName()+"!\nThe project has no background graphic specified.", "Build Error", JOptionPane.ERROR_MESSAGE); throw e;}
-			init(frame, font, bg);
+			init(640, 480, frame, font, bg);
 			addImage(loadImage(new File(FOLDER+"body_m.png")), "skin", 0);
 			addImage(loadImage(new File(FOLDER+"body_f.png")), "skin", 1);
 			addImage(loadImage(new File(FOLDER+"body_s.png")), "skin", 2);

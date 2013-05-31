@@ -39,25 +39,25 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	private static final long serialVersionUID = -3848661454388754599L;
 	
 	private File file; private String name; public final MapEditor editor;
-	protected Resource(File f, MapEditor e){
-		file = f; editor = e; if(file == null) name = "";
-		else {
-			name = file.getName(); int i = name.lastIndexOf('.'); if(i != -1) name = name.substring(0, i);
-		}
+	protected Resource(File f, MapEditor e){editor = e; _setFile(f);}
+	protected void _setName(String n){name = n;}
+	private void _setFile(File f){
+		file = f; if(file == null) name = "";
+		else {name = file.getName(); int i = name.lastIndexOf('.'); if(i != -1) name = name.substring(0, i);}
 	}
 	public File changeName(String n) throws Exception {
-		if(name.equals(n)) throw new Exception(); String ext = file.getName(); int i = ext.lastIndexOf('.');
+		if(name != null && name.equals(n)) throw new Exception(); String ext = file.getName(); int i = ext.lastIndexOf('.');
 		 if(i == -1) ext = ""; else ext = ext.substring(i);
 		 File f = new File(file.getParent()+File.separator+n+ext);
 		 if(f.exists()){
-			 JOptionPane.showMessageDialog(editor, "Unable to rename \'"+name+"\'.\n\'"+n+"\' already exists.", "Unable to Rename", JOptionPane.ERROR_MESSAGE);
+			 JOptionPane.showMessageDialog(editor, "Unable to rename \'"+getName()+"\'.\n\'"+n+"\' already exists.", "Unable to Rename", JOptionPane.ERROR_MESSAGE);
 			 throw new Exception();
 		 } return f;
 	}
 	public void updateName(){((DefaultTreeModel)editor.getBrowser().getModel()).nodeChanged(this);}
 	public void rename(File f) throws Exception {
-		if(file.renameTo(f)){
-			file = f; name = file.getName(); int i = name.lastIndexOf('.'); if(i != -1) name = name.substring(0, i); updateName();
+		if(name == null || file.renameTo(f)){
+			_setFile(f); updateName();
 		} else{
 			JOptionPane.showMessageDialog(editor, "Unable to rename \'"+name+"\'.\nPerhaps the file is open in another program?", "Unable to Rename", JOptionPane.ERROR_MESSAGE);
 			throw new Exception();
@@ -65,7 +65,11 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	}
 	public abstract long getId();
 	public void setName(String n) throws Exception {rename(changeName(n));}
-	public String getName(){return name;}
+	public String getName(){
+		if(name == null){
+			String n = file.getName(); int i = n.lastIndexOf('.'); if(i != -1) n = n.substring(0, i); return n;
+		} else return name;
+	}
 	public File getFile(){return file;}
 	public boolean edit(){return false;}
 	public void remove(boolean delete) throws Exception {
@@ -90,8 +94,9 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	public abstract Icon getIcon();
 	protected abstract void read(File f) throws Exception ;
 	public void deferredRead(File f) throws Exception {}
-	public File changeDirectory(File dir, boolean allowRename) throws Exception {
-		if(!allowRename && dir.equals(file.getParentFile())) throw new Exception();
+	public boolean isCompatible(Project p){return true;}
+	public File changeDirectory(File dir, Project p, boolean allowRename) throws Exception {
+		if((!allowRename && dir.equals(file.getParentFile())) || !isCompatible(p)) throw new Exception();
 		String ext = file.getName(); int idx = ext.lastIndexOf('.');
 		if(idx == -1) ext = ""; else ext = ext.substring(idx);
 		File f = new File(dir.toString()+File.separator+name+ext);
@@ -108,8 +113,8 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			destination.transferFrom(source, 0, source.size());
 		} finally {if(source != null) source.close(); if(destination != null) destination.close();}
 	}
-	public File copy(File dir) throws Exception {
-		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, true);
+	public File copy(File dir, Project p) throws Exception {
+		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, p, true);
 		copyFile(file, f); return f;
 	}
 	public void refresh() throws Exception {

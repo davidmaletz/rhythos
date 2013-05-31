@@ -41,22 +41,27 @@ import mrpg.world.Tilemap;
 public class AutoTileEditor extends JPanel implements ActionListener, MouseListener, MouseMotionListener {
 	private static final long serialVersionUID = -2758279297055018804L;
 	private int frame_num = 0; private Timer timer = new Timer(100, this);
-	private Tilemap tilemap; private final Rectangle rect = new Rectangle(); private int edge=0;
-	public AutoTileEditor(){setPreferredSize(new Dimension(Tile.tile_size, Tile.tile_size)); addMouseListener(this); addMouseMotionListener(this);}
+	private Tilemap tilemap; private final Rectangle rect = new Rectangle(); private int edge=0, tile_size;
+	public AutoTileEditor(int ts){
+		tile_size = ts; setPreferredSize(new Dimension(TilesetViewer.TILE_SIZE, TilesetViewer.TILE_SIZE));
+		addMouseListener(this); addMouseMotionListener(this);
+	}
 	public void setTilemap(Tilemap t){
 		tilemap = t; repaint();
 	}
 	public void paint(Graphics g){
 		Graphics2D g2d = (Graphics2D)g;
-		g.getClipBounds(rect);
 		super.paint(g);
+		Graphics2D g2 = (Graphics2D)g.create(); double s = ((double)TilesetViewer.TILE_SIZE)/tile_size;
+		g2.scale(s,s); g2.getClipBounds(rect); g2.clearRect(rect.x, rect.y, rect.width, rect.height);
 		if(tilemap != null){
 			BufferedImage image = (BufferedImage)tilemap.getTile(0).image;
 			int w = Math.min(rect.x+rect.width, image.getWidth())-rect.x;
 			int h = Math.min(rect.y+rect.height, image.getHeight())-rect.y;
 			if(w > 0 && h > 0){
-				tilemap.getTile(0).paint(g, frame_num, rect.x, rect.y, rect.x, rect.y, w, h, this);
-				int d = 4, first = (Tile.tile_size-(5*d))/2+1;
+				tilemap.getTile(0).paint(g2, frame_num, rect.x, rect.y, rect.x, rect.y, w, h, this);
+				g.getClipBounds(rect);
+				int d = 4, first = (TilesetViewer.TILE_SIZE-(5*d))/2+1;
 					byte walkable = tilemap.getTile(0).info.getWalkable();
 					AffineTransform t = g2d.getTransform();
 					g2d.translate(first+d*2-1, first-1);
@@ -87,7 +92,7 @@ public class AutoTileEditor extends JPanel implements ActionListener, MouseListe
 	public void mouseDragged(MouseEvent e) {}
 	public void mouseMoved(MouseEvent e) {
 		int dx = e.getX(), dy = e.getY();
-		int d = 4, first = (Tile.tile_size-(5*d))/2+1;
+		int d = 4, first = (TilesetViewer.TILE_SIZE-(5*d))/2+1;
 		boolean inxc = dx >= first+d && dx <= first+d*3, inyc = dy >= first+d && dy <= first+d*3;
 		int ed = 0;
 		if(inxc && dy < first+d) ed = Direction.UP;

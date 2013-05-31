@@ -41,11 +41,12 @@ public class SelectTool implements Tool {
 	public Listener listener;
 	public SelectTool(WorldPanel w, History h){world = w; history = h;}
 	private static final float[] dashed = new float[]{8.0f};
-	public void paint(Graphics g, int stX, int stY, int mouseX, int mouseY){
+	public void paint(Graphics g, int stX, int stY, int mouseX, int mouseY){}
+	public void paintTop(Graphics g, double scale, int stX, int stY, int mouseX, int mouseY){
 		if(sel_x1 != Integer.MIN_VALUE){
-			Graphics2D g2d = (Graphics2D)g.create();
-			int x = Math.min(sel_x1, sel_x2)*Tile.tile_size, y = Math.min(sel_y1, sel_y2)*Tile.tile_size,
-			width = (Math.abs(sel_x2-sel_x1)+1)*Tile.tile_size-2, height = (Math.abs(sel_y2-sel_y1)+1)*Tile.tile_size-2;
+			Graphics2D g2d = (Graphics2D)g.create(); int ts = (int)Math.floor(world.tile_size*scale);
+			int x = Math.min(sel_x1, sel_x2)*ts, y = Math.min(sel_y1, sel_y2)*ts,
+			width = (Math.abs(sel_x2-sel_x1)+1)*ts-2, height = (Math.abs(sel_y2-sel_y1)+1)*ts-2;
 			g2d.setPaint(Color.black); float f = world.getFrame()*3;
 			g2d.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 8.0f, dashed, f));
 			g2d.drawRect(x, y, width, height);
@@ -56,10 +57,10 @@ public class SelectTool implements Tool {
 	}
 	public void repaint(int stX, int stY, int mouseX, int mouseY){
 		double s = world.getScale();
-		int x = Math.max(0, (int)Math.floor((Math.min(stX, mouseX)*Tile.tile_size-1)*s-1)),
-		y = Math.max(0, (int)Math.floor((Math.min(stY, mouseY)*Tile.tile_size-1)*s-1));
-		world.repaint(x, y, (int)Math.ceil(((Math.max(stX, mouseX)+1)*Tile.tile_size+2)*s+2)-x,
-				(int)Math.ceil(((Math.max(stY, mouseY)+1)*Tile.tile_size+2)*s+2)-y);
+		int x = Math.max(0, (int)Math.floor((Math.min(stX, mouseX)*world.tile_size-1)*s-1)),
+		y = Math.max(0, (int)Math.floor((Math.min(stY, mouseY)*world.tile_size-1)*s-1));
+		world.repaint(x, y, (int)Math.ceil(((Math.max(stX, mouseX)+1)*world.tile_size+2)*s+2)-x,
+				(int)Math.ceil(((Math.max(stY, mouseY)+1)*world.tile_size+2)*s+2)-y);
 	}
 	public void updateSelection(int mouseX, int mouseY, int oldSelWidth, int oldSelHeight){}
 	
@@ -181,7 +182,7 @@ public class SelectTool implements Tool {
 		Rectangle r = world.getVisibleRect();
 		World w = world.getWorld();
 		int width = Math.min(w.getWidth(), clip.getWidth()), height = Math.min(w.getHeight(), clip.getHeight());
-		sel_x1 = (int)Math.floor((r.x+r.width*0.5)/(Tile.tile_size*s)); sel_y1 = (int)Math.floor((r.y+r.height*0.5)/(Tile.tile_size*s));
+		sel_x1 = (int)Math.floor((r.x+r.width*0.5)/(world.tile_size*s)); sel_y1 = (int)Math.floor((r.y+r.height*0.5)/(world.tile_size*s));
 		sel_x1 = Math.max(sel_x1-width/2, 0); sel_y1 = Math.max(sel_y1-height/2, 0);
 		sel_x2 = sel_x1+width-1; sel_y2 = sel_y1+height-1;
 		if(sel_x2 >= w.getWidth()){int dx = w.getWidth()-sel_x2+1; sel_x1 -= dx; sel_x2 -= dx;}

@@ -27,7 +27,7 @@ class Shop extends Sprite {
 	private var char:Character; private var card:Sprite; private var sel:Int; private var arrow:Text; private var up_arrow:Text;
 	private var down_arrow:Text; private var pause:Int; private var scroll:Sprite; private var blink_ct:Int;
 	public function new() {
-		super(); var w:Int=400,h:Int=300; char = Main.getPlayer().clone(); refreshChar(); Frame.drawFrame(graphics,w,h); pause = Main.pause();
+		super(); var w:Int=Main.width,h:Int=Main.height; char = Main.getPlayer().clone(); refreshChar(); Frame.drawFrame(graphics,w,h); pause = Main.pause();
 		card = CharSheet.createCharCard(char); card.x = w-128-16; addChild(card); w -= 128+32; Frame.drawDividerV(graphics,w,6,h-12); w += 8;
 		Main.safeEnterFrame(this, handleKey); sel = 0; arrow = new Text(Status.YELLOW, 12, 12, 0, "\202"); arrow.x = 10; addChild(arrow);
 		up_arrow = new Text(Status.YELLOW, 16, w, 1, "\200"); up_arrow.y = 8; addChild(up_arrow);
@@ -37,7 +37,7 @@ class Shop extends Sprite {
 			var t:Text = new Text((items[i].available)?Status.GRAY:Frame.TEXT, 12, w, 0, items[i].getName()); t.y = 16*i; scroll.addChild(t);
 			t = new Text(Status.YELLOW, 8, w-36, 2, Battle.format(Std.string(items[i].cost))); t.y = 16*i+4; scroll.addChild(t);
 		} var m:Sprite = new Sprite(); m.graphics.beginFill(0); m.graphics.drawRect(24,24,w,SCROLL_H); m.graphics.endFill();
-		addChild(m); scroll.mask = m; scroll.x = 24; scroll.y = 24; addChild(scroll); updateSel(); y = 300; blink_ct = MAX_BLINK;
+		addChild(m); scroll.mask = m; scroll.x = 24; scroll.y = 24; addChild(scroll); updateSel(); y = Main.height; blink_ct = MAX_BLINK;
 	}
 	private function compareItem(a:ShopItem, b:ShopItem):Int {
 		if(a.available == b.available){
@@ -65,7 +65,7 @@ class Shop extends Sprite {
 	private function exit():Void {if(pause > 0){Main.unpause(); pause = 0;} parent.removeChild(this);}
 	public static var firstShop:Bool = true;
 	public function handleKey(e:Event):Void {
-		var dh:Int = 75; if(sel < 0){y += dh; if(y >= 300) exit(); return;} if(y > 0){y -= dh;
+		var dh:Int = Main.height>>2; if(sel < 0){y += dh; if(y >= Main.height) exit(); return;} if(y > 0){y -= dh;
 			if(y <= 0 && Main.score == 0 && Main.gold == 200 && firstShop){
 				parent.addChild(new DialogBox("Hit '\004ESC\000' to exit.",null,true,0,24,1,1));
 			} if(y <= 0) firstShop = false; return;

@@ -203,16 +203,16 @@ class Battle extends Sprite {
 	}
 	public static inline var VICTORY_COL:Int = 0xebb453; public static inline var DEFEAT_COL:Int = 0x777777;
 	private function victory():Void {
-		addChild(new BounceWriter(VICTORY_COL,40,"VICTORY!!",(400-9*40)*0.5,(300-40)*0.5+30,48)); state = 3; enemy.clearQueue();
+		addChild(new BounceWriter(VICTORY_COL,40,"VICTORY!!",(Main.width-9*40)*0.5,(Main.height-40)*0.5+30,48)); state = 3; enemy.clearQueue();
 		var f:Int = enemy.queueDeath(); if(etype.onDefeat != null) enemy.setFunction(f,etype.onDefeat); player.queueIdle(1);
 		channel2 = Main.loopSFX("point"); Main.battleTime(lastTime);
 	}
 	private function defeat():Void {
-		addChild(new BounceWriter(DEFEAT_COL,40,"DEFEAT",(400-6*40)*0.5,(300-40)*0.5+30,48)); state = 2; player.clearQueue();
+		addChild(new BounceWriter(DEFEAT_COL,40,"DEFEAT",(Main.width-6*40)*0.5,(Main.height-40)*0.5+30,48)); state = 2; player.clearQueue();
 		player.queueDeath(); victoryDance(enemy);
 	}
 	public function spellWarning():Void {
-		addChild(new BounceWriter(Status.RED,24,"SPELL INCOMING!",(400-15*24)*0.5,(300-24)*0.5+30,24));
+		addChild(new BounceWriter(Status.RED,24,"SPELL INCOMING!",(Main.width-15*24)*0.5,(Main.height-24)*0.5+30,24));
 	}
 	private function getScore():String {return format(Std.string(cur_score));}
 	public static function format(s:String):String {
@@ -227,11 +227,11 @@ class Battle extends Sprite {
 		if(f == null) enemy.setFunction(i, enemyAction); else enemy.setFunction(i, function(c:Character):Void {f(c); enemyAction(c);});
 	}
 	private function begin():Void {state = 0; enemyAction();}
-	private function showFight():Void {addChild(new BounceWriter(Status.GREEN,40,"FIGHT!!",(400-7*40)*0.5,(300-40)*0.5+30,48));}
+	private function showFight():Void {addChild(new BounceWriter(Status.GREEN,40,"FIGHT!!",(Main.width-7*40)*0.5,(Main.height-40)*0.5+30,48));}
 	private function showSt():Void {
 		var t:Float = 60.0/etype.getBPM()*etype.getLead(), t2:Float = t/4;
-		addChild(new BounceWriter(Status.RED,40,"Ready?",(400-6*40)*0.5,(300-40)*0.5+30,Std.int(t2*24)));
-		function getSet():Void {addChild(new BounceWriter(Status.YELLOW,40,"Get Set!",(400-8*40)*0.5,(300-40)*0.5+30,Std.int(t2*24)));}
+		addChild(new BounceWriter(Status.RED,40,"Ready?",(Main.width-6*40)*0.5,(Main.height-40)*0.5+30,Std.int(t2*24)));
+		function getSet():Void {addChild(new BounceWriter(Status.YELLOW,40,"Get Set!",(Main.width-8*40)*0.5,(Main.height-40)*0.5+30,Std.int(t2*24)));}
 		Timer.delay(getSet,Std.int(t2*2000)-292); Timer.delay(showFight,Std.int(t*1000)-292); Timer.delay(begin,Std.int(t*1000));
 	}
 	public function pause():Void {

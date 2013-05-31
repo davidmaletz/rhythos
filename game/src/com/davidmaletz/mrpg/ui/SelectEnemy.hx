@@ -26,7 +26,7 @@ class SelectEnemy extends Sprite {
 	private static var TYPE_NAME:Array<String> = ["", "", "MINIBOSS!", "BOSS!", "FINAL BOSS!"]; private static var MAX_BLINK:Int=12;
 	private var char:Sprite; private var sel:Int; private var pause:Int; private var blink_ct:Int; private var func:Bool->Int->Void;
 	public function new(f:Bool->Int->Void=null) {
-		super(); var w:Int = 290; Frame.drawFrame(graphics, w, 256); x = (400-w)*0.5; y = 298; pause = Main.pause(); var l:Int = EnemyType.ENEMIES.length;
+		super(); var w:Int = 290; Frame.drawFrame(graphics, w, 256); x = (Main.width-w)*0.5; y = (Main.height-2); pause = Main.pause(); var l:Int = EnemyType.ENEMIES.length;
 		sel = (Main.max_type>=l)?l-1:Main.max_type; var e:EnemyType = EnemyType.ENEMIES[sel], c:Character = e.getChar(); Main.safeEnterFrame(this, handleKey);
 		func = f; char = new Sprite(); Frame.drawFrame(char.graphics, 128, 128, true); addChild(char); char.x = (w-128)>>1; char.y = 16;
 		setChar(c); var t:Text = new Text(Status.YELLOW, 16, w, 1, c.cname), _y:Int = 148; t.y = _y; addChild(t);
@@ -73,7 +73,7 @@ class SelectEnemy extends Sprite {
 		} setChar(c); Main.playChange();
 	}
 	public function handleKey(e:Event):Void {
-		var dh:Int = 69; if(blink_ct < 0){y += dh; if(y >= 298) exit(); return;} if(y > 22){y -= dh; return;}
+		var dh:Int = Main.height>>2; if(blink_ct < 0){y += dh; if(y >= (Main.height-2)) exit(); return;} if(y > 22){y -= dh; return;}
 		blink_ct--; if(blink_ct == 0){blink_ct = MAX_BLINK; var t:Text = getText(TYPE); t.visible = !t.visible;}
 		if(Main.isPressed(Main.ESCAPE, pause)){Main.resetPressed(pause); Main.playCancel(); blink_ct = -1; sel = -1; callFunc(false); return;}
 		if(Main.isPressed(Main.ENTER, pause)){Main.resetPressed(pause); Main.playSelect(); blink_ct = -1; callFunc(false); return;}

@@ -22,6 +22,7 @@ import java.awt.Graphics;
 
 public interface Tool {
 	public void paint(Graphics g, int stX, int stY, int mouseX, int mouseY);
+	public void paintTop(Graphics gold, double scale, int stX, int stY, int mouseX, int mouseY);
 	public void repaint(int stX, int stY, int mouseX, int mouseY);
 	
 	public void updateSelection(int mouseX, int mouseY, int oldSelWidth, int oldSelHeight);

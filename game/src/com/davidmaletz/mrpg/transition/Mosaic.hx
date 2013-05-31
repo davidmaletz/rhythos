@@ -26,14 +26,14 @@ import nme.Lib;
 class Mosaic extends Sprite {
 	private var orig:BitmapData; private var cur:BitmapData; private var w:Int; private var delta:Int;
 	public function new() {
-		super(); w = 400; orig = new BitmapData(400,300,false); orig.draw(Main.instance); cur = new BitmapData(400,300,false);
-		Main.safeEnterFrame(this, enter_frame); Main.instance.parent.removeChild(Main.instance); enter_frame(null); delta = -20;
-		Main.pause(); Lib.current.addChild(this);
+		super(); w = Main.width; orig = new BitmapData(Main.width,Main.height,false); orig.draw(Main.instance); cur = new BitmapData(Main.width,Main.height,false);
+		Main.safeEnterFrame(this, enter_frame); Main.instance.parent.removeChild(Main.instance); enter_frame(null); delta = -Math.floor(Main.width/20);
+		Main.pause(); Lib.current.addChild(this); scaleX = scaleY = Main.instance.scaleX;
 	}
 	private function enter_frame(e:Event):Void {
-		if(w <= 20){delta = 20; orig.draw(Main.instance);} else if(delta > 0 && w >= 400){
+		var d:Int = Math.floor(Main.width/20); if(w <= d){delta = d; orig.draw(Main.instance);} else if(delta > 0 && w >= Main.width){
 			parent.removeChild(this); Lib.current.addChild(Main.instance); Main.unpause(); return;
-		} w += delta; var s:Float = w/400; cur.draw(orig, new Matrix(s,0,0,s,0,0)); s = 400/w; graphics.clear();
-		graphics.beginBitmapFill(cur, new Matrix(s,0,0,s,0,0)); graphics.drawRect(0,0,400,300); graphics.endFill();
+		} w += delta; var s:Float = w/Main.width; cur.draw(orig, new Matrix(s,0,0,s,0,0)); s = Main.width/w; graphics.clear();
+		graphics.beginBitmapFill(cur, new Matrix(s,0,0,s,0,0)); graphics.drawRect(0,0,Main.width,Main.height); graphics.endFill();
 	}
 }

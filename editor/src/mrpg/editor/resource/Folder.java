@@ -37,9 +37,9 @@ public class Folder extends Resource {
 		for(File file : f.listFiles())
 			try{add(Resource.readFile(file, editor));}catch(Exception e){}
 	}
-	public File copy(File dir) throws Exception {
-		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, true);
-		if(!f.mkdir()) throw new Exception(); for(int i=0; i<getChildCount(); i++) getChild(i).copy(f);
+	public File copy(File dir, Project p) throws Exception {
+		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, p, true);
+		if(!f.mkdir()) throw new Exception(); for(int i=0; i<getChildCount(); i++) getChild(i).copy(f, p);
 		return f;
 	}
 	public static Folder create(File f, MapEditor e) throws Exception {

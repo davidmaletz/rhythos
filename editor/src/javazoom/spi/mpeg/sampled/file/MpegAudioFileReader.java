@@ -68,6 +68,7 @@ import org.tritonus.share.sampled.file.TAudioFileReader;
 /**
  * This class implements AudioFileReader for MP3 SPI.
  */
+@SuppressWarnings("all")
 public class MpegAudioFileReader extends TAudioFileReader
 {
     public static final String VERSION = "MP3SPI 1.9.5";
@@ -300,7 +301,7 @@ public class MpegAudioFileReader extends TAudioFileReader
     /**
      * Returns AudioFileFormat from inputstream and medialength.
      */
-    public AudioFileFormat getAudioFileFormat(InputStream inputStream, long mediaLength) throws UnsupportedAudioFileException, IOException
+	public AudioFileFormat getAudioFileFormat(InputStream inputStream, long mediaLength) throws UnsupportedAudioFileException, IOException
     {
         if (TDebug.TraceAudioFileReader) TDebug.out(">MpegAudioFileReader.getAudioFileFormat(InputStream inputStream, long mediaLength): begin");
         HashMap aff_properties = new HashMap();
@@ -368,7 +369,7 @@ public class MpegAudioFileReader extends TAudioFileReader
         // MPEG header info.
         int nVersion = AudioSystem.NOT_SPECIFIED;
         int nLayer = AudioSystem.NOT_SPECIFIED;
-        int nSFIndex = AudioSystem.NOT_SPECIFIED;
+		int nSFIndex = AudioSystem.NOT_SPECIFIED;
         int nMode = AudioSystem.NOT_SPECIFIED;
         int FrameSize = AudioSystem.NOT_SPECIFIED;
         int nFrameSize = AudioSystem.NOT_SPECIFIED;

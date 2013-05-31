@@ -29,13 +29,13 @@ class Preloader extends NMEPreloader {
 	public function new() {
 		super(); while(numChildren > 0) removeChildAt(0); 
 		Frame.init(); var bg = new Bitmap(Frame.background); bg.scaleX = bg.scaleY = 2; addChild(bg); msg_ct = MSG_MAX;
-		var t:Text = new Text(Status.BLUE, 40, 400, 1, "Rhythos!"); t.y = 50; addChild(t);
-		t = new Text(Status.YELLOW, 24, 400, 1, "ARCADE"); t.x = 0; t.y = 100; addChild(t);
-		t = new Text(Status.RED, 16, 400, 1, "BETA"); t.x = 110; t.y = 100; addChild(t);
+		var t:Text = new Text(Status.BLUE, 40, Main.width, 1, "Rhythos!"); t.y = 50; addChild(t);
+		t = new Text(Status.YELLOW, 24, Main.width, 1, "ARCADE"); t.x = 0; t.y = 100; addChild(t);
+		t = new Text(Status.RED, 16, Main.width, 1, "BETA"); t.x = 110; t.y = 100; addChild(t);
 		bar = new Bar(Bar.HP, false); bar.setPercent(0); bar.scaleX = bar.scaleY = 2; bar.x = 50; bar.y = 138; addChild(bar);
-		var s:Sprite = new Sprite(); Frame.drawFrame(s.graphics, 400, 52, true); s.y = 197; addChild(s);
-		text = new Text(Status.GRAY, 16, 400, 1); text.y = 205; addChild(text);
-		text2 = new Text(Status.GRAY, 16, 400, 1); text2.y = text.y+20; addChild(text2);
+		var s:Sprite = new Sprite(); Frame.drawFrame(s.graphics, Main.width, 52, true); s.y = 197; addChild(s);
+		text = new Text(Status.GRAY, 16, Main.width, 1); text.y = 205; addChild(text);
+		text2 = new Text(Status.GRAY, 16, Main.width, 1); text2.y = text.y+20; addChild(text2);
 		initMessages(); setMsg(messages[cur_msg]); addEventListener(Event.ADDED_TO_STAGE, init); addEventListener(Event.REMOVED_FROM_STAGE, destroy);
 	}
 	private function init(e:Event):Void {addEventListener(Event.ENTER_FRAME, enter_frame);}
