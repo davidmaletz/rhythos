@@ -17,6 +17,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 import javax.swing.text.BadLocationException;
@@ -34,15 +36,16 @@ import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
+import org.fife.ui.rtextarea.RUndoManager;
 import org.fife.ui.rtextarea.SearchEngine;
 
 public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener, ActionListener {
 	private static final long serialVersionUID = 9050172784894489328L;
 	public static final String SYNTAX_STYLE_HAXE = "text/haxe";
-	private RSyntaxTextArea textArea;
+	private MySyntaxTextArea textArea;
 	
 	public ScriptTextPane(int w, int h){
-		super(createTextArea(), true); textArea = (RSyntaxTextArea)getTextArea();
+		super(createTextArea(), true); textArea = (MySyntaxTextArea)getTextArea();
 		textArea.addHyperlinkListener(this);
 		CompletionProvider provider = createCompletionProvider();
 		AutoCompletion ac = new AutoCompletion(provider); ac.install(textArea);
@@ -55,7 +58,7 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 		textArea.setText(text); textArea.setCaretPosition(0); textArea.discardAllEdits();
 	}
 	private static RSyntaxTextArea createTextArea() {
-		RSyntaxTextArea textArea = new RSyntaxTextArea();
+		RSyntaxTextArea textArea = new MySyntaxTextArea();
 		textArea.setTabSize(4);
 		textArea.setCaretPosition(0);
 		textArea.requestFocusInWindow();
@@ -69,7 +72,8 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 	}
 	private CompletionProvider createCompletionProvider() {
 		DefaultCompletionProvider provider = new DefaultCompletionProvider();
-		provider.addCompletion(new BasicCompletion(provider, "showMessage", "Shows a message dialog with the passed formatted string.", "baka"));
+		provider.addCompletion(new BasicCompletion(provider, "showMessage", "Shows a message dialog with the passed formatted string."));
+		provider.addCompletion(new BasicCompletion(provider, "showChoice", "Shows a choice selection dialog with the passed options."));
 
 		/*TODO: add auto-complete options.
 		provider.addCompletion(new BasicCompletion(provider, "abstract"));
@@ -322,5 +326,42 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 			}
 			replaceDialog.setVisible(true);
 		}
+	}
+	public static interface ModifiedListener {
+		public void setModified(boolean modified);
+	}
+	public String getText(){return textArea.getText();}
+	public void loadDocument(String doc){textArea.loadDocument(doc, false, null);}
+	public void loadDocument(String doc, boolean modified){textArea.loadDocument(doc, modified, null);}
+	public void loadDocument(String doc, boolean modified, ModifiedListener l){textArea.loadDocument(doc, modified, l);}
+	public void onSave(){textArea.save();}
+	private static class MySyntaxTextArea extends RSyntaxTextArea {
+		private static final long serialVersionUID = -3837261840564134591L;
+		private MyUndoManager manager;
+		protected RUndoManager createUndoManager(){
+			int last = 0; ModifiedListener l = null;
+			if(manager != null){getDocument().removeDocumentListener(manager); last = manager.lastSave; l = manager.listener;}
+			manager = new MyUndoManager(this); getDocument().addDocumentListener(manager);
+			manager.lastSave = last; manager.listener = l; return manager;
+		}
+		public void loadDocument(String doc, boolean modified, ModifiedListener l){
+			manager.loadDocument(modified, l); setText(doc); discardAllEdits();
+		}
+		public void save(){manager.save(); manager.endInternalAtomicEdit();}
+	}
+	private static class MyUndoManager extends RUndoManager implements DocumentListener {
+		private static final long serialVersionUID = -56221406556737313L;
+		private int lastSave; private ModifiedListener listener;
+		public MyUndoManager(RSyntaxTextArea t){super(t);}
+		public void loadDocument(boolean modified, ModifiedListener l){
+			lastSave = (modified)?-1:0; listener = l;
+		}
+		public void save(){lastSave = edits.indexOf(editToBeUndone())+1;}
+		public void updateActions(){
+			super.updateActions(); if(listener != null) listener.setModified(lastSave != edits.indexOf(editToBeUndone())+1);
+		}
+		public void changedUpdate(DocumentEvent e){}
+		public void insertUpdate(DocumentEvent e){if(listener != null) listener.setModified(true);}
+		public void removeUpdate(DocumentEvent e){if(listener != null) listener.setModified(true);}
 	}
 }

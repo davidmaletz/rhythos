@@ -44,6 +44,8 @@ public class Script extends Modifiable implements ActionListener {
 		super.contextMenu(menu);
 	}
 	public long getId(){return 0;}
+	public String getScript(){return script;}
+	public void setScript(String s){script = s;}
 	public boolean edit(){
 		ScriptEditor.show(this); return true;
 	}
@@ -51,9 +53,10 @@ public class Script extends Modifiable implements ActionListener {
 	public void actionPerformed(ActionEvent e) {edit();}
 
 	public void save() throws Exception {
+		ScriptEditor.loadScript(this);
 		File f = getFile(); BufferedWriter out = new BufferedWriter(new FileWriter(f));
 		try{
-			out.write(script); out.flush(); out.close(); setModified(false);
+			out.write(script); out.flush(); out.close(); setModified(false); ScriptEditor.onSave(this);
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {
@@ -62,7 +65,7 @@ public class Script extends Modifiable implements ActionListener {
 			StringWriter out = new StringWriter();
 			char[] buffer = new char[4096];
 			int n = 0; while(-1 != (n = in.read(buffer))) out.write(buffer, 0, n);
-			script = out.toString(); in.close(); setModified(false);
+			script = out.toString(); in.close(); setModified(false); ScriptEditor.update(this);
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static Script createScript(File f, MapEditor e, Project p) throws Exception {

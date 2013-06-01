@@ -508,7 +508,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	}
 	public void windowClosing(WindowEvent e) {
 		if(saveall.isEnabled()){
-			int i = JOptionPane.showConfirmDialog(this, "Save all maps before closing?");
+			int i = JOptionPane.showConfirmDialog(this, "Save all resources before closing?");
 			if(i == JOptionPane.NO_OPTION){writeWorkspace(); dispose(); instance = null;}
 			else if(i == JOptionPane.YES_OPTION){
 				browser.saveAll(); writeWorkspace(); dispose(); instance = null;
