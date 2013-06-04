@@ -46,7 +46,7 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 	
 	public ScriptTextPane(int w, int h){
 		super(createTextArea(), true); textArea = (MySyntaxTextArea)getTextArea();
-		textArea.addHyperlinkListener(this);
+		textArea.addHyperlinkListener(this); textArea.addParser(new HaxeParser());
 		CompletionProvider provider = createCompletionProvider();
 		AutoCompletion ac = new AutoCompletion(provider); ac.install(textArea);
 		Gutter gutter = getGutter();
