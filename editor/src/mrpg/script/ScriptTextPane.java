@@ -30,10 +30,10 @@ import org.fife.rsta.ui.search.FindDialog;
 import org.fife.rsta.ui.search.ReplaceDialog;
 import org.fife.rsta.ui.search.SearchDialogSearchContext;
 import org.fife.ui.autocomplete.AutoCompletion;
-import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.CompletionProvider;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.parser.Parser;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 import org.fife.ui.rtextarea.RUndoManager;
@@ -46,7 +46,7 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 	
 	public ScriptTextPane(int w, int h){
 		super(createTextArea(), true); textArea = (MySyntaxTextArea)getTextArea();
-		textArea.addHyperlinkListener(this); textArea.addParser(new HaxeParser());
+		textArea.addHyperlinkListener(this);
 		CompletionProvider provider = createCompletionProvider();
 		AutoCompletion ac = new AutoCompletion(provider); ac.install(textArea);
 		Gutter gutter = getGutter();
@@ -54,6 +54,8 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 		gutter.setBookmarkIcon(MapEditor.getIcon("bookmark"));
 		setPreferredSize(new Dimension(w,h));
 	}
+	public void setParser(Parser p){textArea.clearParsers(); textArea.addParser(p);}
+	public void reparse(){textArea.forceReparsing(0);}
 	public void setText(String text) {
 		textArea.setText(text); textArea.setCaretPosition(0); textArea.discardAllEdits();
 	}
@@ -71,53 +73,8 @@ public class ScriptTextPane extends RTextScrollPane implements HyperlinkListener
 		return textArea;
 	}
 	private CompletionProvider createCompletionProvider() {
+		//TODO: create a new CompletionProviderBase class that gets completion results from Haxe.
 		DefaultCompletionProvider provider = new DefaultCompletionProvider();
-		provider.addCompletion(new BasicCompletion(provider, "showMessage", "Shows a message dialog with the passed formatted string."));
-		provider.addCompletion(new BasicCompletion(provider, "showChoice", "Shows a choice selection dialog with the passed options."));
-
-		/*TODO: add auto-complete options.
-		provider.addCompletion(new BasicCompletion(provider, "abstract"));
-		provider.addCompletion(new BasicCompletion(provider, "assert"));
-		provider.addCompletion(new BasicCompletion(provider, "break"));
-		provider.addCompletion(new BasicCompletion(provider, "case"));
-		provider.addCompletion(new BasicCompletion(provider, "catch"));
-		provider.addCompletion(new BasicCompletion(provider, "class"));
-		provider.addCompletion(new BasicCompletion(provider, "const"));
-		provider.addCompletion(new BasicCompletion(provider, "continue"));
-		provider.addCompletion(new BasicCompletion(provider, "default"));
-		provider.addCompletion(new BasicCompletion(provider, "do"));
-		provider.addCompletion(new BasicCompletion(provider, "else"));
-		provider.addCompletion(new BasicCompletion(provider, "enum"));
-		provider.addCompletion(new BasicCompletion(provider, "extends"));
-		provider.addCompletion(new BasicCompletion(provider, "final"));
-		provider.addCompletion(new BasicCompletion(provider, "finally"));
-		provider.addCompletion(new BasicCompletion(provider, "for"));
-		provider.addCompletion(new BasicCompletion(provider, "goto"));
-		provider.addCompletion(new BasicCompletion(provider, "if"));
-		provider.addCompletion(new BasicCompletion(provider, "implements"));
-		provider.addCompletion(new BasicCompletion(provider, "import"));
-		provider.addCompletion(new BasicCompletion(provider, "instanceof"));
-		provider.addCompletion(new BasicCompletion(provider, "interface"));
-		provider.addCompletion(new BasicCompletion(provider, "native"));
-		provider.addCompletion(new BasicCompletion(provider, "new"));
-		provider.addCompletion(new BasicCompletion(provider, "package"));
-		provider.addCompletion(new BasicCompletion(provider, "private"));
-		provider.addCompletion(new BasicCompletion(provider, "protected"));
-		provider.addCompletion(new BasicCompletion(provider, "public"));
-		provider.addCompletion(new BasicCompletion(provider, "return"));
-		provider.addCompletion(new BasicCompletion(provider, "static"));
-		provider.addCompletion(new BasicCompletion(provider, "strictfp"));
-		provider.addCompletion(new BasicCompletion(provider, "super"));
-		provider.addCompletion(new BasicCompletion(provider, "switch"));
-		provider.addCompletion(new BasicCompletion(provider, "synchronized"));
-		provider.addCompletion(new BasicCompletion(provider, "this"));
-		provider.addCompletion(new BasicCompletion(provider, "throw"));
-		provider.addCompletion(new BasicCompletion(provider, "throws"));
-		provider.addCompletion(new BasicCompletion(provider, "transient"));
-		provider.addCompletion(new BasicCompletion(provider, "try"));
-		provider.addCompletion(new BasicCompletion(provider, "void"));
-		provider.addCompletion(new BasicCompletion(provider, "volatile"));
-		provider.addCompletion(new BasicCompletion(provider, "while"));*/
 		return provider;
 	}
 	public JMenu createViewMenu(){

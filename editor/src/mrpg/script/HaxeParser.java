@@ -1,9 +1,11 @@
 package mrpg.script;
 
+import java.io.File;
+
 import javax.swing.text.Element;
 
-import haxe.lang.HaxeException;
-import hscript.Parser;
+import mrpg.editor.resource.Project;
+import mrpg.editor.resource.Script;
 
 import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
 import org.fife.ui.rsyntaxtextarea.parser.AbstractParser;
@@ -13,42 +15,44 @@ import org.fife.ui.rsyntaxtextarea.parser.ParseResult;
 import org.fife.ui.rsyntaxtextarea.parser.ParserNotice;
 
 public class HaxeParser extends AbstractParser {
-	private Parser parser;
 	private DefaultParseResult result;
-	public HaxeParser(){
-		parser = new Parser(); result = new DefaultParseResult(this);
+	private Project project; private Script script;
+	public HaxeParser(Project p, Script s){
+		project = p; script = s; result = new DefaultParseResult(this);
 	}
-	private static String getDesc(Throwable t){
-		if(t instanceof HaxeException){
-			Object o = ((HaxeException)t).obj;
-			if(o instanceof hscript.Error){
-				hscript.Error e = (hscript.Error)o; switch(e.index){
-				case 0: return "Invalid Character '"+(char)((Integer)e.params.__get(0)).intValue()+"'";
-				case 1: return "Unexpected '"+e.params.__get(0)+"'";
-				case 2: return "Unterminated String";
-				case 3: return "Unterminated Comment";
-				case 4: return "Unknown Variable '"+e.params.__get(0)+"'";
-				case 5: return "Invalid Iterator '"+e.params.__get(0)+"'";
-				case 6: return "Invalid Operation '"+e.params.__get(0)+"'";
-				case 7: return "Invalid Access '"+e.params.__get(0)+"'";
-				}
-			} return o.toString();
-		} else return t.getMessage();
+	private void getPath(StringBuilder b, File f){
+		if(f.equals(project.getFile())) return;
+		getPath(b, f.getParentFile()); b.append(f.getName()); if(f.isDirectory()) b.append("/");
 	}
+	/*
+	 * TODO: recompile projects periodically if modified in separate thread
+	 * (and disable building while compiling, which should also be in a separate thread w/progress bar).
+	 * Make sure project is out of date before recompiling manually
+	 * Add haxe autocomplete. Make sure linux and mac versions work
+	 */
 	public ParseResult parse(RSyntaxDocument doc, String style){
 		result.clearNotices();
 		Element root = doc.getDefaultRootElement();
 		result.setParsedLines(0, root.getElementCount()-1);
-		try{
-			parser.parseString(doc.getText(0, doc.getLength()));
-		}catch(Throwable t){
-			int line = parser.line-1; Element elem = root.getElement(line);
-			int offs = elem.getStartOffset();
-			int len = elem.getEndOffset()-offs;
-			if (line==root.getElementCount()-1) {
-				len++;
-			} DefaultParserNotice pn = new DefaultParserNotice(this, getDesc(t), line, offs, len);
-			pn.setLevel(ParserNotice.ERROR); result.addNotice(pn);
-		} return result;
+		if(project.lastCompile == null) return result;
+		try {
+			if(!script.isModified() && script.getFile().lastModified() <= project.lastCompile.time){
+				StringBuilder b = new StringBuilder(); b.append("../"); getPath(b, script.getFile());
+				String id = b.toString();
+				for(String s : project.lastCompile.messages){
+					String[] bits = s.split(":", 4);
+					if(bits.length >= 4 && bits[0].equals(id)) try{
+						int line = Integer.parseInt(bits[1])-1;
+						Element elem = root.getElement(line);
+						int offs = elem.getStartOffset();
+						String chrs[] = bits[2].trim().substring(11).split("-");
+						int st = Integer.parseInt(chrs[0]), end = Integer.parseInt(chrs[1]);
+						offs += st; int len = (end-st)+1;
+						DefaultParserNotice pn = new DefaultParserNotice(this, bits[3].trim(), line, offs, len);
+						pn.setLevel(ParserNotice.ERROR); result.addNotice(pn);
+					}catch(Exception ex){}
+				}
+			}
+		}catch(Exception e){} return result;
 	}
 }

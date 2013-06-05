@@ -56,7 +56,7 @@ import mrpg.editor.resource.Resource;
 import mrpg.editor.resource.Script;
 import mrpg.editor.resource.Tileset;
 import mrpg.editor.resource.Workspace;
-import mrpg.export.Target;
+import mrpg.script.HaxeCompiler;
 
 
 public class WorkspaceBrowser extends JTree implements ActionListener, MouseListener, MouseMotionListener {
@@ -159,10 +159,10 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		String n = f.getName(); int idx = n.lastIndexOf('.'); if(idx != -1) n = n.substring(0,idx); Resource r;
 		try{
 			if(f.isDirectory()){
-				r = Folder.create(new File(dir+File.separator+n), editor);
+				r = Folder.create(new File(dir,n), editor);
 				for(File c : f.listFiles()) if(sub || !c.isDirectory()) importImage(r, c, p, sub);
 			} else {
-				r = Image.importImage(f, new File(dir+File.separator+n+"."+Image.EXT), editor, p);
+				r = Image.importImage(f, new File(dir,n+"."+Image.EXT), editor, p);
 			} addResource(r, parent);
 		}catch(Exception e){}
 	}
@@ -171,10 +171,10 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		String n = f.getName(); int idx = n.lastIndexOf('.'); if(idx != -1) n = n.substring(0,idx); Resource r;
 		try{
 			if(f.isDirectory()){
-				r = Folder.create(new File(dir+File.separator+n), editor);
+				r = Folder.create(new File(dir,n), editor);
 				for(File c : f.listFiles()) if(sub || !c.isDirectory()) importMedia(r, c, p, sub);
 			} else {
-				r = Media.importMedia(f, new File(dir+File.separator+n+"."+Media.EXT), editor, p);
+				r = Media.importMedia(f, new File(dir,n+"."+Media.EXT), editor, p);
 			} addResource(r, parent);
 		}catch(Exception e){}
 	}
@@ -182,7 +182,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		String dir = parent.getFile().toString();
 		try{
 			if(!f.isDirectory()){
-				File f2 = new File(dir+File.separator+f.getName()); Resource.copyFile(f, f2);
+				File f2 = new File(dir,f.getName()); Resource.copyFile(f, f2);
 				addResource(Resource.readFile(f2, editor), parent);
 			}
 		}catch(Exception e){}
@@ -193,7 +193,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new folder:", "Create New Folder", JOptionPane.PLAIN_MESSAGE, null, null, "New Folder");
 			if(name == null) throw new Exception();
 			String dir = parent.getFile().toString();
-			File f = new File(dir+File.separator+name);
+			File f = new File(dir, name);
 			if(f.exists()){
 				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create New Folder", JOptionPane.ERROR_MESSAGE);
 				throw new Exception();
@@ -213,7 +213,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			String name = (String)JOptionPane.showInputDialog(editor, "Enter a name for the new script:", "Create Script", JOptionPane.PLAIN_MESSAGE, null, null, "New Script");
 			if(name == null) throw new Exception();
 			String dir = parent.getFile().toString();
-			File f = new File(dir+File.separator+name+"."+Script.EXT);
+			File f = new File(dir,name+"."+Script.EXT);
 			if(f.exists()){
 				JOptionPane.showMessageDialog(editor, "\'"+name+"\' already exists!", "Create Script", JOptionPane.ERROR_MESSAGE);
 				throw new Exception();
@@ -296,7 +296,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		} else if(command == MapEditor.PROPERTIES){getSelectedResource().properties();
 		} else if(command == MapEditor.MAP){addMap();
 		} else if(command == Project.PROJECT) try{
-			Project p = Project.createProject(editor); addProject(p);
+			Project p = Project.createProject(editor); addProject(p); MapEditor.doDeferredRead(true);
 			if(!editor.hasMap()) p.getMaps().next().edit();
 		}catch(Exception ex){}
 		else if(command == IMAGE_ICON){
@@ -332,12 +332,12 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		} else if(command == AUTOTILE){addAutoTile();}
 		else if(command == MapEditor.BUILD){
 			try{
-				Project p = getProject(getSelectedResource()); innerSaveAll(p); p.getTarget().build(p);
-			}catch(Exception ex){}
+				Project p = getProject(getSelectedResource()); innerSaveAll(p); HaxeCompiler.compile(p);
+			}catch(Exception ex){ex.printStackTrace();}
 		} else if(command == MapEditor.TEST){
 			try{
-				Project p = getProject(getSelectedResource()); Target t = p.getTarget(); innerSaveAll(p); t.build(p); t.run(p);
-			}catch(Exception ex){}
+				Project p = getProject(getSelectedResource()); innerSaveAll(p); HaxeCompiler.compile(p); HaxeCompiler.run(p);
+			}catch(Exception ex){ex.printStackTrace();}
 		}
 	}
 	

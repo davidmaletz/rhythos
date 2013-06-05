@@ -31,9 +31,7 @@ import java.awt.event.WindowListener;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Map.Entry;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
@@ -92,8 +90,6 @@ import mrpg.editor.tools.RectTool;
 import mrpg.editor.tools.SelectTool;
 import mrpg.editor.tools.Tool;
 import mrpg.editor.tools.ZoomTool;
-import mrpg.export.SWFTarget;
-import mrpg.export.Target;
 import mrpg.script.ScriptEditor;
 import mrpg.world.World;
 
@@ -462,9 +458,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		history.clearHistory(); history.world = null; map_label.setText("");
 		tileset_viewer.setProject(null); return true;
 	}
-	public void saveMap(Map m){
-		if(m == current_map){lastSave = history.redoPos(); updateSaveButtons();}
-	}
+	public void saveMap(Map m){if(m == current_map){lastSave = history.redoPos();}}
 	
 	public void clipboardChanged(){if(!browser_focus) paste.setEnabled(clipboard.hasData());}
 	
@@ -536,11 +530,6 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 			} ar.clear();
 		}
 	}
-	
-	private static HashMap<String, Class<? extends Target>> targets = new HashMap<String, Class<? extends Target>>();
-	public static void registerTarget(String name, Class<? extends Target> t){targets.put(name, t);}
-	public static Object[] getTargetsArray(){return targets.entrySet().toArray();}
-	public static Entry<String,Class<? extends Target>> defaultTarget(){return targets.entrySet().iterator().next();}
 	
 	private static final DocumentBuilderFactory document_factory = DocumentBuilderFactory.newInstance();
 	private static final TransformerFactory transformer_factory = TransformerFactory.newInstance();
@@ -622,7 +611,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
 		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
 		Resource.register("Script", Script.EXT, Script.class);
-		registerTarget("SWF Version 1.0", SWFTarget.class);
+		//TODO: copy classes from test project to default project when done editing them.
 		//TODO: player twitch when hitting two arrow keys rapidly?
 		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.
 		//TODO: If map is missing tileset, load all Tile.empty for that tileset, don't throw exception!

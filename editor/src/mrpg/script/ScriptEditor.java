@@ -15,6 +15,8 @@ import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 
 import mrpg.editor.MapEditor;
+import mrpg.editor.WorkspaceBrowser;
+import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Script;
 
 public class ScriptEditor extends JFrame implements ScriptTextPane.ModifiedListener, ActionListener {
@@ -39,7 +41,9 @@ public class ScriptEditor extends JFrame implements ScriptTextPane.ModifiedListe
 		script = s; textPane.loadDocument(script.getScript(), script.isModified(), this); save.setEnabled(script.isModified());
 	}
 	public static void show(Script script){
-		if(instance == null) instance = new ScriptEditor(); instance.setScript(script); instance.setVisible(true);
+		if(instance == null) instance = new ScriptEditor();
+		instance.textPane.setParser(new HaxeParser(WorkspaceBrowser.getProject(script), script));
+		instance.setScript(script); instance.setVisible(true);
 	}
 	public static void onSave(Script script){
 		if(instance != null && script == instance.script) instance.textPane.onSave();
@@ -52,9 +56,14 @@ public class ScriptEditor extends JFrame implements ScriptTextPane.ModifiedListe
 			instance.textPane.loadDocument(script.getScript(), script.isModified(), instance); instance.save.setEnabled(script.isModified());
 		}
 	}
+	public static void compiled(Project p){
+		if(instance != null && WorkspaceBrowser.getProject(instance.script) == p){
+			instance.textPane.reparse();
+		}
+	}
 	public static void init(){
 		((AbstractTokenMakerFactory)TokenMakerFactory.getDefaultInstance()).putMapping(ScriptTextPane.SYNTAX_STYLE_HAXE, "org.fife.ui.rsyntaxtextarea.modes.HaxeTokenMaker");
 		FoldParserManager.get().addFoldParserMapping(ScriptTextPane.SYNTAX_STYLE_HAXE, new CurlyFoldParser());
 	}
-	public static void destroy(){if(instance != null) instance.dispose();}
+	public static void destroy(){if(instance != null) instance.dispose(); HaxeCompiler.destroy();}
 }

@@ -48,7 +48,7 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	public File changeName(String n) throws Exception {
 		if(name != null && name.equals(n)) throw new Exception(); String ext = file.getName(); int i = ext.lastIndexOf('.');
 		 if(i == -1) ext = ""; else ext = ext.substring(i);
-		 File f = new File(file.getParent()+File.separator+n+ext);
+		 File f = new File(file.getParent(),n+ext);
 		 if(f.exists()){
 			 JOptionPane.showMessageDialog(editor, "Unable to rename \'"+getName()+"\'.\n\'"+n+"\' already exists.", "Unable to Rename", JOptionPane.ERROR_MESSAGE);
 			 throw new Exception();
@@ -99,10 +99,10 @@ public abstract class Resource extends DefaultMutableTreeNode {
 		if((!allowRename && dir.equals(file.getParentFile())) || !isCompatible(p)) throw new Exception();
 		String ext = file.getName(); int idx = ext.lastIndexOf('.');
 		if(idx == -1) ext = ""; else ext = ext.substring(idx);
-		File f = new File(dir.toString()+File.separator+name+ext);
+		File f = new File(dir.toString(),name+ext);
 		if(f.exists()){
 			String n = (String)JOptionPane.showInputDialog(editor, "Enter a new name for \'"+name+"\':", "Name Conflict", JOptionPane.PLAIN_MESSAGE, null, null, "Copy Of "+name);
-			if(n == null) throw new Exception(); else f = new File(dir.toString()+File.separator+n+ext);
+			if(n == null) throw new Exception(); else f = new File(dir.toString(),n+ext);
 		} if(f.exists()) throw new Exception(); return f; 
 	}
 	public static void copyFile(File from, File to) throws Exception {
@@ -112,6 +112,15 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			destination = new FileOutputStream(to).getChannel();
 			destination.transferFrom(source, 0, source.size());
 		} finally {if(source != null) source.close(); if(destination != null) destination.close();}
+	}
+	public static void copyDir(File from, File to){
+		for(File f : from.listFiles()){
+			try{
+				File n = new File(to, f.getName());
+				if(f.isDirectory()){n.mkdir(); copyDir(f, n);}
+				else copyFile(f, n);
+			}catch(Exception e){}
+		}
 	}
 	public File copy(File dir, Project p) throws Exception {
 		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, p, true);

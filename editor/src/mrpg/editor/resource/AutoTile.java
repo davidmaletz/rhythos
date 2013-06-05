@@ -101,7 +101,7 @@ public class AutoTile extends TileResource implements ActionListener {
 	}
 	public static AutoTile createAutoTile(Resource parent, MapEditor e, Project p) throws Exception {
 		String dir = parent.getFile().toString();
-		File f = new File(dir+File.separator+"New AutoTile"+"."+EXT);
+		File f = new File(dir,"New AutoTile"+"."+EXT);
 		AutoTile ret = new AutoTile(f, e); ret._setName(null); ret.id = p.newTilemapId();
 		ret.properties(); if(!ret.properties.updated) throw new Exception();
 		p.setTilemapId(ret, ret.id); return ret;

@@ -57,13 +57,14 @@ public class Script extends Modifiable implements ActionListener {
 		File f = getFile(); BufferedWriter out = new BufferedWriter(new FileWriter(f));
 		try{
 			out.write(script); out.flush(); out.close(); setModified(false); ScriptEditor.onSave(this);
+			super.save();
 		}catch(Exception e){out.close(); throw e;}
 	}
+	private static char[] buffer = new char[4096];
 	protected void read(File f) throws Exception {
 		FileReader in = new FileReader(f);
 		try{
 			StringWriter out = new StringWriter();
-			char[] buffer = new char[4096];
 			int n = 0; while(-1 != (n = in.read(buffer))) out.write(buffer, 0, n);
 			script = out.toString(); in.close(); setModified(false); ScriptEditor.update(this);
 		}catch(Exception e){in.close(); throw e;}

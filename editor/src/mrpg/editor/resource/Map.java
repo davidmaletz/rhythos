@@ -81,7 +81,7 @@ public class Map extends Modifiable {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
 			out.writeShort(VERSION); out.writeLong(id); if(background == null) out.writeByte(0); else {out.writeByte(1); out.writeLong(background.getId());}
-			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this);
+			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this); super.save();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MAP);}
@@ -98,7 +98,7 @@ public class Map extends Modifiable {
 	
 	public static Map createMap(Resource parent, MapEditor e, Project p) throws Exception{
 		String dir = parent.getFile().toString();
-		File f = new File(dir+File.separator+"New Map"+"."+EXT);
+		File f = new File(dir,"New Map"+"."+EXT);
 		Map ret = new Map(f,e); ret._setName(null); ret.world = new World(20,15); ret.id = p.newMapId(); ret.properties();
 		if(!ret.properties.updated) throw new Exception();
 		p.setMapId(ret, ret.id); return ret;

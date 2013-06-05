@@ -33,9 +33,10 @@ public class Folder extends Resource {
 	}
 	public long getId(){return 0;}
 	public Icon getIcon(){return icon;}
+	public static String OUT_DIR = "__haxe"; 
 	protected void read(File f) throws Exception {
 		for(File file : f.listFiles())
-			try{add(Resource.readFile(file, editor));}catch(Exception e){}
+			if(!file.getName().equals(OUT_DIR)) try{add(Resource.readFile(file, editor));}catch(Exception e){}
 	}
 	public File copy(File dir, Project p) throws Exception {
 		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, p, true);

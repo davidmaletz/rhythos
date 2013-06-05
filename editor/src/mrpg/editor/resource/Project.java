@@ -31,10 +31,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -58,7 +58,7 @@ import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.export.Graphic;
-import mrpg.export.Target;
+import mrpg.script.HaxeCompiler;
 
 
 public class Project extends Folder {
@@ -69,22 +69,25 @@ public class Project extends Folder {
 		folderChooser.setDialogTitle("Choose Project Directory"); 
 	}
 	public static final String PROJECT = "project"; private static final short VERSION=1;
-	private static final Icon icon = MapEditor.getIcon(PROJECT);
+	private static final Icon icon = MapEditor.getIcon(PROJECT); public HaxeCompiler.Result lastCompile = null;
 	private Properties properties; private String target; private Image frame, font, bg; private ArrayList<String> options;
-	private Target cache = null; public int tile_size;
-	public Target getTarget(){
-		if(cache == null)try{cache = (Target)Class.forName(target).newInstance();}catch(Exception e){} return cache; 
-	}
+	public int tile_size;
 	public Graphic getFrame(){return frame.getGraphic();}
 	public Graphic getFont(){return font.getGraphic();}
 	public Graphic getBG(){return bg.getGraphic();}
+	public String getTarget(){return target;}
 	public static Project createProject(MapEditor e) throws Exception {
 		File f; if(folderChooser.showSaveDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
 			f = folderChooser.getSelectedFile(); if(!f.exists() && !f.mkdirs()) throw new Exception();
 		} else throw new Exception();
 		if(f.listFiles().length > 0) throw new Exception();
-		Project p = new Project(f, e); p.target = MapEditor.defaultTarget().getValue().getName(); p.tile_size = TilesetViewer.TILE_SIZE;
-		p.options = new ArrayList<String>(); p.save(); return p;
+		Project p = new Project(f, e); File project = new File("project");
+		if(project.exists()){
+			Resource.copyDir(project, f); p.read(f);
+		} if(!new File(f, ".project").exists()) {
+			p.target = HaxeCompiler.defaultTarget(); p.tile_size = TilesetViewer.TILE_SIZE;
+			p.options = new ArrayList<String>(); p.save();
+		} return p;
 	}
 	public static Project openProject(MapEditor e, Workspace w) throws Exception {
 		File f; if(folderChooser.showOpenDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
@@ -92,7 +95,7 @@ public class Project extends Folder {
 		} else throw new Exception(); return openProject(e,w,f);
 	}
 	public static Project openProject(MapEditor e, Workspace w, File f) throws Exception {
-		File prop = new File(f.toString()+File.separator+".project"); if(!prop.exists()) throw new Exception();
+		File prop = new File(f.toString(),".project"); if(!prop.exists()) throw new Exception();
 		for(int i=0; i<w.getProjectCount(); i++) if(w.getProject(i).getFile().equals(f)){
 			JOptionPane.showMessageDialog(MapEditor.instance, "The selected project is already open!", "Cannot Open Project", JOptionPane.ERROR_MESSAGE);
 			throw new Exception();
@@ -102,7 +105,7 @@ public class Project extends Folder {
 	public boolean canDelete(){return false;}
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	public void save() throws Exception {
-		File f = new File(getFile().toString()+File.separator+".project");
+		File f = new File(getFile().toString(),".project");
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{out.writeShort(VERSION);
 			out.writeUTF(target); out.writeShort(tile_size); if(frame == null) out.writeLong(0); else out.writeLong(frame.getId());
@@ -113,10 +116,10 @@ public class Project extends Folder {
 	}
 	protected void read(File f) throws Exception {super.read(f); MapEditor.deferRead(this, MapEditor.DEF_PROJECT);}
 	public void deferredRead(File _f) throws Exception {
-		File f = new File(getFile().toString()+File.separator+".project");
+		File f = new File(getFile().toString(),".project");
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			target = in.readUTF(); tile_size = in.readShort(); cache = null; try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
+			target = in.readUTF(); tile_size = in.readShort(); try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
 			try{font = getImageById(in.readLong());}catch(Exception e){font = null;}
 			try{bg = getImageById(in.readLong());}catch(Exception e){bg = null;} int sz = in.read();
 			options = new ArrayList<String>(sz); for(int i=0; i<sz; i++) options.add(in.readUTF()); in.close();
@@ -225,15 +228,11 @@ public class Project extends Folder {
 			c.add(inner);
 			pack();
 		}
-		@SuppressWarnings("unchecked")
 		public void setVisible(boolean b){
 			if(b == true){
 				name.setText(project.getName()); name.requestFocus(); name.selectAll();
-				Object[] targets = MapEditor.getTargetsArray(); String data[] = new String[targets.length];
-				int selected = 0; for(int i=0; i<targets.length; i++){
-					Entry<String,Class> e = (Entry<String,Class>)targets[i]; String n = e.getValue().getName();
-					if(n.equals(project.target)) selected = i; data[i] = e.getKey();
-				} target.setModel(new DefaultComboBoxModel(data)); target.setSelectedIndex(selected);
+				target.setModel(new DefaultComboBoxModel(HaxeCompiler.TARGET_NAMES));
+				target.setSelectedIndex(Arrays.asList(HaxeCompiler.TARGETS).indexOf(project.target));
 				tile_size.setSelectedItem(Integer.toString(project.tile_size));
 				frame = project.frame;
 				if(frame == null) frame_thumb.setIcon(new ImageIcon()); else frame_thumb.setIcon(new ImageIcon(frame.getImage()));
@@ -246,12 +245,10 @@ public class Project extends Folder {
 			}
 			super.setVisible(b);
 		}
-		@SuppressWarnings("unchecked")
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(command == MapEditor.OK){
-				String t = ((Entry<String,Class>)MapEditor.getTargetsArray()[target.getSelectedIndex()]).getValue().getName();
-				if(!t.equals(project.target)){project.cache = null; project.target = t;}
+				project.target = HaxeCompiler.TARGETS[target.getSelectedIndex()];
 				try{
 					int ts = Integer.parseInt(tile_size.getSelectedItem().toString());
 					if(ts != project.tile_size){
