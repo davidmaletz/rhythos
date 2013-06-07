@@ -56,7 +56,8 @@ public class HaxeCompiler {
 		b.append("<window background=\"#ffffff\" fps=\"24\" />");
 		b.append("<window width=\""); b.append(getProjectWidth(p)); b.append("\" height=\"");
 		b.append(getProjectHeight(p)); b.append("\" unless=\"mobile\" />");
-		b.append("<window orientation=\"landscape\" vsync=\"true\" antialiasing=\"0\" if=\"cpp\" />");
+		b.append("<window orientation=\"landscape\" vsync=\"true\" antialiasing=\"0\" if=\"neko\"/>");
+		b.append("<window require-shaders=\"true\" if=\"neko\"/>");
 		b.append("<source path=\"../\" />");
 		b.append("<haxelib name=\"nme\" />");
 		b.append("<ndll name=\"std\" />");
