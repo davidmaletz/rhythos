@@ -20,7 +20,6 @@ package com.rhythos.core;
 
 import com.rhythos.core.game.Game;
 import haxe.Timer;
-import nme.display.Bitmap;
 import nme.display.BitmapData;
 import nme.display.Sprite;
 import nme.errors.Error;
@@ -34,6 +33,9 @@ import nme.media.SoundTransform;
 import nme.net.SharedObject;
 import nme.ui.Keyboard;
 import nme.utils.ByteArray;
+#if neko
+import sys.io.FileSeek;
+#end
 
 /**
  * TODO:
@@ -64,30 +66,13 @@ class Main extends Sprite {
 		var end:Int = ar.length; for(i in 0...end) if(ar[i] == e) return i; return -1;
 	}
 	public static function safeEnterFrame(e:EventDispatcher, f:Event->Void, first:Bool=false):Void {
-		function _init(ev:Event):Void {e.addEventListener(Event.ENTER_FRAME, f); if(first) f(ev);}
+		function _init(ev:Event):Void {e.removeEventListener(Event.ENTER_FRAME, f); e.addEventListener(Event.ENTER_FRAME, f); if(first) f(ev);}
 		function _destroy(ev:Event):Void {e.removeEventListener(Event.ENTER_FRAME, f);}
 		e.addEventListener(Event.ADDED_TO_STAGE, _init); e.addEventListener(Event.REMOVED_FROM_STAGE, _destroy);
 	}
 	
 	public static function removeAllChildren(s:Sprite):Void {while(s.numChildren > 0) s.removeChildAt(0);}
 
-	private static var asset_cache:Hash<Dynamic> = new Hash<Dynamic>();
-	private static function getAsset(id:String, t1:Int=-1, t2:Int=-1):Dynamic {
-		if(t1 >= 0) id += Std.string(t1); if(t2 >= 0) id += "_"+Std.string(t2);
-		if(asset_cache.exists(id)) return asset_cache.get(id);
-		var c = Type.resolveClass("assets."+id); var a:Dynamic = null;
-		if(c != null) a = Type.createInstance(c,[]); asset_cache.set(id, a); return a;
-	}
-	public static function playSFX(id:String, t1:Int=-1, t2:Int=-1):SoundChannel {
-		var c = getAsset(id,t1,t2); if(c != null){
-			var s:Sound = cast(c, Sound); var vol:Float = 1; return s.play(0,0,new SoundTransform(SFX_VOL*0.2*vol));
-		} ResourceError("sfx",id,t1,t2); return null;
-	}
-	public static function loopSFX(id:String, t1:Int=-1, t2:Int=-1):SoundChannel {
-		var c = getAsset(id,t1,t2); if(c != null){
-			var s:Sound = cast(c, Sound); var vol:Float = 1; return s.play(0,0x3FFFFFFF,new SoundTransform(SFX_VOL*0.2*vol));
-		} ResourceError("sfx",id,t1,t2); return null;
-	}
 	private static var settings:SharedObject;
 	private function init(e) {
 		instance = this; removeEventListener(Event.ADDED_TO_STAGE, init); Project.load(); Main.width = Std.int(stage.stageWidth/scaleX);
@@ -95,7 +80,11 @@ class Main extends Sprite {
 		Lib.current.stage.addEventListener(KeyboardEvent.KEY_UP, key_up);
 		settings = SharedObject.getLocal("settings"); var d:Dynamic = Reflect.field(settings.data, "bgm_vol");
 		if(d == null) BGM_VOL = 5; else BGM_VOL = d; d = Reflect.field(settings.data, "sfx_vol");
-		if(d == null) SFX_VOL = 5; else SFX_VOL = d; player = new Character("Test", 0, 8000, 8000); addChild(new Game());
+		if(d == null) SFX_VOL = 5; else SFX_VOL = d;
+		player = new Character("Test", 0, 8000, 8000);
+		player.equip[0] = new com.rhythos.core.equipment.Equipment("325a90048ef03ffb", 1,1);
+		player.equip[1] = new com.rhythos.core.equipment.Equipment("add6fde6a0f6ac93", 1,1);
+		addChild(new Game());
 	}
 	public static inline function getPlayer():Character {return instance.player;}
 	private static inline var KEY_W:Int = 87; private static inline var KEY_A:Int = 65;
@@ -130,25 +119,58 @@ class Main extends Sprite {
 			case Keyboard.ESCAPE: if(pressed[ESCAPE] <= 1) pressed[ESCAPE] = 0; else pressed[ESCAPE] = 3;
 		}
 	}
-	public static function playClick():Void {playSFX("click");}
-	public static function playSelect():Void {playSFX("select");}
-	public static function playCancel():Void {playSFX("close");}
-	public static function playChange():Void {playSFX("change");}
 	private static var SFX_VOL:Int; private static var BGM_VOL:Int; private static var bgm_vol:Float;
-	public static function getBitmap(id:String, t1:Int=-1, t2:Int=-1):BitmapData {
-		var c = getAsset(id,t1,t2); if(c == null){ResourceError("image",id,t1,t2); return null;}
-		return cast(c, Bitmap).bitmapData;
+	private static var asset_cache:Hash<Dynamic> = new Hash<Dynamic>();
+	private static function getAsset(id:String):Dynamic {
+		if(asset_cache.exists(id)) return asset_cache.get(id); var a:Dynamic = null;
+		#if neko
+		if(id.charCodeAt(0) == 105){
+			var f = sys.io.File.read("assets/A"+id, true); f.bigEndian = true;
+			var w = f.readInt31(), h = f.readInt31(), len = f.readInt31();
+			var b = new BitmapData(w, h, true);
+			var ar = ByteArray.fromBytes(f.read(len)); f.close();
+			ar.inflate(); b.setPixels(new nme.geom.Rectangle(0,0,w,h), ar); a = b;
+		} else if(id.charCodeAt(1) == 115){
+			//TODO
+		} else {
+			a = ByteArray.fromBytes(sys.io.File.getBytes("assets/A"+id));
+		}
+		#else
+		var c = Type.resolveClass("A"+id); if(c != null) a = Type.createInstance(c,[]);
+		#end
+		asset_cache.set(id, a); return a;
 	}
-	public static function getData(id:String, t1:Int=-1, t2:Int=-1):ByteArray {
-		var c = getAsset(id,t1,t2); if(c == null){ResourceError("data",id,t1,t2); return null;}
+	public static function readID(d:ByteArray):String {
+		var ret:String = null;
+		for(i in 0...8){
+			var ch = d.readUnsignedByte();
+			if(ret == null && ch == 0) continue;
+			if(ret == null) ret = StringTools.hex(ch);
+			else ret += StringTools.hex(ch,2);
+		} return ret.toLowerCase();
+	}
+	public static function playSFX(id:String):SoundChannel {
+		var c = getAsset("s"+id); if(c != null){
+			var s:Sound = cast(c, Sound); var vol:Float = 1; return s.play(0,0,new SoundTransform(SFX_VOL*0.2*vol));
+		} ResourceError("sound (sfx)",id); return null;
+	}
+	public static function loopSFX(id:String):SoundChannel {
+		var c = getAsset("s"+id); if(c != null){
+			var s:Sound = cast(c, Sound); var vol:Float = 1; return s.play(0,0x3FFFFFFF,new SoundTransform(SFX_VOL*0.2*vol));
+		} ResourceError("sound (sfx)",id); return null;
+	}
+	public static function getBitmap(id:String):BitmapData {
+		var c = getAsset("i"+id); if(c == null){ResourceError("image",id); return null;}
+		return cast(c, BitmapData);
+	}
+	public static function getData(type:String, id:String):ByteArray {
+		var c = getAsset(type+id); if(c == null){ResourceError("data",type+id); return null;}
 		return cast(c, ByteArray);
 	}
-	public static function getBGM(id:String, t1:Int=-1, t2:Int=-1):Sound {
-		var c = getAsset(id,t1,t2); if(c == null){ResourceError("bgm",id,t1,t2); return null;}
+	public static function getBGM(id:String):Sound {
+		var c = getAsset("s"+id); if(c == null){ResourceError("sound (bgm)",id); return null;}
 		return cast(c, Sound);
 	}
-	public static function getBPM(id:Int):Int {return 149;} //TODO: load song BPM
-	public static function getLead(id:Int):Int {return 16;} //TODO: load song lead
 	public static function playBGM(s:Sound, loops:Int=0x3FFFFFFF, st:Float=0):SoundChannel { var vol:Float = 1;
 		if(s == null || cur_bgm == s) return bgmc; cur_bgm = s; if(bgmc != null) bgmc.stop(); bgm_vol = vol; bgmc = s.play(st, loops, new SoundTransform(BGM_VOL*0.2*bgm_vol)); return bgmc;
 	}
@@ -162,13 +184,14 @@ class Main extends Sprite {
 		Reflect.setField(settings.data, "bgm_vol", BGM_VOL); settings.flush();
 	}
 	public static function stopBGM():Void {if(bgmc != null){bgmc.stop(); cur_bgm = null; bgmc = null;}}
-	private static var pauseCt:Int;
-	public static inline function pause():Int {if(pauseCt == 0 && battle != null) battle.pause(); pauseCt++; return pauseCt;}
-	public static inline function unpause():Void {pauseCt--; if(pauseCt == 0 && battle != null) battle.unpause();}
+	private static var pauseCt:Int = 0;
+	public static inline function pause():Int {pauseCt++; return pauseCt;}
+	public static inline function unpause():Void {pauseCt--;}
 	public static inline function pauseLevel():Int {return pauseCt;}
 	public static inline function isPaused():Bool {return pauseCt > 0;}
 	public static inline function isPressed(dir:Int, allowPaused:Int=0):Bool {return (pressed[dir] >= 2 || pressed[dir+6] >= 2) && (pauseCt == allowPaused);}
-	public static inline function isHeld(dir:Int, allowPaused:Int=0):Bool {return (pressed[dir] >= 1 || pressed[dir+6] >= 1) && (pauseCt == allowPaused);}
+	public static inline function isHeld(dir:Int, allowPaused:Int=0):Bool {
+		return (pressed[dir] >= 1 || pressed[dir+6] >= 1) && (pauseCt == allowPaused);}
 	public static function resetPressed(allowPaused:Int=0):Void {
 		if(pauseCt == allowPaused){
 			if(pressed[UP] == 2) pressed[UP] = 1;
@@ -202,8 +225,7 @@ class Main extends Sprite {
 		Lib.current.addChild(new Main());
 	}
 	
-	private static function ResourceError(type:String, id:String, t1:Int, t2:Int):Void {
-		if(t1 >= 0) id += Std.string(t1); if(t2 >= 0) id += "_"+Std.string(t2);
-		trace("Unable to locate "+type+":\n'"+id+"'");
+	private static function ResourceError(type:String, id:String):Void {
+		trace("Unable to locate "+type+" with id:\n'"+id+"'");
 	}
 }

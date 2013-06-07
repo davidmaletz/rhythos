@@ -33,7 +33,6 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Random;
 
 import javax.swing.BorderFactory;
@@ -152,25 +151,25 @@ public class Project extends Folder {
 	public long setImageId(Image r, long id) throws Exception {return setId(images, r, id);}
 	public void removeImageId(Image r, long id) throws Exception {removeId(images, r, id);}
 	public Image getImageById(long id) throws Exception {return getById(images, id);}
-	public Iterator<Image> getImages(){return images.values().iterator();}
+	public Iterable<Image> getImages(){return images.values();}
 	private HashMap<Long,Media> media = new HashMap<Long,Media>();
 	public long newMediaId(){return newId(media);}
 	public long setMediaId(Media r, long id) throws Exception {return setId(media, r, id);}
 	public void removeMediaId(Media r, long id) throws Exception {removeId(media, r, id);}
 	public Media getMediaById(long id) throws Exception {return getById(media, id);}
-	public Iterator<Media> getMedia(){return media.values().iterator();}
+	public Iterable<Media> getMedia(){return media.values();}
 	private HashMap<Long,TileResource> tilemaps = new HashMap<Long,TileResource>();
 	public long newTilemapId(){return newId(tilemaps);}
 	public long setTilemapId(TileResource r, long id) throws Exception {return setId(tilemaps, r, id);}
 	public void removeTilemapId(TileResource r, long id) throws Exception {removeId(tilemaps, r, id);}
 	public TileResource getTilemapById(long id) throws Exception {return getById(tilemaps, id);}
-	public Iterator<TileResource> getTilemaps(){return tilemaps.values().iterator();}
+	public Iterable<TileResource> getTilemaps(){return tilemaps.values();}
 	private HashMap<Long,Map> maps = new HashMap<Long,Map>();
 	public long newMapId(){return newId(maps);}
 	public long setMapId(Map r, long id) throws Exception {return setId(maps, r, id);}
 	public void removeMapId(Map r, long id) throws Exception {removeId(maps, r, id);}
 	public Map getMapById(long id) throws Exception {return getById(maps, id);}
-	public Iterator<Map> getMaps(){return maps.values().iterator();}
+	public Iterable<Map> getMaps(){return maps.values();}
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
@@ -252,7 +251,7 @@ public class Project extends Folder {
 				try{
 					int ts = Integer.parseInt(tile_size.getSelectedItem().toString());
 					if(ts != project.tile_size){
-						if(project.getTilemaps().hasNext() || project.getMaps().hasNext()){
+						if(project.getTilemaps().iterator().hasNext() || project.getMaps().iterator().hasNext()){
 							JOptionPane.showMessageDialog(this, "You cannot change the tilesize of a project already containing maps and tilesets (as it would break them).\nIf you really wish to change the tile size, delete all maps and tilesets and try again.", "Unable to change Tile Size", JOptionPane.ERROR_MESSAGE);
 						} else project.tile_size = ts;
 					}

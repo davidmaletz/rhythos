@@ -23,10 +23,9 @@ import nme.geom.Point;
 import nme.geom.Rectangle;
 
 class Equipment {
-	public static var TYPES:Array<Int>;
-	private var id:Int; public var phys_def:Float; public var mag_def:Float; public var allowHair:Bool;
-	public function new(i:Int, p:Float, m:Float, a:Bool=true){id = i; phys_def = p; mag_def = m; allowHair = a;}
-	public function draw(type:Int, b:BitmapData):Void {if(id >= 0) _draw(b, Main.getBitmap("equip", id, TYPES[type]));}
+	private var id:String; public var phys_def:Float; public var mag_def:Float; public var allowHair:Bool;
+	public function new(i:String, p:Float, m:Float, a:Bool=true){id = i; phys_def = p; mag_def = m; allowHair = a;}
+	public function draw(type:Int, b:BitmapData):Void {if(id != null) _draw(b, Main.getBitmap(id));}
 	public static inline function _draw(b1:BitmapData, b2:BitmapData):Void {
 		b1.copyPixels(b2, new Rectangle(0,0,b1.width,b1.height), new Point(0,0), null, null, true);
 	}

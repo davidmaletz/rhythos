@@ -17,11 +17,18 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 import mrpg.editor.resource.Folder;
+import mrpg.editor.resource.Image;
+import mrpg.editor.resource.Map;
+import mrpg.editor.resource.Media;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
+import mrpg.editor.resource.TileResource;
+import mrpg.export.Export;
+import mrpg.export.NekoExport;
+import mrpg.export.SWFExport;
 
 public class HaxeCompiler {
-	private static Process host, test; private static int port = 0; private static File nme_path = null;
+	private static Process host, test; private static int port = 0; private static String neko_exe = null;
 	private static boolean isClosed(Process p){
 		try{p.exitValue(); return true;} catch(Exception e){return false;}
 	}
@@ -73,23 +80,44 @@ public class HaxeCompiler {
 			target = t; isNeko = n; time = System.currentTimeMillis(); messages = m;
 		}
 	}
+	private static void updateApplicationMainFl(File f) throws Exception {
+		BufferedWriter out = new BufferedWriter(new FileWriter(new File(f, "ApplicationMain.hx"), true));
+		out.newLine(); out.write("import AssetList;"); out.newLine(); out.flush(); out.close();
+	}
+	private static void generateAssetListFl(Project p, File f) throws Exception {
+		BufferedWriter out = new BufferedWriter(new FileWriter(new File(f, "AssetList.hx")));
+		out.write("class AssetList {}"); out.newLine();
+		for(Image i : p.getImages()){
+			out.write("class Ai"); out.write(Long.toHexString(i.getId()));
+			out.write(" extends nme.display.BitmapData { public function new () { super (0, 0); } }"); out.newLine();
+		} for(Media m : p.getMedia()){
+			out.write("class As"); out.write(Long.toHexString(m.getId()));
+			out.write(" extends nme.media.Sound { }"); out.newLine();
+		} for(TileResource tm : p.getTilemaps()){
+			out.write("class At"); out.write(Long.toHexString(tm.getId()));
+			out.write(" extends nme.utils.ByteArray { }"); out.newLine();
+		} for(Map m : p.getMaps()){
+			out.write("class Am"); out.write(Long.toHexString(m.getId()));
+			out.write(" extends nme.utils.ByteArray { }"); out.newLine();
+		} out.flush(); out.close();
+	}
 	private static Result inner_parse(Project p, File fbase, File fbin) throws Exception {
-		if(!fbin.exists()) fbin.mkdir(); String target = p.getTarget();
+		if(!fbin.exists()) fbin.mkdir(); String target = p.getTarget(); boolean flash = target.equals("flash");
 		File project = new File(fbin, "project.nmml");
 		if(!project.exists() || project.lastModified() < new File(fbase, ".project").lastModified()){
 			BufferedWriter out = new BufferedWriter(new FileWriter(new File(fbin, "project.nmml")));
 			out.write(createNMML(p)); out.flush(); out.close();
 			Process _p = Runtime.getRuntime().exec("haxelib run nme update \""+project.getAbsolutePath()+"\" "+target);
-			_p.waitFor();
-		} //TODO: update assets if needed.
-		File hxml; boolean neko = false; int i = target.indexOf(" -neko"); String t = target; if(i != -1){
+			_p.waitFor(); if(flash) updateApplicationMainFl(new File(new File(fbin, target), "haxe"));
+		} File hxml; boolean neko = false; int i = target.indexOf(" -neko"); String t = target; if(i != -1){
 			neko = true; t = target.substring(0, i); if(target.indexOf("-64") != -1) t += "64";
 			hxml = new File(fbin, t); hxml = new File(hxml, "neko");
 		} else hxml = new File(fbin, t); hxml = new File(hxml, "haxe"); hxml = new File(hxml, "release.hxml");
 		if(!hxml.exists() || !new File(hxml.getParentFile(), "bin").exists()){
 			Process _p = Runtime.getRuntime().exec("haxelib run nme update \""+project.getAbsolutePath()+"\" "+target);
-			_p.waitFor(); if(!hxml.exists()) throw new Exception();
-		} String s = "--cwd \""+fbin.getAbsolutePath()+"\"\n\""+hxml.getAbsolutePath()+"\"\n\000"; byte b[] = s.getBytes("UTF-8");
+			_p.waitFor(); if(!hxml.exists()) throw new Exception(); if(flash) updateApplicationMainFl(hxml.getParentFile());
+		} if(flash) generateAssetListFl(p, hxml.getParentFile());
+		String s = "--cwd \""+fbin.getAbsolutePath()+"\"\n\""+hxml.getAbsolutePath()+"\"\n\000"; byte b[] = s.getBytes("UTF-8");
 		Socket socket = new Socket("127.0.0.1", port); OutputStream out = socket.getOutputStream(); out.write(b); out.flush();
 		BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		Result r = new Result(t, neko, new ArrayList<String>());
@@ -100,38 +128,51 @@ public class HaxeCompiler {
 		launchHost(); File fbase = p.getFile(), fbin = new File(fbase, Folder.OUT_DIR);
 		return inner_parse(p, fbase, fbin);
 	}
+	private static void deleteAll(File f, boolean subdir) throws Exception {
+		for(File c : f.listFiles()) if(subdir || !c.isDirectory()){
+			if(c.isDirectory()) deleteAll(c, subdir); c.delete();
+		}
+	}
 	public static void compile(Project p) throws Exception {
 		launchHost(); File fbase = p.getFile(), fbin = new File(fbase, Folder.OUT_DIR);
 		Result r = inner_parse(p, fbase, fbin); p.lastCompile = r; ScriptEditor.compiled(p);
-		if(r.messages.size() > 0){/*TODO: Show error log*/ throw new Exception();}
+		if(r.messages.size() > 0){System.out.println(r.messages); /*TODO: Show error log*/ throw new Exception();}
+		Export export; String t = r.target;
 		if(r.isNeko){
-			String t = r.target;
-			if(nme_path == null){
-				Process _p = Runtime.getRuntime().exec("haxelib path nme"); _p.waitFor();
-				BufferedReader in = new BufferedReader(new InputStreamReader(_p.getInputStream()));
-				String line; while((line = in.readLine()) != null){
-					if(line.charAt(0) != '-'){nme_path = new File(line); if(nme_path.exists()) break; else nme_path = null;}
-				}
-			} File templates = new File(nme_path, "templates"); templates = new File(templates, "default");
-			templates = new File(templates, "neko"); File _target = new File(new File(fbin, t), "neko");
-			File bindir = new File(_target, "bin"); if(t.equals("mac")){
-				bindir = new File(bindir, getProjectOut(p)+".app"); bindir = new File(bindir, "Contents");
-				bindir = new File(bindir, "MacOS");
-			} Resource.copyDir(new File(new File(templates, "ndll"),t), bindir); boolean windows = t.equals("windows");
-			OutputStream exe = new FileOutputStream(new File(bindir, p.getName()+((windows)?".exe":"")));
-			int len = writeAll(new FileInputStream(new File(new File(templates, "bin"), "neko-"+t)), exe);
+			File _target = new File(new File(fbin, t), "neko");
+			File bindir = new File(_target, "bin"); deleteAll(bindir, false); if(t.equals("mac")){
+				File app = new File(bindir, getProjectOut(p)+".app"); deleteAll(app, true); app.delete();
+				BufferedWriter command = new BufferedWriter(new FileWriter(new File(bindir, getProjectOut(p)+".command")));
+				command.write("#!/bin/bash\ncd \"${0%/*}\"\n./"+getProjectOut(p)+"\n"); command.flush(); command.close();
+			}  Resource.copyDir(new File("neko", t), bindir); boolean windows = t.equals("windows"); String ext = ((windows)?".exe":"");
+			File out = new File(bindir, p.getName()+ext); new File(bindir, "neko"+ext).renameTo(out);
+			FileOutputStream exe = new FileOutputStream(out, true); int len = (int)exe.getChannel().size();
 			writeAll(new FileInputStream(new File(new File(_target, "obj"), "ApplicationMain.n")), exe);
 			exe.write(NEKO); ByteBuffer bb = ByteBuffer.allocate(4); bb.order(ByteOrder.LITTLE_ENDIAN);
 			bb.putInt(len); exe.write(bb.array()); exe.flush(); exe.close();
-			//TODO: copy/add assets
-		}
+			export = new NekoExport(new File(new File(_target, "bin"), "assets"));
+		} else if(t.equals("flash")) export = new SWFExport(new File(new File(new File(fbin, t), "bin"), getProjectOut(p)+".swf"));
+		else throw new Exception();
+		for(Image i : p.getImages()) export.addImage(i);
+		for(Media m : p.getMedia()) export.addMedia(m);
+		for(TileResource tm : p.getTilemaps()) export.addTilemap(tm);
+		for(Map m : p.getMaps()) export.addMap(m); export.finish();
 	}
 	public static void run(Project p) throws Exception {
 		if(test != null && !isClosed(test)){test.destroy(); test = null;} String t = p.lastCompile.target;
 		File fbase = p.getFile(), fbin = new File(fbase, Folder.OUT_DIR); fbin = new File(fbin, t);
 		if(p.lastCompile.isNeko){
-			fbin = new File(fbin, "neko"); fbin = new File(fbin, "obj"); fbin = new File(fbin, "ApplicationMain.n");
-			test = Runtime.getRuntime().exec("neko \""+fbin.getAbsolutePath()+"\"");
+			fbin = new File(fbin, "neko"); File dir = new File(fbin, "bin");
+			fbin = new File(fbin, "obj"); fbin = new File(fbin, "ApplicationMain.n");
+			if(neko_exe == null){
+				String os = System.getProperty("os.name").toLowerCase();
+				if(os.contains("windows")) neko_exe = "neko\\windows\\neko.exe";
+				else if(os.contains("linux")) neko_exe = "neko/linux/neko";
+				else if(os.contains("mac")) neko_exe = "neko/mac/neko";
+				else throw new Exception();
+				//TODO: check for linux 64?
+			}
+			test = Runtime.getRuntime().exec(neko_exe+" \""+fbin.getAbsolutePath()+"\"", null, dir);
 			//TODO: open log window showing errors from test
 		} else if(t.equals("flash")){
 			fbin = new File(fbin, "bin"); fbin = new File(fbin, getProjectOut(p)+".swf");

@@ -141,7 +141,7 @@ public class Tileset extends TileResource implements ActionListener {
 		private int getTileSize(){Project p = getProject(); if(p == null) return TilesetViewer.TILE_SIZE; else return p.tile_size;}
 		public void setVisible(boolean b){
 			if(b == true){
-				updated = false; id.setText(Long.toString(tileset.id));
+				updated = false; id.setText(Long.toHexString(tileset.id));
 				name.setText(tileset.getName()); name.requestFocus(); name.selectAll();
 				image = tileset.image; tilemap = tileset.tilemap;
 				editor.setTilemap(tilemap);

@@ -46,7 +46,7 @@ public abstract class Resource extends DefaultMutableTreeNode {
 		else {name = file.getName(); int i = name.lastIndexOf('.'); if(i != -1) name = name.substring(0, i);}
 	}
 	public File changeName(String n) throws Exception {
-		if(name != null && name.equals(n)) throw new Exception(); String ext = file.getName(); int i = ext.lastIndexOf('.');
+		if(name != null && name.equals(n)) return null; String ext = file.getName(); int i = ext.lastIndexOf('.');
 		 if(i == -1) ext = ""; else ext = ext.substring(i);
 		 File f = new File(file.getParent(),n+ext);
 		 if(f.exists()){
@@ -64,7 +64,7 @@ public abstract class Resource extends DefaultMutableTreeNode {
 		}
 	}
 	public abstract long getId();
-	public void setName(String n) throws Exception {rename(changeName(n));}
+	public void setName(String n) throws Exception {File f = changeName(n); if(f != null) rename(f);}
 	public String getName(){
 		if(name == null){
 			String n = file.getName(); int i = n.lastIndexOf('.'); if(i != -1) n = n.substring(0, i); return n;

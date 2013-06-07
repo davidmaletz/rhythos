@@ -153,7 +153,7 @@ public class Map extends Modifiable {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				updated = false; id.setText(Long.toString(map.id));
+				updated = false; id.setText(Long.toHexString(map.id));
 				name.setText(map.getName()); name.requestFocus(); name.selectAll();
 				width.setValue(map.world.getWidth()); height.setValue(map.world.getHeight());
 				x_wrap.setSelected(map.world.wrapX); y_wrap.setSelected(map.world.wrapY);

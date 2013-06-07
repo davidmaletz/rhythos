@@ -27,9 +27,15 @@ import nme.geom.ColorTransform;
 import nme.geom.Matrix;
 import nme.geom.Rectangle;
 import com.rhythos.core.equipment.Equipment;
+#if neko
+import native.display.BitmapInt32;
+#end
 
 class Character extends Sprite {
 	private static inline var FRAME_LENGTH:Int=2;
+	private static inline var SKIN_ID:String = "7c9d1a47b36b792e";
+	private static inline var EYES_ID:String = "56b950ae4646f30f";
+	private static inline var HAIR_ID:String = "315e5cedce4a5798";
 	public static inline var WALK_ST:Int=0; public static inline var WALK_LEN:Int=9; public static inline var UP:Int=0;
 	public static inline var LEFT:Int=1; public static inline var DOWN:Int=2; public static inline var RIGHT:Int=3;
 	public static inline var N_DIR:Int=4; public static inline var SLASH_ST:Int=WALK_ST+WALK_LEN*N_DIR;
@@ -49,9 +55,14 @@ class Character extends Sprite {
 		skin_mat = _clear; eyes_mat = _clear; hair_mat = _clear;
 		equip = [null,null,null]; top = new Sprite(); hairId = 0;
 		if(type >= 0){
-			skin = Main.getBitmap("skin", type); if(type < 2){eyes = Main.getBitmap("eyes", type); eyewhite = getEyeWhite(skin, type);}
-			if(type != 2 && hairId >= 0) hair = Main.getBitmap("hair", type, hairId); else hair = null;
-		} if(b != null) skin = b; scaleX = scaleY = 2; bitmap = new BitmapData(skin.width, skin.height, true, 0); resetDefense();
+			skin = Main.getBitmap(SKIN_ID); if(type < 2){eyes = Main.getBitmap(EYES_ID); eyewhite = getEyeWhite(skin, type);}
+			if(type != 2 && hairId >= 0) hair = Main.getBitmap(HAIR_ID); else hair = null;
+		} if(b != null) skin = b; scaleX = scaleY = 2; resetDefense();
+		#if neko
+		bitmap = new BitmapData(skin.width, skin.height, true, {a:0,rgb:0});
+		#else
+		bitmap = new BitmapData(skin.width, skin.height, true, 0);
+		#end
 		updateBitmap(); updateFrame(); Main.safeEnterFrame(this, enter_frame, true);
 	}
 	public function clone():Character {
@@ -67,13 +78,13 @@ class Character extends Sprite {
 	public inline function getType():Int {return type;}
 	public function setType(t:Int, b:BitmapData=null):Void {
 		type = t; if(type >= 0){
-			skin = Main.getBitmap("skin", type); eyes = Main.getBitmap("eyes", type); eyewhite = getEyeWhite(skin, type);
-			if(hairId >= 0) hair = Main.getBitmap("hair", type, hairId); else hair = null;
+			skin = Main.getBitmap(SKIN_ID); eyes = Main.getBitmap(EYES_ID); eyewhite = getEyeWhite(skin, type);
+			if(hairId >= 0) hair = Main.getBitmap(HAIR_ID); else hair = null;
 		} if(b != null) skin = b; updateBitmap(); updateFrame();
 	}
 	public inline function getHairStyle():Int {return hairId;}
 	public function setHairStyle(h:Int):Void {
-		hairId = h; if(hairId >= 0) hair = Main.getBitmap("hair", type, hairId); else hair = null;
+		hairId = h; if(hairId >= 0) hair = Main.getBitmap(HAIR_ID); else hair = null;
 		updateBitmap(); updateFrame();
 	}
 	public static var SKIN_MAT:Array<ColorTransform>;
@@ -125,7 +136,11 @@ class Character extends Sprite {
 	
 	public inline function updateBitmap():Void {dirty = 2;}
 	private function renderBitmap():Void {
+		#if neko
+		bitmap.fillRect(new Rectangle(0,0,bitmap.width, bitmap.height), {a:0,rgb:0});
+		#else
 		bitmap.fillRect(new Rectangle(0,0,bitmap.width, bitmap.height), 0);
+		#end
 		bitmap.draw(skin, null, skin_mat); if(eyes != null){if(eyewhite != null) bitmap.draw(eyewhite); bitmap.draw(eyes, null, eyes_mat);}
 		if(equip[LEGS] != null) equip[LEGS].draw(type, bitmap);
 		if(equip[TORSO] != null) equip[TORSO].draw(type, bitmap);
@@ -151,7 +166,7 @@ class Character extends Sprite {
 	}
 	public function enter_frame(e:Event):Void {
 		if(!Main.isPaused()){frame_ct--; if(frame_ct==0){
-				frame_ct = FRAME_LENGTH; var f:Int; if(anim.isEmpty()) f = (Main.battle == null || Main.battle.state != 0)?frame:getIdle(); else {
+				frame_ct = FRAME_LENGTH; var f:Int; if(anim.isEmpty()) f = getIdle(); else {
 					f = anim.removeFirst(); var _f:Character->Void = func.removeFirst(); if(_f != null) _f(this);
 				} if(f != frame){frame = f; updateFrame();}
 			} if(flashCt > 0){flashCt--; if(flashCt == 0) clearColor();}
@@ -161,7 +176,11 @@ class Character extends Sprite {
 	private static var eyewhites:Array<BitmapData>; public static var EYE_WHITE:Int;
 	private static function getEyeWhites(base:BitmapData):BitmapData {
 		var b:BitmapData = base.clone(); for(y in 0...b.height) for(x in 0...b.width){
+			#if neko
+			var p:BitmapInt32 = b.getPixel32(x,y); if(p.rgb != EYE_WHITE) b.setPixel32(x,y,{a:0,rgb:0});
+			#else
 			var p:Int = b.getPixel32(x,y); if(p != EYE_WHITE) b.setPixel32(x,y,0);
+			#end
 		} return b;
 	}
 	private static function getEyeWhite(base:BitmapData, type:Int):BitmapData {

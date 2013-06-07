@@ -169,7 +169,7 @@ public class AutoTile extends TileResource implements ActionListener {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				updated = false; id.setText(Long.toString(autotile.id));
+				updated = false; id.setText(Long.toHexString(autotile.id));
 				name.setText(autotile.getName()); name.requestFocus(); name.selectAll();
 				image = autotile.image; setTilemap(autotile.autotile);
 				editor.setTilemap(tilemap); editor.start();

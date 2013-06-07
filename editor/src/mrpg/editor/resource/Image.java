@@ -123,7 +123,7 @@ public class Image extends Resource {
 		public void setVisible(boolean b){
 			if(b == true){
 				name.setText(image.getName()); name.requestFocus(); name.selectAll();
-				id.setText(Long.toString(image.id)); BufferedImage im = image.getImage();
+				id.setText(Long.toHexString(image.id)); BufferedImage im = image.getImage();
 				dim.setText(im.getWidth()+" x "+im.getHeight());
 				thumb.setIcon(new ImageIcon(image.getImage()));
 			}

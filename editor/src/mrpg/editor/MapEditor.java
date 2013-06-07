@@ -611,13 +611,12 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
 		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
 		Resource.register("Script", Script.EXT, Script.class);
+		//TODO: can you drag resources OUTSIDE of a project? Seems like a big problem.
 		//TODO: copy classes from test project to default project when done editing them.
 		//TODO: player twitch when hitting two arrow keys rapidly?
 		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.
 		//TODO: If map is missing tileset, load all Tile.empty for that tileset, don't throw exception!
-		//TODO: project output file/folder?
 		//TODO: GUI UI Form Builder
-		//TODO: finish map loading in haxe, and get export maps working so we can create SWF and see changes.
 		//TODO: fix up autotile management to work with the new system. Allow an autotile to be a subset in a tilemap.
 		//TODO: register create new file types. (import formats too, for tiled tilemaps?)
 		//TODO: register tools to the tool dropdown, which can change when the target changes.

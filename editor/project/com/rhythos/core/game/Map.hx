@@ -31,13 +31,15 @@ class Map extends Sprite {
 	private var w:Int; private var h:Int; private var max_level:Int; private var cells:Array<Cell>;
 	private var wrapX:Bool; private var wrapY:Bool; private var event_layer:Int;
 	public function new(d:ByteArray){
-		super(); w = d.readShort(); h = d.readShort(); var wrap:Int = d.readByte(); wrapX = (wrap & 1) != 0; wrapY = (wrap & 2) != 0;
+		super(); var tilemaps = new Array<Tilemap>(); var len = d.readUnsignedByte();
+		for(i in 0...len) tilemaps.push(Tilemap.get(Main.readID(d)));
+		w = d.readShort(); h = d.readShort(); var wrap:Int = d.readUnsignedByte(); wrapX = (wrap & 1) != 0; wrapY = (wrap & 2) != 0;
 		cells = new Array<Cell>(); event_layer = 2; max_level = event_layer; for(y in 0...h) for(x in 0...w){
-			var tiles:Int = d.readByte(); if(tiles == 0) cells.push(null);
+			var tiles:Int = d.readUnsignedByte(); if(tiles == 0) cells.push(null);
 			else {
 				var c:Cell = new Cell(this, x, y); cells.push(c);
 				for(t in 0...tiles){
-					var level:Int = d.readByte(); c.setTile(Tile.read(d), level); if(level > max_level) max_level = level;
+					var level:Int = d.readUnsignedByte(); c.setTile(Tile.read(tilemaps, d), level); if(level > max_level) max_level = level;
 				}
 			}
 		} max_level++; for(l in 0...max_level){var s:Sprite = new Sprite(); renderLevel(s.graphics, l); addChild(s);}
@@ -99,10 +101,10 @@ class Map extends Sprite {
 		var l:Int = event_layer; try{l = getChildIndex(c.parent);}catch(e:Dynamic){} var x:Int = c.getX(), y:Int = c.getY();
 		return canMove(getCell(x,y), Direction.RIGHT, l) && canMove(getCell(x+1,y), Direction.LEFT, l);
 	}
-	private static var cache:Array<Map> = new Array<Map>();
-	public static function get(id:Int):Map {
-		var st:Int=cache.length, end:Int=id+1; for(i in st...end) cache.push(null);
-		var t:Map = cache[id]; if(t == null){t = new Map(Main.getData("map", id)); cache[id] = t;}
+	private static var cache:Hash<Map> = new Hash<Map>();
+	public static function get(id:String):Map {
+		var t:Map; if(cache.exists(id)) t = cache.get(id);
+		else {t = new Map(Main.getData("m", id)); cache.set(id, t);}
 		t.init(); return t;
 	}
 }

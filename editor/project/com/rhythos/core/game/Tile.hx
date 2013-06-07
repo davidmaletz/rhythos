@@ -31,7 +31,7 @@ class Tile {
 	public inline function getIndex():Int {return index;}
 	public inline function getWalkable():Int {return tilemap.getWalkable(index);}
 	public static var empty:Tile; public static var tile_size:Int;
-	public static function read(d:ByteArray):Tile {
-		var map:Int = d.readByte(); if(map == 255) return empty; return Tilemap.get(map).getTile(d.readShort());
+	public static function read(tilemaps:Array<Tilemap>, d:ByteArray):Tile {
+		var map:Int = d.readUnsignedByte(); if(map == 255) return empty; return tilemaps[map].getTile(d.readShort());
 	}
 }

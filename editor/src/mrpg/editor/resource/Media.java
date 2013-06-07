@@ -118,7 +118,7 @@ public class Media extends Resource {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				name.setText(media.getName()); name.requestFocus(); name.selectAll(); id.setText(Long.toString(media.id));
+				name.setText(media.getName()); name.requestFocus(); name.selectAll(); id.setText(Long.toHexString(media.id));
 				Audio.Clip clip = media.getClip(); if(clip != null){long frames = clip.length(); float spf = 1.f/clip.framesPerSecond();
 				int m = (int)(frames*spf/60), s = (int)(frames*spf)-m*60;
 				dur.setText(m+":"+((s < 10)?"0":"")+s);
