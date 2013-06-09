@@ -1,34 +1,27 @@
 package mrpg.editor.resource;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.File;
 
 import javax.swing.Icon;
-import javax.swing.JMenu;
 import javax.swing.JPopupMenu;
 
 import mrpg.editor.MapEditor;
-import mrpg.editor.WorkspaceBrowser;
+import mrpg.editor.Menu;
 
 public class Folder extends Resource {
 	private static final long serialVersionUID = 4352438677363086255L;
-	private static final String FOLDER = "folder";
+	public static final String FOLDER = "folder", ADD_FOLDER = "add_folder";
+	public static final Menu new_options = new Menu("Create New", MapEditor.NEW),
+		import_options = new Menu("Import", MapEditor.IMPORT);
 	private static final Icon icon = MapEditor.getIcon(FOLDER);
 	protected Folder(File f, MapEditor editor){super(f, editor);}
 	public boolean canAddChildren(){return true;}
 	public void contextMenu(JPopupMenu menu){
-		WorkspaceBrowser browser = editor.getBrowser();
-		JMenu inner = new JMenu("Create New"); inner.setIcon(MapEditor.getIcon(MapEditor.NEW));
-		inner.add(browser.add_folder);
-		inner.add(browser.add_map);
-		inner.add(browser.add_tileset);
-		inner.add(browser.add_autotile);
-		inner.add(browser.add_script);
-		menu.add(inner);
-		inner = new JMenu("Import"); inner.setIcon(MapEditor.getIcon(MapEditor.IMPORT));
-		inner.add(browser.add_resource);
-		inner.add(browser.add_image);
-		inner.add(browser.add_media);
-		menu.add(inner);
+		menu.add(new_options.getMenuItem(false));
+		menu.add(import_options.getMenuItem(false));
 		menu.addSeparator();
 	}
 	public long getId(){return 0;}
@@ -45,5 +38,14 @@ public class Folder extends Resource {
 	}
 	public static Folder create(File f, MapEditor e) throws Exception {
 		if(f.mkdir()) return new Folder(f,e); else throw new Exception();
+	}
+	
+	public static void register(){
+		new_options.addItem("Folder", ADD_FOLDER, KeyEvent.VK_F, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateFolderAction());
+	}
+	private static class CreateFolderAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().addFolder();
+		}
 	}
 }

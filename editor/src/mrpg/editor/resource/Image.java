@@ -22,6 +22,7 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -52,7 +53,7 @@ import mrpg.export.Graphic;
 public class Image extends Resource {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "mimg";
-	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.IMAGE_ICON);
+	private static final Icon icon = MapEditor.getIcon("image");
 	private final Properties properties; private Graphic graphic; private long id;
 	public Image(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
 	public long getId(){return id;}
@@ -137,6 +138,16 @@ public class Image extends Resource {
 				} catch(Exception ex){}
 			}
 			setVisible(false);
+		}
+	}
+	
+	public static void register(){
+		Resource.register("Image Files", Image.EXT, Image.class);
+		Folder.import_options.addItem("Image File", "image", KeyEvent.VK_I, ActionEvent.CTRL_MASK, new ImportImageAction());
+	}
+	private static class ImportImageAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().importImages();
 		}
 	}
 }

@@ -28,6 +28,7 @@ import java.awt.Rectangle;
 import mrpg.display.WorldPanel;
 import mrpg.editor.Clipboard;
 import mrpg.editor.History;
+import mrpg.editor.TilesetViewer;
 import mrpg.world.Cell;
 import mrpg.world.Tile;
 import mrpg.world.World;
@@ -39,7 +40,7 @@ public class SelectTool implements Tool {
 	private int sel_x1 = Integer.MIN_VALUE, sel_y1, sel_x2, sel_y2;
 	private Tile bg_tiles[] = null;
 	public Listener listener;
-	public SelectTool(WorldPanel w, History h){world = w; history = h;}
+	public SelectTool(WorldPanel w, TilesetViewer v, History h){world = w; history = h;}
 	private static final float[] dashed = new float[]{8.0f};
 	public void paint(Graphics g, int stX, int stY, int mouseX, int mouseY){}
 	public void paintTop(Graphics g, double scale, int stX, int stY, int mouseX, int mouseY){
@@ -201,6 +202,9 @@ public class SelectTool implements Tool {
 		history.addEntry(entry);
 		world.repaint();
 	}
+	
+	public String getName(){return "Select tiles";}
+	public String getIcon(){return "select";}
 	
 	public static interface Listener {
 		public void select();

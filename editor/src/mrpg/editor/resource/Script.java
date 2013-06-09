@@ -20,6 +20,7 @@ package mrpg.editor.resource;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
@@ -35,7 +36,7 @@ import mrpg.script.ScriptEditor;
 
 public class Script extends Modifiable implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
-	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.SCRIPT_ICON);
+	private static final Icon icon = MapEditor.getIcon("script");
 	public static final String EXT = "hx";
 	private String script;
 	public Script(File f, MapEditor e){super(f, e);}
@@ -57,7 +58,6 @@ public class Script extends Modifiable implements ActionListener {
 		File f = getFile(); BufferedWriter out = new BufferedWriter(new FileWriter(f));
 		try{
 			out.write(script); out.flush(); out.close(); setModified(false); ScriptEditor.onSave(this);
-			super.save();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	private static char[] buffer = new char[4096];
@@ -71,5 +71,15 @@ public class Script extends Modifiable implements ActionListener {
 	}
 	public static Script createScript(File f, MapEditor e, Project p) throws Exception {
 		Script ret = new Script(f, e); f.createNewFile(); return ret;
+	}
+	
+	public static void register(){
+		Resource.register("Script", Script.EXT, Script.class);
+		Folder.new_options.addItem("Script", "script", KeyEvent.VK_C, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateScriptAction());
+	}
+	private static class CreateScriptAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().addScript();
+		}
 	}
 }

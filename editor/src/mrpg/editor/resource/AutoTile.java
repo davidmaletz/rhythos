@@ -21,6 +21,7 @@ package mrpg.editor.resource;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -58,7 +59,8 @@ import mrpg.world.WallTilemap;
 
 public class AutoTile extends TileResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
-	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.TILESET);
+	public static final String TILESET = "database";
+	private static final Icon icon = MapEditor.getIcon(TILESET);
 	public static final String EXT = "atm"; private static final short VERSION=1;
 	public static final String ADD_AUTOTILE="set-tileset";
 	private Tilemap autotile; private Properties properties; private Image image; private long id;
@@ -223,6 +225,15 @@ public class AutoTile extends TileResource implements ActionListener {
 			else if(command == MapEditor.CANCEL) setVisible(false);
 			else if(command == FRAMES){if(frames.isEnabled()){updateFrames();}}
 			else if(frames.isEnabled()) tilemap.setSpeed(0, Integer.parseInt(command));
+		}
+	}
+	public static void register(){
+		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
+		Folder.new_options.addItem("Auto Tile", "database", KeyEvent.VK_T, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateAutoTileAction());
+	}
+	private static class CreateAutoTileAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().addAutoTile();
 		}
 	}
 }

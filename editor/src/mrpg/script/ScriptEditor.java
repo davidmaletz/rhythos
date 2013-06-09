@@ -34,7 +34,7 @@ public class ScriptEditor extends JFrame implements ScriptTextPane.ModifiedListe
 		if(script != null){script.setModified(modified); save.setEnabled(modified); MapEditor.instance.updateSaveButtons();}
 	}
 	public void actionPerformed(ActionEvent e) {
-		if(script != null && script.isModified()) try{script.save();}catch(Exception ex){}
+		if(script != null && script.isModified()) try{script.save(); MapEditor.instance.updateSaveButtons();}catch(Exception ex){}
 	}
 	public void setScript(Script s){
 		if(script != null) script.setScript(textPane.getText());

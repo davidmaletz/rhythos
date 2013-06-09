@@ -110,4 +110,7 @@ public class PencilTool implements Tool {
 	public void mouseReleased(int stX, int stY, int mouseX, int mouseY){entry = null;}
 	
 	public void activate(){world.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));}
+	
+	public String getName(){return "Freehand drawing tool";}
+	public String getIcon(){return "pencil";}
 }

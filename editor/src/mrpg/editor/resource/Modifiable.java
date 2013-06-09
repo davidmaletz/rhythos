@@ -20,5 +20,5 @@ public abstract class Modifiable extends Resource {
 	public String toString(){if(modified) return "*"+super.toString(); else return super.toString();}
 	public void refresh() throws Exception {if(!modified) super.refresh();}
 	public void revert() throws  Exception {super.refresh();}
-	public void save() throws Exception {MapEditor.instance.updateSaveButtons();}
+	public abstract void save() throws Exception ;
 }

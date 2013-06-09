@@ -37,7 +37,7 @@ import mrpg.world.World;
 public class EraserTool implements Tool {
 	private final WorldPanel world;
 	private final History history; private History.Entry entry; private boolean entryAdded;
-	public EraserTool(WorldPanel w, History h){world = w;  history = h;}
+	public EraserTool(WorldPanel w, TilesetViewer v, History h){world = w;  history = h;}
 	public void paint(Graphics g, int stX, int stY, int mouseX, int mouseY){
 		Composite c = ((Graphics2D)g).getComposite();
 		((Graphics2D)g).setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
@@ -99,4 +99,7 @@ public class EraserTool implements Tool {
 	public void mouseReleased(int stX, int stY, int mouseX, int mouseY){entry = null;}
 	
 	public void activate(){world.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));}
+	
+	public String getName(){return "Eraser tool";}
+	public String getIcon(){return "eraser";}
 }

@@ -34,4 +34,7 @@ public interface Tool {
 	public void mouseReleased(int stX, int stY, int mouseX, int mouseY);
 	
 	public void activate();
+	
+	public String getIcon();
+	public String getName();
 }

@@ -21,6 +21,7 @@ package mrpg.editor.resource;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -55,8 +56,8 @@ import mrpg.world.World;
 
 public class Map extends Modifiable {
 	private static final long serialVersionUID = 3067630717384565840L;
-	public static final String EXT = "map"; private static final short VERSION=1;
-	private static final Icon icon = MapEditor.getIcon(MapEditor.MAP);
+	public static final String EXT = "map", MAP = "map"; private static final short VERSION=1;
+	private static final Icon icon = MapEditor.getIcon(MAP);
 	private World world; private Properties properties; private Image background; private long id;
 	public Map(File f, MapEditor e){super(f,e);}
 	public void contextMenu(JPopupMenu menu){
@@ -81,7 +82,7 @@ public class Map extends Modifiable {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
 			out.writeShort(VERSION); out.writeLong(id); if(background == null) out.writeByte(0); else {out.writeByte(1); out.writeLong(background.getId());}
-			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this); super.save();
+			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this);
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MAP);}
@@ -176,7 +177,7 @@ public class Map extends Modifiable {
 					map.setName(name.getText());
 				}catch(Exception ex){
 					name.setText(map.getName()); return;
-				} try{map.save(); updated = true;}catch(Exception ex){}
+				} try{map.save(); map.editor.updateSaveButtons(); updated = true;}catch(Exception ex){}
 				setVisible(false);
 			} else if(command == MapEditor.SET){
 				Project p = WorkspaceBrowser.getProject(map);
@@ -196,6 +197,16 @@ public class Map extends Modifiable {
 				background = null; image_thumb.setIcon(new ImageIcon());
 			}
 			else setVisible(false);
+		}
+	}
+	
+	public static void register(){
+		Resource.register("Map Files", Map.EXT, Map.class);
+		Folder.new_options.addItem("Map", MAP, KeyEvent.VK_M, ActionEvent.CTRL_MASK, new CreateMapAction());
+	}
+	private static class CreateMapAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().addMap();
 		}
 	}
 }

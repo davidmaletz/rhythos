@@ -133,4 +133,7 @@ public class FillTool implements Tool {
 	public void mouseReleased(int stX, int stY, int mouseX, int mouseY){}
 	
 	public void activate(){world.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));}
+	
+	public String getName(){return "Flood fill tool";}
+	public String getIcon(){return "fill";}
 }

@@ -23,6 +23,7 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -54,7 +55,7 @@ import mrpg.world.BasicTilemap;
 
 public class Tileset extends TileResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
-	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.TILESET);
+	private static final Icon icon = MapEditor.getIcon("database");
 	public static final String EXT = "btm"; private static final short VERSION=1;
 	public static final String SET_TILESET="set-tileset";
 	private BasicTilemap tilemap; private Properties properties; private Image image; private long id;
@@ -171,6 +172,15 @@ public class Tileset extends TileResource implements ActionListener {
 				}
 			}
 			else setVisible(false);
+		}
+	}
+	public static void register(){
+		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
+		Folder.new_options.addItem("Tileset", "database", KeyEvent.VK_T, ActionEvent.CTRL_MASK, new CreateTilesetAction());
+	}
+	private static class CreateTilesetAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().addTileset();
 		}
 	}
 }

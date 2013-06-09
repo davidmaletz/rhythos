@@ -30,13 +30,15 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.MemoryImageSource;
 
 import mrpg.display.WorldPanel;
+import mrpg.editor.History;
+import mrpg.editor.TilesetViewer;
 
 
 public class ZoomTool implements Tool {
 	private final WorldPanel world; private int pressedY = -1, lastX, lastY;
 	private static final Cursor hidden = getHiddenCursor(); private Rectangle rect = null;
 	public Listener listener;
-	public ZoomTool(WorldPanel w){world = w;}
+	public ZoomTool(WorldPanel w, TilesetViewer v, History h){world = w;}
 	public void paint(Graphics g, int stX, int stY, int mouseX, int mouseY){
 		if(pressedY != Integer.MIN_VALUE){
 			g = g.create();
@@ -95,6 +97,9 @@ public class ZoomTool implements Tool {
 	}
 	
 	public void activate(){pressedY = Integer.MIN_VALUE; world.setCursor(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR));}
+	
+	public String getName(){return "Zoom in/out";}
+	public String getIcon(){return "zoom";}
 	
 	private static final Cursor getHiddenCursor(){
 		int[] pixels = new int[16 * 16];

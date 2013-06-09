@@ -104,4 +104,7 @@ public class RectTool implements Tool {
 	}
 	
 	public void activate(){world.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));}
+	
+	public String getName(){return "Rectangle drawing tool";}
+	public String getIcon(){return "rect";}
 }

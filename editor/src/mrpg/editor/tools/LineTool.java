@@ -113,4 +113,7 @@ public class LineTool implements Tool {
 	}
 	
 	public void activate(){world.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));}
+	
+	public String getName(){return "Line drawing tool";}
+	public String getIcon(){return "line";}
 }

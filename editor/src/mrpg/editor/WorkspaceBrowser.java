@@ -84,8 +84,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		sndChooser.setAcceptAllFileFilterUsed(false); sndChooser.setFileFilter(new ExtFileFilter("Audio Files", new String[]{".wav",".mp3"}));
 		sndChooser.setMultiSelectionEnabled(true); sndChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 	}
-	public static final String ADD_FOLDER_ICON = "add_folder", EDIT_ICON = "edit",
-		IMAGE_ICON = "image", MEDIA_ICON = "media", DB_ICON = new String("database"), SCRIPT_ICON = "script", TILESET = new String("database"), AUTOTILE = new String("database");
+	public static final String EDIT_ICON = "edit";
 	private final int NO_DRAG=0, CHECK_DRAG=1, HAS_DRAG=2;
 	private final MapEditor editor;
 	private final JPopupMenu context_menu; private Resource dragTo = null, dragLine = null;
@@ -187,6 +186,37 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			}
 		}catch(Exception e){}
 	}
+	public void importImages(){
+		if(imgChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+			try{
+				Resource parent = getInsertResource(); boolean sub = false;
+				for(File f : imgChooser.getSelectedFiles()) if(f.isDirectory()) sub = true;
+				if(sub) sub = JOptionPane.showConfirmDialog(this, "Include Subdirectories?", "Import Images", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE) == JOptionPane.YES_OPTION;
+				for(File f : imgChooser.getSelectedFiles()) importImage(parent, f, getProject(parent), sub);
+				MapEditor.doDeferredRead(true);
+			} catch(Exception ex){}
+		}
+	}
+	public void importMedia(){
+		if(sndChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+			try{
+				Resource parent = getInsertResource(); boolean sub = false;
+				for(File f : sndChooser.getSelectedFiles()) if(f.isDirectory()) sub = true;
+				if(sub) sub = JOptionPane.showConfirmDialog(this, "Include Subdirectories?", "Import Media", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE) == JOptionPane.YES_OPTION;
+				for(File f : sndChooser.getSelectedFiles()) importMedia(parent, f, getProject(parent), sub);
+				MapEditor.doDeferredRead(true);
+			} catch(Exception ex){}
+		}
+	}
+	public void importResources(){
+		if(Resource.resourceChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
+			try{
+				Resource parent = getInsertResource();
+				for(File f : Resource.resourceChooser.getSelectedFiles()) importResource(parent, f, getProject(parent));
+				MapEditor.doDeferredRead(true);
+			} catch(Exception ex){}
+		}
+	}
 	public void addFolder(){
 		try{
 			Resource parent = getInsertResource();
@@ -281,7 +311,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 				int i = JOptionPane.showConfirmDialog(this, "Save all maps before removing project?");
 				if(i == JOptionPane.NO_OPTION) removeResource(r, false);
 				else if(i == JOptionPane.YES_OPTION){
-					innerSaveAll(r); removeResource(r, false);
+					innerSaveAll(r); removeResource(r, false); editor.updateSaveButtons();
 				}
 			} else removeResource(r, false);
 		} else if(command == MapEditor.RENAME){
@@ -291,52 +321,19 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			try{
 				r.setName(name);
 			}catch(Exception ex){}
-		} else if(command == ADD_FOLDER_ICON){addFolder();
 		} else if(command == EDIT_ICON){getSelectedResource().edit();
 		} else if(command == MapEditor.PROPERTIES){getSelectedResource().properties();
-		} else if(command == MapEditor.MAP){addMap();
 		} else if(command == Project.PROJECT) try{
 			Project p = Project.createProject(editor); addProject(p); MapEditor.doDeferredRead(true);
 			if(!editor.hasMap()) p.getMaps().iterator().next().edit();
-		}catch(Exception ex){}
-		else if(command == IMAGE_ICON){
-			if(imgChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
-				try{
-					Resource parent = getInsertResource(); boolean sub = false;
-					for(File f : imgChooser.getSelectedFiles()) if(f.isDirectory()) sub = true;
-					if(sub) sub = JOptionPane.showConfirmDialog(this, "Include Subdirectories?", "Import Images", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE) == JOptionPane.YES_OPTION;
-					for(File f : imgChooser.getSelectedFiles()) importImage(parent, f, getProject(parent), sub);
-					MapEditor.doDeferredRead(true);
-				} catch(Exception ex){}
-			}
-		} else if(command == MEDIA_ICON){
-			if(sndChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
-				try{
-					Resource parent = getInsertResource(); boolean sub = false;
-					for(File f : sndChooser.getSelectedFiles()) if(f.isDirectory()) sub = true;
-					if(sub) sub = JOptionPane.showConfirmDialog(this, "Include Subdirectories?", "Import Media", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE) == JOptionPane.YES_OPTION;
-					for(File f : sndChooser.getSelectedFiles()) importMedia(parent, f, getProject(parent), sub);
-					MapEditor.doDeferredRead(true);
-				} catch(Exception ex){}
-			}
-		} else if(command == DB_ICON){
-			if(Resource.resourceChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION){
-				try{
-					Resource parent = getInsertResource();
-					for(File f : Resource.resourceChooser.getSelectedFiles()) importResource(parent, f, getProject(parent));
-					MapEditor.doDeferredRead(true);
-				} catch(Exception ex){}
-			}
-		} else if(command == SCRIPT_ICON){addScript();
-		} else if(command == TILESET){addTileset();
-		} else if(command == AUTOTILE){addAutoTile();}
+			}catch(Exception ex){}
 		else if(command == MapEditor.BUILD){
 			try{
-				Project p = getProject(getSelectedResource()); innerSaveAll(p); HaxeCompiler.compile(p);
+				Project p = getProject(getSelectedResource()); innerSaveAll(p); editor.updateSaveButtons(); HaxeCompiler.compile(p);
 			}catch(Exception ex){ex.printStackTrace();}
 		} else if(command == MapEditor.TEST){
 			try{
-				Project p = getProject(getSelectedResource()); innerSaveAll(p); HaxeCompiler.compile(p); HaxeCompiler.run(p);
+				Project p = getProject(getSelectedResource()); innerSaveAll(p); editor.updateSaveButtons(); HaxeCompiler.compile(p); HaxeCompiler.run(p);
 			}catch(Exception ex){ex.printStackTrace();}
 		}
 	}
@@ -397,13 +394,13 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		for(TreePath p : getSelectionPathsTrimChildren()){
 			if(p == null) continue;
 			try{Modifiable r = (Modifiable)getResource(p); if(r.isModified()){r.revert(); m.reload(r);}}catch(Exception e){}
-		} MapEditor.doDeferredRead(false);
+		} MapEditor.doDeferredRead(false); editor.updateSaveButtons();
 	}
 	public void saveSelection(){
 		for(TreePath p : getSelectionPathsTrimChildren()){
 			if(p == null) continue;
 			try{Modifiable r = (Modifiable)getResource(p); if(r.isModified()) r.save();}catch(Exception e){}
-		} MapEditor.doDeferredRead(false);
+		} MapEditor.doDeferredRead(false); editor.updateSaveButtons();
 	}
 	
 	private void innerSaveAll(Resource r){
@@ -412,7 +409,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			try{Modifiable m = (Modifiable)c; if(m.isModified()) m.save();}catch(Exception e){}
 		}
 	}
-	public void saveAll(){innerSaveAll(getWorkspace());}
+	public void saveAll(){innerSaveAll(getWorkspace()); editor.updateSaveButtons();}
 	public boolean selectionModified(){
 		int ct = getSelectionCount(); if(ct == 0) return false;
 		if(ct > 1){
@@ -526,14 +523,6 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		revert = MapEditor.createMenuItemIcon("Revert", MapEditor.REVERT, this),
 		remove = MapEditor.createMenuItemIcon("Remove Project", MapEditor.DELETE, MapEditor.REMOVE, this),
 		rename = MapEditor.createMenuItemIcon("Rename", MapEditor.RENAME, this),
-		add_folder = MapEditor.createMenuItemIcon("Folder", ADD_FOLDER_ICON, this),
-		add_map = MapEditor.createMenuItemIcon("Map", MapEditor.MAP, this),
-		add_tileset = MapEditor.createMenuItemIcon("Tileset", TILESET, this),
-		add_autotile = MapEditor.createMenuItemIcon("AutoTile", AUTOTILE, this),
-		add_resource = MapEditor.createMenuItemIcon("Resource File", DB_ICON, this),
-		add_image = MapEditor.createMenuItemIcon("Image File", IMAGE_ICON, this),
-		add_media = MapEditor.createMenuItemIcon("Audio File", MEDIA_ICON, this),
-		add_script = MapEditor.createMenuItemIcon("Script", SCRIPT_ICON, this),
 		edit = MapEditor.createMenuItemIcon("Edit", EDIT_ICON, this),
 		properties = MapEditor.createMenuItemIcon("Properties", MapEditor.PROPERTIES, this),
 		add_project = MapEditor.createMenuItemIcon("Create New Project", Project.PROJECT, this),

@@ -21,6 +21,7 @@ package mrpg.editor.resource;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -50,7 +51,7 @@ import mrpg.media.MediaPlayer;
 public class Media extends Resource {
 	private static final long serialVersionUID = -3381982539985690245L;
 	public static final String EXT = "msnd";
-	private static final Icon icon = MapEditor.getIcon(WorkspaceBrowser.MEDIA_ICON);
+	private static final Icon icon = MapEditor.getIcon("media");
 	private final Properties properties; private Sound sound; private long id;
 	public Media(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
 	public Audio.Clip getClip(){try{return sound.getClip();}catch(Exception e){} return null;}
@@ -134,6 +135,16 @@ public class Media extends Resource {
 				}catch(Exception ex){}
 			}
 			setVisible(false);
+		}
+	}
+	
+	public static void register(){
+		Resource.register("Media Files", Media.EXT, Media.class);
+		Folder.import_options.addItem("Audio File", "media", KeyEvent.VK_I, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new ImportMediaAction());
+	}
+	private static class ImportMediaAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().importMedia();
 		}
 	}
 }

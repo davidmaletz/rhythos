@@ -18,6 +18,9 @@
  ******************************************************************************/
 package mrpg.editor.resource;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -148,6 +151,15 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			if(idx == -1) throw new Exception();
 			Class<? extends Resource> r = resources.get(ext.substring(idx+1)); if(r == null) throw new Exception();
 			Resource ret = r.getConstructor(File.class, MapEditor.class).newInstance(f, e); ret.read(f); return ret;
+		}
+	}
+	
+	public static void register(){
+		Folder.import_options.addItem("Resource File", "database", KeyEvent.VK_R, ActionEvent.CTRL_MASK, new ImportResourceAction());
+	}
+	private static class ImportResourceAction implements ActionListener {
+		public void actionPerformed(ActionEvent e){
+			MapEditor.instance.getBrowser().importResources();
 		}
 	}
 }
