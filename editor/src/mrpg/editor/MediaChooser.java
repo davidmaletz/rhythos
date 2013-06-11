@@ -97,7 +97,7 @@ public class MediaChooser extends JDialog implements ActionListener, TreeSelecti
 			player.setClip(clip);
 		}
 	}
-	public void mouseClicked(MouseEvent e) {if(e.getClickCount() == 2) okAction();}
+	public void mouseClicked(MouseEvent e) {if(e.getClickCount() == 2 && tree.getRowForLocation(e.getX(), e.getY()) != -1) okAction();}
 	public void mouseEntered(MouseEvent e) {}
 	public void mouseExited(MouseEvent e) {}
 	public void mousePressed(MouseEvent e) {}

@@ -33,6 +33,7 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Random;
 
 import javax.swing.BorderFactory;
@@ -56,6 +57,7 @@ import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
+import mrpg.export.Export;
 import mrpg.export.Graphic;
 import mrpg.script.HaxeCompiler;
 
@@ -146,30 +148,51 @@ public class Project extends Folder {
 	private static <E extends Resource> E getById(HashMap<Long,E> table, long id) throws Exception {
 		E r = table.get(id); if(r == null) throw new Exception(); else return r;
 	}
-	private HashMap<Long,Image> images = new HashMap<Long,Image>();
-	public long newImageId(){return newId(images);}
-	public long setImageId(Image r, long id) throws Exception {return setId(images, r, id);}
-	public void removeImageId(Image r, long id) throws Exception {removeId(images, r, id);}
-	public Image getImageById(long id) throws Exception {return getById(images, id);}
-	public Iterable<Image> getImages(){return images.values();}
-	private HashMap<Long,Media> media = new HashMap<Long,Media>();
-	public long newMediaId(){return newId(media);}
-	public long setMediaId(Media r, long id) throws Exception {return setId(media, r, id);}
-	public void removeMediaId(Media r, long id) throws Exception {removeId(media, r, id);}
-	public Media getMediaById(long id) throws Exception {return getById(media, id);}
-	public Iterable<Media> getMedia(){return media.values();}
-	private HashMap<Long,TileResource> tilemaps = new HashMap<Long,TileResource>();
-	public long newTilemapId(){return newId(tilemaps);}
-	public long setTilemapId(TileResource r, long id) throws Exception {return setId(tilemaps, r, id);}
-	public void removeTilemapId(TileResource r, long id) throws Exception {removeId(tilemaps, r, id);}
-	public TileResource getTilemapById(long id) throws Exception {return getById(tilemaps, id);}
-	public Iterable<TileResource> getTilemaps(){return tilemaps.values();}
-	private HashMap<Long,Map> maps = new HashMap<Long,Map>();
-	public long newMapId(){return newId(maps);}
-	public long setMapId(Map r, long id) throws Exception {return setId(maps, r, id);}
-	public void removeMapId(Map r, long id) throws Exception {removeId(maps, r, id);}
-	public Map getMapById(long id) throws Exception {return getById(maps, id);}
-	public Iterable<Map> getMaps(){return maps.values();}
+	private HashMap<String,HashMap<Long,Resource>> assets = new HashMap<String,HashMap<Long,Resource>>();
+	private HashMap<Long,Resource> get(String type){
+		HashMap<Long,Resource> ret = assets.get(type); if(ret == null){
+			ret = new HashMap<Long,Resource>(); assets.put(type, ret);
+		} return ret;
+	}
+	private static class ConvertIterator<T> implements Iterator<T> {
+		private Iterator<?> parent;
+		public ConvertIterator(Iterator<?> p){parent = p;}
+		public boolean hasNext(){return parent.hasNext();}
+		@SuppressWarnings("unchecked")
+		public T next(){return (T)parent.next();}
+		public void remove(){parent.remove();}
+	}
+	private static class ConvertIterable<T> implements Iterable<T> {
+		private Iterable<?> parent;
+		public ConvertIterable(Iterable<?> p){parent = p;}
+		public Iterator<T> iterator(){return new ConvertIterator<T>(parent.iterator());}
+	}
+	public long newImageId(){return newId(get(Export.IMAGE));}
+	public long setImageId(Image r, long id) throws Exception {return setId(get(Export.IMAGE), r, id);}
+	public void removeImageId(Image r, long id) throws Exception {removeId(get(Export.IMAGE), r, id);}
+	public Image getImageById(long id) throws Exception {return (Image)getById(get(Export.IMAGE), id);}
+	public Iterable<Image> getImages(){return new ConvertIterable<Image>(get(Export.IMAGE).values());}
+	public long newMediaId(){return newId(get(Export.SOUND));}
+	public long setMediaId(Media r, long id) throws Exception {return setId(get(Export.SOUND), r, id);}
+	public void removeMediaId(Media r, long id) throws Exception {removeId(get(Export.SOUND), r, id);}
+	public Media getMediaById(long id) throws Exception {return (Media)getById(get(Export.SOUND), id);}
+	public Iterable<Media> getMedia(){return new ConvertIterable<Media>(get(Export.SOUND).values());}
+	public long newTilemapId(){return newId(get(Export.TILEMAP));}
+	public long setTilemapId(TileResource r, long id) throws Exception {return setId(get(Export.TILEMAP), r, id);}
+	public void removeTilemapId(TileResource r, long id) throws Exception {removeId(get(Export.TILEMAP), r, id);}
+	public TileResource getTilemapById(long id) throws Exception {return (TileResource)getById(get(Export.TILEMAP), id);}
+	public Iterable<TileResource> getTilemaps(){return new ConvertIterable<TileResource>(get(Export.TILEMAP).values());}
+	public long newMapId(){return newId(get(Export.MAP));}
+	public long setMapId(Map r, long id) throws Exception {return setId(get(Export.MAP), r, id);}
+	public void removeMapId(Map r, long id) throws Exception {removeId(get(Export.MAP), r, id);}
+	public Map getMapById(long id) throws Exception {return (Map)getById(get(Export.MAP), id);}
+	public Iterable<Map> getMaps(){return new ConvertIterable<Map>(get(Export.MAP).values());}
+	public long newId(String type){return newId(get(type));}
+	public long setId(String type, Resource r, long id) throws Exception {return setId(get(type), r, id);}
+	public void removeId(String type, Resource r, long id) throws Exception {removeId(get(type), r, id);}
+	public Resource getById(String type, long id) throws Exception {return (Image)getById(get(type), id);}
+	public Iterable<Resource> getResources(String type){return get(type).values();}
+	public Iterable<String> getResourceTypes(){return assets.keySet();}
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;

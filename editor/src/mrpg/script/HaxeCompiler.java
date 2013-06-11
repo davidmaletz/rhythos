@@ -1,13 +1,15 @@
 package mrpg.script;
 
 import java.awt.Desktop;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -69,12 +71,6 @@ public class HaxeCompiler {
 		b.append("</project>");
 		return b.toString();
 	}
-	private static byte buf[] = new byte[4096], NEKO[] = {(byte)'N',(byte)'E',(byte)'K',(byte)'O'};
-	private static int writeAll(InputStream in, OutputStream out) throws Exception {
-		int ret = 0; try{
-			int n = 0; while(-1 != (n = in.read(buf))){out.write(buf, 0, n); ret += n;}
-		}catch(Exception e){} in.close(); return ret;
-	}
 	public static class Result {
 		public final String target; public final boolean isNeko; public final long time; public final ArrayList<String> messages;
 		public Result(String t, boolean n, ArrayList<String> m){
@@ -134,6 +130,7 @@ public class HaxeCompiler {
 			if(c.isDirectory()) deleteAll(c, subdir); c.delete();
 		}
 	}
+	private static byte NEKO[] = {(byte)'N',(byte)'E',(byte)'K',(byte)'O'};
 	public static void compile(Project p) throws Exception {
 		launchHost(); File fbase = p.getFile(), fbin = new File(fbase, Folder.OUT_DIR);
 		Result r = inner_parse(p, fbase, fbin); p.lastCompile = r; ScriptEditor.compiled(p);
@@ -148,7 +145,7 @@ public class HaxeCompiler {
 			}  Resource.copyDir(new File("neko", t), bindir); boolean windows = t.equals("windows"); String ext = ((windows)?".exe":"");
 			File out = new File(bindir, p.getName()+ext); new File(bindir, "neko"+ext).renameTo(out);
 			FileOutputStream exe = new FileOutputStream(out, true); int len = (int)exe.getChannel().size();
-			writeAll(new FileInputStream(new File(new File(_target, "obj"), "ApplicationMain.n")), exe);
+			Export.writeAll(new FileInputStream(new File(new File(_target, "obj"), "ApplicationMain.n")), exe);
 			exe.write(NEKO); ByteBuffer bb = ByteBuffer.allocate(4); bb.order(ByteOrder.LITTLE_ENDIAN);
 			bb.putInt(len); exe.write(bb.array()); exe.flush(); exe.close();
 			export = new NekoExport(new File(new File(_target, "bin"), "assets"));
@@ -156,8 +153,18 @@ public class HaxeCompiler {
 		else throw new Exception();
 		for(Image i : p.getImages()) export.addImage(i);
 		for(Media m : p.getMedia()) export.addMedia(m);
-		for(TileResource tm : p.getTilemaps()) export.addTilemap(tm);
-		for(Map m : p.getMaps()) export.addMap(m); export.finish();
+		ByteArrayOutputStream ar = new ByteArrayOutputStream(); DataOutputStream dout = new DataOutputStream(ar);
+		for(String type : p.getResourceTypes()){
+			if(type.equals(Export.IMAGE) || type.equals(Export.SOUND)) continue;
+			boolean tileset = type.equals(Export.TILEMAP);
+			for(Resource rs : p.getResources(type)){
+				BufferedInputStream in = new BufferedInputStream(new FileInputStream(rs.getFile()));
+				in.skip(10); byte[] header = null; if(tileset){
+					String name = ((TileResource)rs).getTilemap().getClass().getSimpleName();
+					ar.reset(); dout.writeUTF(name); dout.flush(); header = ar.toByteArray();
+				} export.addData(header, in, type, rs.getId(), rs.getFile().lastModified());
+			}
+		} export.finish();
 	}
 	public static void run(Project p) throws Exception {
 		if(test != null && !isClosed(test)){test.destroy(); test = null;} String t = p.lastCompile.target;

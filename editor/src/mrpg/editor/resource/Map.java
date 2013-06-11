@@ -202,7 +202,8 @@ public class Map extends Modifiable {
 	
 	public static void register(){
 		Resource.register("Map Files", Map.EXT, Map.class);
-		Folder.new_options.addItem("Map", MAP, KeyEvent.VK_M, ActionEvent.CTRL_MASK, new CreateMapAction());
+		Folder.new_options.addMenu("Map", Map.MAP).
+			addItem("Map", MAP, KeyEvent.VK_M, ActionEvent.CTRL_MASK, new CreateMapAction());
 	}
 	private static class CreateMapAction implements ActionListener {
 		public void actionPerformed(ActionEvent e){

@@ -72,6 +72,7 @@ import org.w3c.dom.NodeList;
 
 import mrpg.display.WorldPanel;
 import mrpg.editor.resource.AutoTile;
+import mrpg.editor.resource.SpriteLayer;
 import mrpg.editor.resource.Folder;
 import mrpg.editor.resource.Image;
 import mrpg.editor.resource.Map;
@@ -589,7 +590,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		ScriptEditor.init();
 		setupMenuBar(); setupToolbar(); setupTileToolbar();
 		Resource.register(); Folder.register(); Image.register(); Media.register();
-		Map.register(); Tileset.register(); AutoTile.register(); Script.register();
+		Map.register(); Tileset.register(); AutoTile.register(); SpriteLayer.register(); Script.register();
 		tile_toolbar.addItem(new ToolItem(PencilTool.class));
 		tile_toolbar.addItem(new ToolItem(EraserTool.class));
 		tile_toolbar.addItem(new ToolItem(LineTool.class));

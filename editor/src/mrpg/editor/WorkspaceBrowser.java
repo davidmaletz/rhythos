@@ -237,6 +237,14 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			if(editor.getWorld() == null) m.edit();
 		}catch(Exception e){}
 	}
+	public void addResource(Class<? extends Resource> cls){
+		try{
+			Resource parent = getInsertResource();
+			Resource r = (Resource)cls.getDeclaredMethod("create", Resource.class, MapEditor.class, Project.class).
+				invoke(null, parent, editor, getProject(parent));
+			addResource(r, parent);
+		}catch(Exception e){}
+	}
 	public void addScript(){
 		try{
 			Resource parent = getInsertResource();

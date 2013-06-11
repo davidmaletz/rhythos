@@ -95,7 +95,7 @@ public class ImageChooser extends JDialog implements ActionListener, TreeSelecti
 			BufferedImage im = selected_image.getImage(); size.setText("Dimensions: "+im.getWidth()+" x "+im.getHeight());
 		}
 	}
-	public void mouseClicked(MouseEvent e) {if(e.getClickCount() == 2) okAction();}
+	public void mouseClicked(MouseEvent e) {if(e.getClickCount() == 2 && tree.getRowForLocation(e.getX(), e.getY()) != -1) okAction();}
 	public void mouseEntered(MouseEvent e) {}
 	public void mouseExited(MouseEvent e) {}
 	public void mousePressed(MouseEvent e) {}

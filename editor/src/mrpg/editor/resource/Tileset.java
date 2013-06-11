@@ -176,7 +176,8 @@ public class Tileset extends TileResource implements ActionListener {
 	}
 	public static void register(){
 		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
-		Folder.new_options.addItem("Tileset", "database", KeyEvent.VK_T, ActionEvent.CTRL_MASK, new CreateTilesetAction());
+		Folder.new_options.addMenu("Map", Map.MAP).
+			addItem("Tileset", "database", KeyEvent.VK_T, ActionEvent.CTRL_MASK, new CreateTilesetAction());
 	}
 	private static class CreateTilesetAction implements ActionListener {
 		public void actionPerformed(ActionEvent e){

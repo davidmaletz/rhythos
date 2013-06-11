@@ -229,7 +229,8 @@ public class AutoTile extends TileResource implements ActionListener {
 	}
 	public static void register(){
 		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
-		Folder.new_options.addItem("Auto Tile", "database", KeyEvent.VK_T, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateAutoTileAction());
+		Folder.new_options.addMenu("Map", Map.MAP).
+			addItem("Auto Tile", "database", KeyEvent.VK_T, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateAutoTileAction());
 	}
 	private static class CreateAutoTileAction implements ActionListener {
 		public void actionPerformed(ActionEvent e){

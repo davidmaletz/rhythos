@@ -36,13 +36,16 @@ public class ColorMatrix {
 		0,0,0,0,1
 	};
 	private static final double LENGTH = IDENTITY_MATRIX.length;
+	public static final ColorMatrix identity = new ColorMatrix();
 
 	public double[] matrix;
 // initialization:
 	public ColorMatrix(){this(null);}
 	public ColorMatrix(double[] p_matrix) {
 		matrix = new double[25];
-		copyMatrix(((p_matrix != null && p_matrix.length == LENGTH) ? p_matrix : IDENTITY_MATRIX));
+		for(int i=0;i<LENGTH;i++){
+			matrix[i] = ((p_matrix == null || i >= p_matrix.length)?IDENTITY_MATRIX[i]:p_matrix[i]);
+		}
 	}
 	
 	
@@ -141,14 +144,6 @@ public class ColorMatrix {
 
 	public String toString() {
 		return "ColorMatrix "+Arrays.toString(matrix);
-	}
-
-// private methods:
-	// copy the specified matrix's values to this matrix:
-	protected void copyMatrix(double[] p_matrix) {
-		for (int i=0;i<LENGTH;i++) {
-			matrix[i] = p_matrix[i];
-		}
 	}
 
 	// multiplies one matrix against another:

@@ -20,6 +20,7 @@ package mrpg.export;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.InputStream;
 
 import com.flagstone.transform.DefineData;
 import com.flagstone.transform.DefineTag;
@@ -30,6 +31,7 @@ import com.flagstone.transform.SymbolClass;
 
 public class SWFExport extends Export {
 	private Movie movie; private int id; private SymbolClass bitmaps, sounds, bytearrays; private File f;
+	private ByteArrayOutputStream out = new ByteArrayOutputStream();
 	public SWFExport(File swf) throws Exception {
 		f = swf; movie = new Movie(); movie.decodeFromFile(f);
 		bitmaps = new SymbolClass(); sounds = new SymbolClass(); bytearrays = new SymbolClass();
@@ -38,13 +40,14 @@ public class SWFExport extends Export {
 		}
 	}
 	public void addImage(Graphic b, long i, long modified) throws Exception {
-		String type = "Ai"+Long.toHexString(i); movie.add(b.defineImage(id)); bitmaps.add(id, type); id++;
+		String type = "A"+IMAGE+Long.toHexString(i); movie.add(b.defineImage(id)); bitmaps.add(id, type); id++;
 	}
 	public void addSound(Sound s, long i, long modified) throws Exception {
-		String type = "As"+Long.toHexString(i); movie.add(s.getSound(id)); sounds.add(id, type); id++;
+		String type = "A"+SOUND+Long.toHexString(i); movie.add(s.getSound(id)); sounds.add(id, type); id++;
 	}
-	public void addData(ByteArrayOutputStream ar, String t, long i, long modified) throws Exception {
-		String type = "A"+t+Long.toHexString(i); movie.add(new DefineData(id, ar.toByteArray())); bytearrays.add(id, type); id++;
+	public void addData(byte[] header, InputStream in, String t, long i, long modified) throws Exception {
+		out.reset(); if(header != null) out.write(header); Export.writeAll(in, out);
+		String type = "A"+t+Long.toHexString(i); movie.add(new DefineData(id, out.toByteArray())); bytearrays.add(id, type); id++;
 	}
 	public void finish() throws Exception {
 		movie.add(bitmaps); movie.add(sounds); movie.add(bytearrays); movie.add(ShowFrame.getInstance()); movie.encodeToFile(f);
