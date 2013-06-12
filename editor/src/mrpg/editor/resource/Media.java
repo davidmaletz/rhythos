@@ -50,7 +50,7 @@ import mrpg.media.MediaPlayer;
 
 public class Media extends Resource {
 	private static final long serialVersionUID = -3381982539985690245L;
-	public static final String EXT = "msnd";
+	public static final String EXT = "msnd"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon("media");
 	private final Properties properties; private Sound sound; private long id;
 	public Media(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
@@ -71,13 +71,13 @@ public class Media extends Resource {
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
-			out.writeLong(id); sound.write(out);
+			out.writeShort(VERSION); out.writeLong(id); sound.write(out);
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MEDIA);}
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{
+		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); sound = new Sound(in); long i = WorkspaceBrowser.getProject(this).setMediaId(this, id);
 			if(i != id){id = i; save();}
 		}catch(Exception e){in.close(); throw e;}

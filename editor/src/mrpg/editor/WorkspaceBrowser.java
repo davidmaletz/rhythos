@@ -67,7 +67,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		public ExtFileFilter(String n, String[] _ext){
 			ext = _ext; StringBuilder b = new StringBuilder();
 			b.append(n); b.append(" ("); for(String e : ext){
-				b.append("*"); b.append(e); if(e != ext[ext.length-1]) b.append(",");
+				b.append("*."); b.append(e); if(e != ext[ext.length-1]) b.append(",");
 			} b.append(")"); name = b.toString();
 		}
 		public boolean accept(File f){

@@ -607,7 +607,9 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		//TODO: Project "get by id" has to allow new types via plugins (hash map from long to table?)
 		//TODO: enable/disable resources in a project based on target.
 		//TODO: built in error checking and exception handling in the client - so we know what went wrong when something goes wrong.
-		//TODO: Image Editing based on the map editor?
+		//TODO: Image Editing based on the map editor? Or perhaps based on jhlabs image editor?
+		//TODO: Animation Editing based on VIDE?
+		//TODO: Sound Editing based on ??
 		instance = new MapEditor(); instance.init();
 		SwingUtilities.invokeLater(instance);
 	}

@@ -52,7 +52,7 @@ import mrpg.export.Graphic;
 
 public class Image extends Resource {
 	private static final long serialVersionUID = -5394199071824545816L;
-	public static final String EXT = "mimg";
+	public static final String EXT = "mimg"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon("image");
 	private final Properties properties; private Graphic graphic; private long id;
 	public Image(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
@@ -73,13 +73,13 @@ public class Image extends Resource {
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
-			out.writeLong(id); graphic.write(out);
+			out.writeShort(VERSION); out.writeLong(id); graphic.write(out);
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MEDIA);}
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{
+		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); graphic = new Graphic(in); long i = WorkspaceBrowser.getProject(this).setImageId(this, id);
 			if(i != id){id = i; save();}
 		}catch(Exception e){in.close(); throw e;}

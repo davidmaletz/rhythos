@@ -27,16 +27,16 @@ public class ColorMatrixFilter extends PointFilter {
 	}
 	
 	public int filterRGB(int x, int y, int rgb) {
-		int a = (rgb >> 24) & 0xff;
-		int r = (rgb >> 16) & 0xff;
-		int g = (rgb >> 8) & 0xff;
-		int b = rgb & 0xff;
+		int sa = (rgb >> 24) & 0xff;
+		int sr = (rgb >> 16) & 0xff;
+		int sg = (rgb >> 8) & 0xff;
+		int sb = rgb & 0xff;
 		double[] m = matrix.matrix;
-		r = PixelUtils.clamp((int)(r*m[0]+g*m[1]+b*m[2]+a*m[3]+m[4]));
-		g = PixelUtils.clamp((int)(r*m[5]+g*m[6]+b*m[7]+a*m[8]+m[9]));
-		b = PixelUtils.clamp((int)(r*m[10]+g*m[11]+b*m[12]+a*m[13]+m[14]));
-		a = PixelUtils.clamp((int)(r*m[15]+g*m[16]+b*m[17]+a*m[18]+m[19]));
-		return (a << 24) | (r << 16) | (g << 8) | b;
+		int rr = PixelUtils.clamp((int)(sr*m[0]+sg*m[1]+sb*m[2]+sa*m[3]+m[4]));
+		int rg = PixelUtils.clamp((int)(sr*m[5]+sg*m[6]+sb*m[7]+sa*m[8]+m[9]));
+		int rb = PixelUtils.clamp((int)(sr*m[10]+sg*m[11]+sb*m[12]+sa*m[13]+m[14]));
+		int ra = PixelUtils.clamp((int)(sr*m[15]+sg*m[16]+sb*m[17]+sa*m[18]+m[19]));
+		return (ra << 24) | (rr << 16) | (rg << 8) | rb;
 	}
 
 	public String toString() {

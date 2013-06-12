@@ -67,16 +67,19 @@ import javax.swing.tree.TreePath;
 
 import com.jhlabs.image.ColorMatrix;
 import com.jhlabs.image.ColorMatrixFilter;
+import com.jhlabs.image.Glow;
+import com.jhlabs.image.OuterGlowFilter;
 
 import layout.SpringUtilities;
 import mrpg.editor.DragList;
 import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
+import mrpg.editor.Matrix;
 import mrpg.editor.WorkspaceBrowser;
 
 public class SpriteLayer extends Resource {
 	private static final long serialVersionUID = -5394199071824545816L;
-	public static final String EXT = "spl", TYPE = "sl";
+	public static final String EXT = "spl", TYPE = "sl"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon("chr_appearance");
 	private final ArrayList<Img> images = new ArrayList<Img>(); private final ArrayList<Color> colors = new ArrayList<Color>();
 	private final Properties properties; private long id;
@@ -96,17 +99,20 @@ public class SpriteLayer extends Resource {
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
-			out.writeLong(id); out.writeShort(images.size()); out.writeShort(colors.size());
+			out.writeShort(VERSION); out.writeLong(id); out.writeShort(images.size()); out.writeShort(colors.size());
 			for(Img i : images){out.writeUTF(i.name); out.writeLong((i.image==null)?0:i.image.getId());}
 			for(Color c : colors){
-				out.writeUTF(c.name); for(int i=0; i<20; i++) out.writeDouble(c.color.matrix[i]);
+				out.writeUTF(c.name); for(int i=0; i<20; i++) out.writeFloat((float)c.color.matrix[i]);
+				Glow g = (c.glow == null)?new Glow():c.glow;
+				out.writeInt(g.color.getRGB()); out.writeByte(g.blurX); out.writeByte(g.blurY);
+				out.writeFloat(g.strength); out.writeByte(g.quality);
 			} out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_PROJECT);}
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{
+		try{if(in.readShort() != VERSION) throw new Exception();
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); short nImg = in.readShort(), nCol = in.readShort();
 			images.clear(); colors.clear(); for(int i=0; i<nImg; i++){
@@ -115,8 +121,10 @@ public class SpriteLayer extends Resource {
 				images.add(new Img(n, img));
 			} for(int c=0; c<nCol; c++){
 				String n = in.readUTF(); double m[] = new double[20];
-				for(int i=0; i<20; i++) m[i] = in.readDouble();
-				colors.add(new Color(n, new ColorMatrix(m)));
+				for(int i=0; i<20; i++) m[i] = in.readFloat();
+				Glow g = new Glow(); g.color = new java.awt.Color(in.readInt()); g.blurX = in.readByte();
+				g.blurY = in.readByte(); g.strength = in.readFloat(); g.quality = in.readByte();
+				colors.add(new Color(n, new ColorMatrix(m), g));
 			} long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 		}catch(Exception e){in.close(); throw e;}
 	}
@@ -238,14 +246,15 @@ public class SpriteLayer extends Resource {
 		private void updatePreview(){
 			Img i = (Img)images.getSelectedValue(); if(i == null || i.image == null){image_thumb.setIcon(new ImageIcon()); return;}
 			Color color = (Color)colors.getSelectedValue(); ColorMatrix c = (color == null)?ColorMatrix.identity:color.color;
-			updatePreview(i.image, c);
+			updatePreview(i.image, c, (color == null)?null:color.glow);
 		}
-		private void updatePreview(ColorMatrix c){
+		private void updatePreview(ColorMatrix c, Glow g){
 			Img i = (Img)images.getSelectedValue(); if(i == null || i.image == null){image_thumb.setIcon(new ImageIcon()); return;}
-			updatePreview(i.image, c);
+			updatePreview(i.image, c, g);
 		}
-		private void updatePreview(Image i, ColorMatrix c){
+		private void updatePreview(Image i, ColorMatrix c, Glow g){
 			BufferedImage b = new ColorMatrixFilter(c).filter(i.getImage(), null);
+			if(g != null && g.strength > 0) b = new OuterGlowFilter(g).filter(b, null);
 			image_thumb.setIcon(new ImageIcon(b));
 		}
 		
@@ -323,17 +332,19 @@ public class SpriteLayer extends Resource {
 		}
 	}
 	private static class Color {
-		public final String name; public final ColorMatrix color;
-		public Color(String n, ColorMatrix c){name = n; color = c;}
+		public final String name; public final ColorMatrix color; public final Glow glow;
+		public Color(String n, ColorMatrix c, Glow g){name = n; color = c; glow = g;}
 		public String toString(){return name;}
 	}
-	private static class ColorEdit extends JDialog implements ActionListener, TableModelListener {
+	private static boolean show = false;
+	private static class ColorEdit extends JDialog implements ActionListener, TableModelListener, ChangeListener {
 		private static final long serialVersionUID = -4987880557990107307L;
-		public boolean updated; private Properties props;
-		private final JTextField name; private Matrix matrix;
-		private static String HUE = "hue", ADD = "add", IDEN = "iden";
+		public boolean updated; private Properties props; private final JButton color;
+		private final JSlider blurX, blurY, strength, quality;
+		private final JTextField name; private Matrix matrix; private Glow glow;
+		private static String HUE = "hue", ADD = "add", IDEN = "iden", COLOR = "color";
 		public ColorEdit(Properties p){
-			super(JOptionPane.getFrameForComponent(p), "Color", true); props = p; setResizable(false);
+			super(JOptionPane.getFrameForComponent(p), "Color", true); props = p; glow = new Glow(); setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
 			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
 			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name"));
@@ -347,6 +358,18 @@ public class SpriteLayer extends Resource {
 			b = new JButton("Add/Multiply..."); b.setActionCommand(ADD); b.addActionListener(this); inner.add(b);
 			b = new JButton("Reset Transform"); b.setActionCommand(IDEN); b.addActionListener(this); inner.add(b);
 			settings.add(inner);
+			inner = new JPanel(new SpringLayout()); inner.setBorder(BorderFactory.createTitledBorder("Glow"));
+			inner.add(new JLabel("Color: ")); color = new JButton(new ColorIcon(0,0,0));
+			color.setActionCommand(COLOR); color.addActionListener(this); inner.add(color);
+			inner.add(new JLabel("Blur X: "));
+			blurX = new JSlider(0, 20, 0); blurX.addChangeListener(this); HueEdit.setup(blurX, 5); inner.add(blurX);
+			inner.add(new JLabel("Blur Y: "));
+			blurY = new JSlider(0, 20, 0); blurY.addChangeListener(this); HueEdit.setup(blurY, 5); inner.add(blurY);
+			inner.add(new JLabel("Strength: "));
+			strength = new JSlider(0, 800, 0); strength.addChangeListener(this); HueEdit.setup(strength, 100); inner.add(strength);
+			inner.add(new JLabel("Quality: ")); quality = new JSlider(1, 3, 1); quality.setSnapToTicks(true);
+			quality.addChangeListener(this); HueEdit.setup(quality, 1); inner.add(quality);
+			SpringUtilities.makeCompactGrid(inner, 5, 2, 3, 3, 3, 3); settings.add(inner);
 			c.add(settings);
 			inner = new JPanel();
 			b = new JButton("Ok"); b.setActionCommand(MapEditor.OK); b.addActionListener(this); inner.add(b);
@@ -355,12 +378,15 @@ public class SpriteLayer extends Resource {
 			pack();
 		}
 		public void show(Color c){
-			updated = false; if(c != null){name.setText(c.name); matrix.setMatrix(c.color.matrix);}
-			else {name.setText("Color"); matrix.setMatrix(ColorMatrix.identity.matrix);}
+			show = true; updated = false; if(c != null){
+				name.setText(c.name); matrix.setMatrix(c.color.matrix); glow = (c.glow == null)?new Glow():new Glow(c.glow);
+			} else {name.setText("Color"); matrix.setMatrix(ColorMatrix.identity.matrix); glow = new Glow();}
+			color.setIcon(new ColorIcon(glow.color)); blurX.setValue(glow.blurX); blurY.setValue(glow.blurY);
+			strength.setValue((int)(glow.strength*100)); quality.setValue(glow.quality);
 			name.requestFocus(); name.selectAll();
-			setVisible(true);
+			show = false; setVisible(true);
 		}
-		public Color get(){return new Color(name.getText(), new ColorMatrix(matrix.getMatrix()));}
+		public Color get(){return new Color(name.getText(), new ColorMatrix(matrix.getMatrix()), new Glow(glow));}
 		private HueEdit hue_edit; private AddMulEdit add_edit;
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
@@ -378,10 +404,20 @@ public class SpriteLayer extends Resource {
 				} else tableChanged(null);
 			} else if(command == IDEN){
 				matrix.setMatrix(ColorMatrix.identity.matrix);
+			} else if(command == COLOR){
+				java.awt.Color c = JColorChooser.showDialog(this, "Select Color", ((ColorIcon)color.getIcon()).color);
+				if(c != null){color.setIcon(new ColorIcon(c)); glow.color = c; tableChanged(null);}
 			} else setVisible(false);
 		}
 		public void tableChanged(TableModelEvent e) {
-			props.updatePreview(new ColorMatrix(matrix.getMatrix()));
+			if(show) return;
+			props.updatePreview(new ColorMatrix(matrix.getMatrix()), glow);
+		}
+		public void stateChanged(ChangeEvent e) {
+			if(show) return;
+			if(e.getSource() == quality){glow.quality = quality.getValue(); return;}
+			glow.blurX = blurX.getValue(); glow.blurY = blurY.getValue(); glow.strength = strength.getValue()*0.01f;
+			tableChanged(null);
 		}
 	}
 	
@@ -415,7 +451,7 @@ public class SpriteLayer extends Resource {
 			pack();
 		}
 		public void setVisible(boolean v){
-			if(v){updated = false; hue.setValue(0); sat.setValue(0); lum.setValue(0); contrast.setValue(0);}
+			if(v){show = true; updated = false; hue.setValue(0); sat.setValue(0); lum.setValue(0); contrast.setValue(0); show = false;}
 			super.setVisible(v);
 		}
 		public void actionPerformed(ActionEvent e) {
@@ -425,9 +461,10 @@ public class SpriteLayer extends Resource {
 			} else setVisible(false);
 		}
 		public void stateChanged(ChangeEvent e) {
+			if(show) return;
 			matrix = new ColorMatrix(edit.matrix.getMatrix());
 			matrix.adjustColor(lum.getValue(), contrast.getValue(), sat.getValue(), hue.getValue());
-			edit.props.updatePreview(matrix);
+			edit.props.updatePreview(matrix, edit.glow);
 		}
 	}
 	
@@ -472,8 +509,8 @@ public class SpriteLayer extends Resource {
 		}
 		public void setVisible(boolean v){
 			if(v){
-				updated = false; add.setIcon(new ColorIcon(0,0,0)); add_power.setValue(0);
-				mul.setIcon(new ColorIcon(255,255,255)); mul_power.setValue(100);
+				show = true; updated = false; add.setIcon(new ColorIcon(0,0,0)); add_power.setValue(0);
+				mul.setIcon(new ColorIcon(255,255,255)); mul_power.setValue(100); show = false;
 			} super.setVisible(v);
 		}
 		public void actionPerformed(ActionEvent e) {
@@ -489,6 +526,7 @@ public class SpriteLayer extends Resource {
 			} else setVisible(false);
 		}
 		public void stateChanged(ChangeEvent e) {
+			if(show) return;
 			java.awt.Color a = ((ColorIcon)add.getIcon()).color, m = ((ColorIcon)mul.getIcon()).color;
 			double ap = add_power.getValue()*0.01, mp = mul_power.getValue()*0.01/255;
 			matrix = new ColorMatrix(new double[]{
@@ -497,7 +535,7 @@ public class SpriteLayer extends Resource {
 					0,0,1+(m.getBlue()-255)*mp,0,a.getBlue()*ap,
 					0,0,0,1,0});
 			matrix.concat(new ColorMatrix(edit.matrix.getMatrix()).matrix);
-			edit.props.updatePreview(matrix);
+			edit.props.updatePreview(matrix, edit.glow);
 		}
 	}
 	

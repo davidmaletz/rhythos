@@ -1,4 +1,4 @@
-package mrpg.editor.resource;
+package mrpg.editor;
 
 import java.awt.Component;
 import java.text.DecimalFormat;

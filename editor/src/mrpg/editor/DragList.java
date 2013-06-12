@@ -91,7 +91,6 @@ public class DragList extends DragSource implements DragSourceListener, DragGest
 			}catch(Exception e){return false;}
 		}
 		public boolean importData(TransferHandler.TransferSupport support){
-			//TODO: ensure ColorMatrix works
 			if(!canImport(support)) return false;
 			try{
 				ObjectTransferable transferable = (ObjectTransferable)support.getTransferable().getTransferData(flavor);
