@@ -69,6 +69,7 @@ import com.jhlabs.image.ColorMatrix;
 import com.jhlabs.image.ColorMatrixFilter;
 
 import layout.SpringUtilities;
+import mrpg.editor.DragList;
 import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
@@ -146,7 +147,7 @@ public class SpriteLayer extends Resource {
 			settings.add(inner); inner = new JPanel(new GridLayout(1,2)); p = new JPanel(new BorderLayout());
 			p.setBorder(BorderFactory.createTitledBorder("Images"));
 			images = new JList(); images.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-			images.addMouseListener(this); images.addListSelectionListener(this);
+			images.addMouseListener(this); images.addListSelectionListener(this); new DragList(images, Img.class);
 			JScrollPane pane = new JScrollPane(images); pane.setPreferredSize(new Dimension(100,120));
 			p.add(pane, BorderLayout.CENTER); JButton addi = new JButton("+"); addi.setActionCommand(ADDI);
 			addi.addActionListener(this); JButton remi = new JButton("-"); remi.setActionCommand(REMI);
@@ -154,7 +155,7 @@ public class SpriteLayer extends Resource {
 			inner2.add(remi); p.add(inner2, BorderLayout.SOUTH); inner.add(p); p = new JPanel(new BorderLayout());
 			p.setBorder(BorderFactory.createTitledBorder("Colors"));
 			colors = new JList(); colors.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-			colors.addMouseListener(this); colors.addListSelectionListener(this);
+			colors.addMouseListener(this); colors.addListSelectionListener(this); new DragList(colors, Color.class);
 			pane = new JScrollPane(colors); pane.setPreferredSize(new Dimension(100,120));
 			p.add(pane, BorderLayout.CENTER); JButton addc = new JButton("+"); addc.setActionCommand(ADDC);
 			addc.addActionListener(this); JButton remc = new JButton("-"); remc.setActionCommand(REMC);
@@ -260,7 +261,7 @@ public class SpriteLayer extends Resource {
 		}
 	}
 	private static class Img {
-		public String name; public Image image;
+		public final String name; public final Image image;
 		public Img(String n, Image i){name = n; image = i;}
 		public String toString(){return name;}
 	}
@@ -322,7 +323,7 @@ public class SpriteLayer extends Resource {
 		}
 	}
 	private static class Color {
-		public String name; public ColorMatrix color;
+		public final String name; public final ColorMatrix color;
 		public Color(String n, ColorMatrix c){name = n; color = c;}
 		public String toString(){return name;}
 	}
@@ -455,7 +456,7 @@ public class SpriteLayer extends Resource {
 			inner.add(new JLabel("Add Color: ")); add = new JButton(new ColorIcon(0,0,0));
 			add.setActionCommand(ColorEdit.ADD); add.addActionListener(this); inner.add(add);
 			inner.add(new JLabel("Add Power: "));
-			add_power = new JSlider(0, 100, 100); add_power.addChangeListener(this); HueEdit.setup(add_power, 100); inner.add(add_power);
+			add_power = new JSlider(-100, 100, 0); add_power.addChangeListener(this); HueEdit.setup(add_power, 100); inner.add(add_power);
 			inner.add(new JLabel("Mul Color: "));
 			mul = new JButton(new ColorIcon(255,255,255));
 			mul.setActionCommand(MUL); mul.addActionListener(this); inner.add(mul);
@@ -471,7 +472,7 @@ public class SpriteLayer extends Resource {
 		}
 		public void setVisible(boolean v){
 			if(v){
-				updated = false; add.setIcon(new ColorIcon(0,0,0)); add_power.setValue(100);
+				updated = false; add.setIcon(new ColorIcon(0,0,0)); add_power.setValue(0);
 				mul.setIcon(new ColorIcon(255,255,255)); mul_power.setValue(100);
 			} super.setVisible(v);
 		}
