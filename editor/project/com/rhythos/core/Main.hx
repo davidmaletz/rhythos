@@ -124,14 +124,18 @@ class Main extends Sprite {
 	private static function getAsset(id:String):Dynamic {
 		if(asset_cache.exists(id)) return asset_cache.get(id); var a:Dynamic = null;
 		#if neko
-		if(id.charCodeAt(0) == 105){
+		var c = id.charCodeAt(0);
+		if(c == 105){
 			var f = sys.io.File.read("assets/A"+id, true); f.bigEndian = true;
 			var w = f.readInt31(), h = f.readInt31(), len = f.readInt31();
 			var b = new BitmapData(w, h, true);
 			var ar = ByteArray.fromBytes(f.read(len)); f.close();
 			ar.inflate(); b.setPixels(new nme.geom.Rectangle(0,0,w,h), ar); a = b;
-		} else if(id.charCodeAt(1) == 115){
-			//TODO
+		} else if(c == 115){
+			//TODO: this whole sound system is kind of clunky, especially with only one mp3 playing at the same time... add a new sound manager eventually?
+			if(sys.FileSystem.exists("assets/A"+id+".mp3"))
+				a = new nme.media.Sound(new native.net.URLRequest("assets/A"+id+".mp3"), null, true);
+			else a = new nme.media.Sound(new native.net.URLRequest("assets/A"+id+".wav"), null, false);
 		} else {
 			a = ByteArray.fromBytes(sys.io.File.getBytes("assets/A"+id));
 		}

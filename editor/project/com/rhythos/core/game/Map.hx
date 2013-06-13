@@ -20,6 +20,7 @@ package com.rhythos.core.game;
 import com.rhythos.core.Character;
 import nme.display.Graphics;
 import nme.display.Sprite;
+import nme.display.BitmapData;
 import nme.utils.ByteArray;
 
 /**
@@ -29,9 +30,12 @@ import nme.utils.ByteArray;
 
 class Map extends Sprite {
 	private var w:Int; private var h:Int; private var max_level:Int; private var cells:Array<Cell>;
-	private var wrapX:Bool; private var wrapY:Bool; private var event_layer:Int;
+	private var wrapX:Bool; private var wrapY:Bool; private var event_layer:Int; private var background:BitmapData;
 	public function new(d:ByteArray){
-		super(); var tilemaps = new Array<Tilemap>(); var len = d.readUnsignedByte();
+		super(); if(d.readByte() == 1){
+			background = Main.getBitmap(Main.readID(d));
+		} else background = null;
+		var tilemaps = new Array<Tilemap>(); var len = d.readUnsignedByte();
 		for(i in 0...len) tilemaps.push(Tilemap.get(Main.readID(d)));
 		w = d.readShort(); h = d.readShort(); var wrap:Int = d.readUnsignedByte(); wrapX = (wrap & 1) != 0; wrapY = (wrap & 2) != 0;
 		cells = new Array<Cell>(); event_layer = 2; max_level = event_layer; for(y in 0...h) for(x in 0...w){
