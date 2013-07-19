@@ -23,6 +23,8 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -37,7 +39,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.plaf.metal.MetalSliderUI;
 
 
-public class MediaPlayer extends JPanel implements ActionListener, ChangeListener, FrameListener, MouseListener, MouseMotionListener {
+public class MediaPlayer extends JPanel implements ActionListener, ChangeListener, FrameListener, MouseListener, MouseMotionListener, HierarchyListener {
 	private static final long serialVersionUID = -2645984272456152640L;
 	private static final Icon PLAY_ICON = new PlayIcon(), PAUSE_ICON = new PauseIcon(), STOP_ICON = new StopIcon();
 	private final Audio.Player player = new Audio.Player(); private Audio.Clip clip;
@@ -65,7 +67,12 @@ public class MediaPlayer extends JPanel implements ActionListener, ChangeListene
 	public void pause(){player.pause(); play.setIcon(PLAY_ICON);}
 	public boolean isRunning(){return player.isRunning();}
 	public void stop(){player.stop(); play.setIcon(PLAY_ICON);}
-
+	public void addNotify(){super.addNotify(); addHierarchyListener(this);}
+	public void removeNotify(){removeHierarchyListener(this); super.removeNotify();}
+	public void hierarchyChanged(HierarchyEvent e){
+		if((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0) if(!isShowing()) stop();
+	}
+	
 	public void actionPerformed(ActionEvent e){
 		if(e.getSource() == play){if(player.isRunning()) pause(); else play();}
 		else stop();

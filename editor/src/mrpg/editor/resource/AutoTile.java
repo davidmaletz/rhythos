@@ -48,7 +48,6 @@ import javax.swing.JTextField;
 import javax.swing.tree.TreePath;
 
 import mrpg.editor.AutoTileEditor;
-import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
@@ -209,9 +208,7 @@ public class AutoTile extends TileResource implements ActionListener {
 			} else if(command == MapEditor.SET){
 				Project p = getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				ImageChooser c = new ImageChooser(p, image);
-				c.setVisible(true);
-				Image im = c.getSelectedImage();
+				Image im = Image.choose(p, image);
 				if(im != null){
 					try{
 						if(im.getImage().getHeight() == p.tile_size*2)
@@ -227,6 +224,7 @@ public class AutoTile extends TileResource implements ActionListener {
 			else if(frames.isEnabled()) tilemap.setSpeed(0, Integer.parseInt(command));
 		}
 	}
+	public String getExt(){return EXT;}
 	public static void register(){
 		Resource.register("Auto Tile Files", AutoTile.EXT, AutoTile.class);
 		Folder.new_options.addMenu("Map", Map.MAP).

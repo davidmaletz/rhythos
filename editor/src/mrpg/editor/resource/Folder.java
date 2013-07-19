@@ -39,7 +39,7 @@ public class Folder extends Resource {
 	public static Folder create(File f, MapEditor e) throws Exception {
 		if(f.mkdir()) return new Folder(f,e); else throw new Exception();
 	}
-	
+	public String getExt(){return null;}
 	public static void register(){
 		new_options.addItem("Folder", ADD_FOLDER, KeyEvent.VK_F, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateFolderAction());
 	}

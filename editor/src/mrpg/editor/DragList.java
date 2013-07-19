@@ -23,9 +23,10 @@ import javax.swing.TransferHandler;
 
 public class DragList extends DragSource implements DragSourceListener, DragGestureListener, KeyListener {
 	private static final long serialVersionUID = -7697869179730226540L;
-	private JList list; private Class<?> type; private static Object clipboard;
-	public DragList(JList l, Class<?> t){
-		super(); list = l; type = t; list.setDragEnabled(true); list.setDropMode(DropMode.INSERT);
+	private JList list; private Class<?> type; private static Object clipboard; private Listener listener;
+	public DragList(JList l, Class<?> t){this(l,t,null);}
+	public DragList(JList l, Class<?> t, Listener ln){
+		super(); list = l; type = t; listener = ln; list.setDragEnabled(true); list.setDropMode(DropMode.INSERT);
 		list.setTransferHandler(new MyTransferHandler()); list.addKeyListener(this);
 		createDefaultDragGestureRecognizer(list, DnDConstants.ACTION_COPY_OR_MOVE, this);
 	}
@@ -71,10 +72,10 @@ public class DragList extends DragSource implements DragSourceListener, DragGest
 			switch(e.getKeyCode()){
 			case 'c': case 'C': if(o != null) clipboard = o; break;
 			case 'v': case 'V':
-				if(clipboard != null && clipboard.getClass() == type) ((DefaultListModel)list.getModel()).addElement(clipboard);
+				if(clipboard != null && clipboard.getClass() == type){((DefaultListModel)list.getModel()).addElement(clipboard); listener.updateDrag();}
 				break;
 			case 'x': case 'X':
-				if(o != null){clipboard = o; ((DefaultListModel)list.getModel()).removeElementAt(list.getSelectedIndex());}
+				if(o != null){clipboard = o; ((DefaultListModel)list.getModel()).removeElementAt(list.getSelectedIndex()); listener.updateDrag();}
 				break;
 			}
 		}
@@ -105,8 +106,11 @@ public class DragList extends DragSource implements DragSourceListener, DragGest
 					Object o = transferable.getObject();
 					if(support.getDropAction() != DnDConstants.ACTION_COPY) transferable.remove();
 					m.add(dropIndex, o); list.setSelectedIndex(dropIndex);
-				} return true;
+				} listener.updateDrag(); return true;
 			}catch(Exception e){return false;}
 		  }
 		}
+	public static interface Listener {
+		public void updateDrag();
+	}
 }

@@ -72,6 +72,7 @@ import org.w3c.dom.NodeList;
 
 import mrpg.display.WorldPanel;
 import mrpg.editor.resource.AutoTile;
+import mrpg.editor.resource.Sprite;
 import mrpg.editor.resource.SpriteLayer;
 import mrpg.editor.resource.Folder;
 import mrpg.editor.resource.Image;
@@ -539,8 +540,8 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		dsel = new ToggleableMenuItem("Deselect All", DSEL_ALL, KeyEvent.VK_D, ActionEvent.CTRL_MASK, actionListener);
 		menu.addItem("Select All", SEL_ALL, KeyEvent.VK_A, ActionEvent.CTRL_MASK, actionListener); menu.addItem(dsel);
 		menu = menu_bar.addMenu("View", null);
-		showGrid = new CheckboxMenuItem("Show Grid", SHOW_GRID, KeyEvent.VK_G, ActionEvent.CTRL_MASK, actionListener);
-		showAll = new CheckboxMenuItem("Show All Layers", SHOW_ALL, KeyEvent.VK_A, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, actionListener);
+		showGrid = new CheckboxMenuItem("Show Grid", SHOW_GRID, KeyEvent.VK_G, ActionEvent.CTRL_MASK, actionListener); menu.addItem(showGrid);
+		showAll = new CheckboxMenuItem("Show All Layers", SHOW_ALL, KeyEvent.VK_A, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, actionListener); menu.addItem(showAll);
 		menu.addSeparator();
 		prev_layer = new ToggleableMenuItem("Previous Layer", PREV_LAYER, KeyEvent.VK_L, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, actionListener, false);
 		next_layer = new ToggleableMenuItem("Next Layer", NEXT_LAYER, KeyEvent.VK_L, ActionEvent.CTRL_MASK, actionListener);
@@ -590,7 +591,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		ScriptEditor.init();
 		setupMenuBar(); setupToolbar(); setupTileToolbar();
 		Resource.register(); Folder.register(); Image.register(); Media.register();
-		Map.register(); Tileset.register(); AutoTile.register(); SpriteLayer.register(); Script.register();
+		Map.register(); Tileset.register(); AutoTile.register(); Sprite.register(); SpriteLayer.register(); Script.register();
 		tile_toolbar.addItem(new ToolItem(PencilTool.class));
 		tile_toolbar.addItem(new ToolItem(EraserTool.class));
 		tile_toolbar.addItem(new ToolItem(LineTool.class));

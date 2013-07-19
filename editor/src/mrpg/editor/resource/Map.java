@@ -47,7 +47,6 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.tree.TreePath;
 
-import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.export.WorldIO;
@@ -189,9 +188,7 @@ public class Map extends Modifiable {
 					if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
 				}
 				if(p == null){JOptionPane.showMessageDialog(this, "Map is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				ImageChooser c = new ImageChooser(p, background);
-				c.setVisible(true);
-				Image im = c.getSelectedImage();
+				Image im = Image.choose(p, background);
 				if(im != null){background = im; image_thumb.setIcon(new ImageIcon(background.getImage()));}
 			} else if(command == MapEditor.CLEAR){
 				background = null; image_thumb.setIcon(new ImageIcon());
@@ -199,7 +196,7 @@ public class Map extends Modifiable {
 			else setVisible(false);
 		}
 	}
-	
+	public String getExt(){return EXT;}
 	public static void register(){
 		Resource.register("Map Files", Map.EXT, Map.class);
 		Folder.new_options.addMenu("Map", Map.MAP).

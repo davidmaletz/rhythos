@@ -46,7 +46,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.tree.TreePath;
 
-import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetEditor;
 import mrpg.editor.TilesetViewer;
@@ -163,9 +162,7 @@ public class Tileset extends TileResource implements ActionListener {
 			} else if(command == MapEditor.SET){
 				Project p = getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				ImageChooser c = new ImageChooser(p, image);
-				c.setVisible(true);
-				Image im = c.getSelectedImage();
+				Image im = Image.choose(p, image);
 				if(im != null){
 					try{tilemap = new BasicTilemap(im.getImage(), tileset.getId(), p.tile_size); editor.setTilemap(tilemap); image = im;}
 					catch(Exception ex){JOptionPane.showMessageDialog(tileset.editor, "Unable to create Tileset: "+ex.getMessage(), "Tileset Creation Error", JOptionPane.ERROR_MESSAGE); updated = false; tileset.tilemap = null;}
@@ -174,6 +171,7 @@ public class Tileset extends TileResource implements ActionListener {
 			else setVisible(false);
 		}
 	}
+	public String getExt(){return EXT;}
 	public static void register(){
 		Resource.register("Tileset Files", Tileset.EXT, Tileset.class);
 		Folder.new_options.addMenu("Map", Map.MAP).

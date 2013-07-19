@@ -140,6 +140,7 @@ public abstract class Resource extends DefaultMutableTreeNode {
 		resourceChooser.setAcceptAllFileFilterUsed(false); resourceChooser.setMultiSelectionEnabled(true);
 		resourceChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 	}
+	public abstract String getExt();
 	public static void register(String name, String ext, Class<? extends Resource> r){
 		resources.put(ext, r); resourceChooser.addChoosableFileFilter(new ExtFileFilter(name, new String[]{ext}));
 	}

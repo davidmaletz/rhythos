@@ -72,7 +72,7 @@ public class Script extends Modifiable implements ActionListener {
 	public static Script createScript(File f, MapEditor e, Project p) throws Exception {
 		Script ret = new Script(f, e); f.createNewFile(); return ret;
 	}
-	
+	public String getExt(){return EXT;}
 	public static void register(){
 		Resource.register("Script", Script.EXT, Script.class);
 		Folder.new_options.addItem("Script", "script", KeyEvent.VK_C, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateScriptAction());

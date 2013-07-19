@@ -53,7 +53,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
@@ -136,7 +135,7 @@ public class Project extends Folder {
 	private static Random random;
 	private static <E extends Resource> long newId(HashMap<Long,E> table){
 		if(random == null) random = new Random();
-		long l; do{l = random.nextLong();}while(table.containsKey(l)); return l;
+		long l; do{l = random.nextLong();}while(l != 0 && table.containsKey(l)); return l;
 	}
 	private static <E extends Resource> long setId(HashMap<Long,E> table, E r, long id) throws Exception {
 		if(r == null) throw new Exception(); Resource old = table.get(id); if(r == old) return id;
@@ -190,7 +189,7 @@ public class Project extends Folder {
 	public long newId(String type){return newId(get(type));}
 	public long setId(String type, Resource r, long id) throws Exception {return setId(get(type), r, id);}
 	public void removeId(String type, Resource r, long id) throws Exception {removeId(get(type), r, id);}
-	public Resource getById(String type, long id) throws Exception {return (Image)getById(get(type), id);}
+	public Resource getById(String type, long id) throws Exception {return getById(get(type), id);}
 	public Iterable<Resource> getResources(String type){return get(type).values();}
 	public Iterable<String> getResourceTypes(){return assets.keySet();}
 	
@@ -288,27 +287,21 @@ public class Project extends Folder {
 				try{project.save();}catch(Exception ex){}
 				setVisible(false);
 			} else if(command == SET_FRAME){
-				ImageChooser c = new ImageChooser(project, frame);
-				c.setVisible(true);
-				Image im = c.getSelectedImage();
+				Image im = Image.choose(project, frame);
 				if(im != null){
 					BufferedImage b = im.getImage(); if(b.getWidth() != 12 || b.getHeight() != 12)
 						JOptionPane.showMessageDialog(this, "Frame images must be 12x12!", "Bad Image Dimensions", JOptionPane.ERROR_MESSAGE);
 					else {frame = im; frame_thumb.setIcon(new ImageIcon(frame.getImage()));}
 				}
 			} else if(command == SET_FONT){
-				ImageChooser c = new ImageChooser(project, font);
-				c.setVisible(true);
-				Image im = c.getSelectedImage();
+				Image im = Image.choose(project, font);
 				if(im != null){
 					BufferedImage b = im.getImage(); if(b.getWidth() < 792 || Math.floor(b.getWidth()*0.125) != b.getWidth()*0.125 || b.getHeight() != 8)
 						JOptionPane.showMessageDialog(this, "Font images must be 8 pixels high, and >= 792 pixels wide (divisible by 8)!", "Bad Image Dimensions", JOptionPane.ERROR_MESSAGE);
 					else {font = im; font_thumb.setIcon(new ImageIcon(font.getImage()));}
 				}
 			} else if(command == SET_BG){
-				ImageChooser c = new ImageChooser(project, bg);
-				c.setVisible(true);
-				Image im = c.getSelectedImage();
+				Image im = Image.choose(project, bg);
 				if(im != null){
 					BufferedImage b = im.getImage(); if(b.getWidth() != 200 || b.getHeight() != 150)
 						JOptionPane.showMessageDialog(this, "Background images must be 200x150!", "Bad Image Dimensions", JOptionPane.ERROR_MESSAGE);

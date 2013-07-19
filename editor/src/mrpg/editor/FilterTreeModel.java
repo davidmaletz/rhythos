@@ -18,8 +18,6 @@
  ******************************************************************************/
 package mrpg.editor;
 
-import java.io.File;
-
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
@@ -27,22 +25,22 @@ import mrpg.editor.resource.Resource;
 
 public class FilterTreeModel extends DefaultTreeModel {
 	private static final long serialVersionUID = -9003054607707078379L;
-	private final String ext;
-	public FilterTreeModel(TreeNode root, String ext){
-		super(root); this.ext = ext;
+	private final Filter filter;
+	public FilterTreeModel(TreeNode root, Filter f){
+		super(root); filter = f;
 	}
 	public Object getChild(Object parent, int index){
 		int ct = 0, end = super.getChildCount(parent); for(int i=0; i<end; i++){
-			Resource r = (Resource)super.getChild(parent, i); File f = r.getFile();
-			if(f.isDirectory() || f.getName().endsWith(ext)){
+			Resource r = (Resource)super.getChild(parent, i);
+			if(filter.filter(r)){
 				if(ct == index) return r; ct++;
 			}
 		} throw new ArrayIndexOutOfBoundsException();
 	}
 	public int getChildCount(Object parent){
 		int ct = 0, end = super.getChildCount(parent); for(int i=0; i<end; i++){
-			Resource r = (Resource)super.getChild(parent, i); File f = r.getFile();
-			if(f.isDirectory() || f.getName().endsWith(ext)) ct++;
+			Resource r = (Resource)super.getChild(parent, i);
+			if(filter.filter(r)) ct++;
 		} return ct;
 	}
 }

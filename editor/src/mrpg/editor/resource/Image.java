@@ -45,7 +45,9 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
+import mrpg.editor.Filter;
 import mrpg.editor.MapEditor;
+import mrpg.editor.ResourceChooser;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.export.Graphic;
 
@@ -140,7 +142,7 @@ public class Image extends Resource {
 			setVisible(false);
 		}
 	}
-	
+	public String getExt(){return EXT;}
 	public static void register(){
 		Resource.register("Image Files", Image.EXT, Image.class);
 		Folder.import_options.addItem("Image File", "image", KeyEvent.VK_I, ActionEvent.CTRL_MASK, new ImportImageAction());
@@ -150,4 +152,28 @@ public class Image extends Resource {
 			MapEditor.instance.getBrowser().importImages();
 		}
 	}
+	
+	public static Image choose(Resource root, Resource selected){
+		ResourceChooser c = new ResourceChooser(root, selected, FILTER);
+		c.setVisible(true); return (Image)c.getSelectedResource();
+	}
+	private static class IFilter extends JPanel implements Filter {
+		private static final long serialVersionUID = 907354882348925575L;
+		private JLabel image_thumb, size;
+		public IFilter(){
+			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS)); image_thumb = new JLabel(new ImageIcon());
+			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			pane.setBorder(BorderFactory.createLoweredBevelBorder()); add(pane);
+			size = new JLabel("Dimensions: 0 x 0"); size.setPreferredSize(new Dimension(150,20)); add(size);
+		}
+		public boolean filter(Resource r){String ext = r.getExt(); return ext == null || ext == EXT;}
+		private void reset(){image_thumb.setIcon(new ImageIcon()); size.setText("Dimensions: 0 x 0");}
+		public JPanel getPreview(){reset(); return this;}
+		public boolean showPreview(Resource r){
+			if(r.getExt() == null){reset(); return false;} 
+			BufferedImage im = ((Image)r).getImage(); image_thumb.setIcon(new ImageIcon(im));
+			size.setText("Dimensions: "+im.getWidth()+" x "+im.getHeight());
+			return true;
+		}
+	} public static final Filter FILTER = new IFilter();
 }

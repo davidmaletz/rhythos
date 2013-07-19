@@ -19,6 +19,7 @@
 package mrpg.editor.resource;
 
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -41,7 +42,9 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 
+import mrpg.editor.Filter;
 import mrpg.editor.MapEditor;
+import mrpg.editor.ResourceChooser;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.export.Sound;
 import mrpg.media.Audio;
@@ -124,8 +127,7 @@ public class Media extends Resource {
 				int m = (int)(frames*spf/60), s = (int)(frames*spf)-m*60;
 				dur.setText(m+":"+((s < 10)?"0":"")+s);
 				preview.setClip(clip);} else dur.setText("0:00");
-			} else preview.stop();
-			super.setVisible(b);
+			} super.setVisible(b);
 		}
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
@@ -137,7 +139,7 @@ public class Media extends Resource {
 			setVisible(false);
 		}
 	}
-	
+	public String getExt(){return EXT;}
 	public static void register(){
 		Resource.register("Media Files", Media.EXT, Media.class);
 		Folder.import_options.addItem("Audio File", "media", KeyEvent.VK_I, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new ImportMediaAction());
@@ -147,4 +149,28 @@ public class Media extends Resource {
 			MapEditor.instance.getBrowser().importMedia();
 		}
 	}
+	
+	public static Media choose(Resource root, Resource selected){
+		ResourceChooser c = new ResourceChooser(root, selected, FILTER);
+		c.setVisible(true); return (Media)c.getSelectedResource();
+	}
+	private static class MFilter extends JPanel implements Filter {
+		private static final long serialVersionUID = 907354882348925575L;
+		private MediaPlayer player; private JLabel dur;
+		public MFilter(){
+			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS)); player = new MediaPlayer();
+			add(player); JLabel dur = new JLabel("Duration: 0:00"); dur.setPreferredSize(new Dimension(150,20)); add(dur);
+		}
+		public boolean filter(Resource r){String ext = r.getExt(); return ext == null || ext == EXT;}
+		private void reset(){player.setClip(null); dur.setText("Duration: 0:00");}
+		public JPanel getPreview(){reset(); return this;}
+		public boolean showPreview(Resource r){
+			if(r.getExt() == null){reset(); return false;} 
+			Audio.Clip clip = ((Media)r).getClip(); player.setClip(clip);
+			long frames = clip.length(); float spf = 1.f/clip.framesPerSecond();
+			int m = (int)(frames*spf/60), s = (int)(frames*spf)-m*60;
+			dur.setText("Duration: "+m+":"+((s < 10)?"0":"")+s);
+			return true;
+		}
+	} public static final Filter FILTER = new MFilter();
 }

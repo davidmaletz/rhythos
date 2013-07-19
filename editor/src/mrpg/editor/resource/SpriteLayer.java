@@ -72,7 +72,6 @@ import com.jhlabs.image.OuterGlowFilter;
 
 import layout.SpringUtilities;
 import mrpg.editor.DragList;
-import mrpg.editor.ImageChooser;
 import mrpg.editor.MapEditor;
 import mrpg.editor.Matrix;
 import mrpg.editor.WorkspaceBrowser;
@@ -95,6 +94,17 @@ public class SpriteLayer extends Resource {
 	public Icon getIcon(){return icon;}
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
+	}
+	public int getImageCount(){return images.size();}
+	public int getColorCount(){return colors.size();}
+	public String getImageName(int i){return (i < 0 || i >= images.size())?"":images.get(i).name;}
+	public String getColorName(int i){return (i < 0 || i >= colors.size())?"":colors.get(i).name;}
+	public BufferedImage get(int image, int color){
+		if(image < 0 || color < 0 || image >= images.size() || color >= colors.size()) return null;
+		Img img = images.get(image); if(img.image == null) return null; Color col = colors.get(color);
+		BufferedImage b = new ColorMatrixFilter(col.color).filter(img.image.getImage(), null);
+		if(col.glow != null && col.glow.strength > 0) b = new OuterGlowFilter(col.glow).filter(b, null);
+		return b;
 	}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
@@ -322,9 +332,7 @@ public class SpriteLayer extends Resource {
 					if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
 				}
 				if(p == null){JOptionPane.showMessageDialog(this, "Sprite Layer is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				ImageChooser c = new ImageChooser(p, image);
-				c.setVisible(true);
-				Image im = c.getSelectedImage();
+				Image im = Image.choose(p, image);
 				if(im != null){image = im; image_thumb.setIcon(new ImageIcon(image.getImage()));}
 			} else if(command == MapEditor.CLEAR){
 				image = null; image_thumb.setIcon(new ImageIcon());
@@ -538,7 +546,7 @@ public class SpriteLayer extends Resource {
 			edit.props.updatePreview(matrix, edit.glow);
 		}
 	}
-	
+	public String getExt(){return EXT;}
 	public static void register(){
 		Resource.register("Sprite Layer Files", SpriteLayer.EXT, SpriteLayer.class);
 		Folder.new_options.addMenu("Sprite", "chr_appearance").

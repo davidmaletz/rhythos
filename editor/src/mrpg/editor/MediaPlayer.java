@@ -55,7 +55,7 @@ public class MediaPlayer extends JFrame implements TreeSelectionListener, FrameL
 	private final JCheckBox shuffle, play_all, repeat;
 	public MediaPlayer(WorkspaceBrowser browser){
 		super("Media Player");
-		tree = new JTree(new FilterTreeModel(null, "."+Media.EXT));
+		tree = new JTree(new FilterTreeModel(null, Media.FILTER));
 		tree.addTreeSelectionListener(this);
 		tree.setCellRenderer(browser.getCellRenderer());
 		tree.setFocusable(false);
@@ -84,7 +84,6 @@ public class MediaPlayer extends JFrame implements TreeSelectionListener, FrameL
 		DefaultTreeModel m = (DefaultTreeModel)tree.getModel();
 		m.setRoot(p); tree.clearSelection(); player.setClip(null);
 	}
-	public void setVisible(boolean v){if(!v) player.stop(); super.setVisible(v);}
 	public void valueChanged(TreeSelectionEvent e) {
 		if(e.getNewLeadSelectionPath() == null) return;
 		Resource r = (Resource)e.getNewLeadSelectionPath().getLastPathComponent();
