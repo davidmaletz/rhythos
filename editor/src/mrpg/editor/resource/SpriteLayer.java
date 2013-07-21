@@ -392,7 +392,7 @@ public class SpriteLayer extends Resource {
 			color.setIcon(new ColorIcon(glow.color)); blurX.setValue(glow.blurX); blurY.setValue(glow.blurY);
 			strength.setValue((int)(glow.strength*100)); quality.setValue(glow.quality);
 			name.requestFocus(); name.selectAll();
-			show = false; setVisible(true);
+			show = false; props.updatePreview(new ColorMatrix(matrix.getMatrix()), glow); setVisible(true);
 		}
 		public Color get(){return new Color(name.getText(), new ColorMatrix(matrix.getMatrix()), new Glow(glow));}
 		private HueEdit hue_edit; private AddMulEdit add_edit;

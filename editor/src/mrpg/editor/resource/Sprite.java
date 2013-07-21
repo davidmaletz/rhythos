@@ -39,10 +39,12 @@ import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -67,7 +69,7 @@ public class Sprite extends Resource {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "spr", TYPE = "sp"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon("chr_appearance");
-	private final ArrayList<Layer> layers = new ArrayList<Layer>();
+	private final ArrayList<Layer> layers = new ArrayList<Layer>(); private AnimationSet animation;
 	private final Properties properties; private long id;
 	public Sprite(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
 	public long getId(){return id;}
@@ -86,7 +88,7 @@ public class Sprite extends Resource {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
 			out.writeShort(VERSION); out.writeLong(id); out.writeShort(layers.size());
-			for(Layer l : layers) l.write(out);
+			for(Layer l : layers) l.write(out); out.writeLong((animation==null)?0:animation.getId());
 			out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
@@ -97,7 +99,9 @@ public class Sprite extends Resource {
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); short nLayers = in.readShort();
 			layers.clear(); for(int i=0; i<nLayers; i++) layers.add(Layer.read(p, in));
-			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+			long id = in.readLong(); AnimationSet ani = null;
+			if(id != 0) try{ani = (AnimationSet)p.getById(AnimationSet.TYPE, id);}catch(Exception ex){}
+			animation = ani; long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static Sprite create(Resource parent, MapEditor e, Project p) throws Exception {
@@ -112,8 +116,8 @@ public class Sprite extends Resource {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final String OK = "ok", CANCEL = "cancel", ADD = "add", REM = "rem";
 		public boolean updated;
-		private final Sprite chara; private final JTextField name, id;
-		private final JLabel image_thumb; private final JList layers;
+		private final Sprite chara; private final JTextField name, id; private AnimationSet animation; private final JTextField ani_label;
+		private final JLabel image_thumb; private final JList layers; private final JComboBox preview_ani;
 		public Properties(Sprite chr){
 			super(JOptionPane.getFrameForComponent(chr.editor), "Sprite Properties", true); chara = chr;
 			setResizable(false);
@@ -137,8 +141,13 @@ public class Sprite extends Resource {
 			pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Preview"),
 					BorderFactory.createLoweredBevelBorder())); inner.add(pane, BorderLayout.CENTER); settings.add(inner);
-			c.add(settings);
-			inner = new JPanel();
+			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Animation")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
+			p = new JPanel(); ani_label = new JTextField("", 15); ani_label.setEditable(false); p.add(ani_label);
+			JButton set = new JButton("Set"); set.setActionCommand(MapEditor.SET); set.addActionListener(this); p.add(set);
+			JButton clear = new JButton("Clear"); clear.setActionCommand(MapEditor.CLEAR); clear.addActionListener(this); p.add(clear);
+			inner.add(p); p = new JPanel(); p.add(new JLabel("Preview: ")); preview_ani = new JComboBox(); preview_ani.setEnabled(false);
+			preview_ani.addActionListener(this); preview_ani.setPreferredSize(ani_label.getPreferredSize()); p.add(preview_ani); inner.add(p);
+			settings.add(inner); c.add(settings); inner = new JPanel();
 			JButton b = new JButton("Ok"); b.setActionCommand(OK); b.addActionListener(this); inner.add(b);
 			b = new JButton("Cancel"); b.setActionCommand(CANCEL); b.addActionListener(this); inner.add(b);
 			c.add(inner);
@@ -147,7 +156,7 @@ public class Sprite extends Resource {
 		public void setVisible(boolean b){
 			if(b == true){
 				updated = false; name.setText(chara.getName()); name.requestFocus(); name.selectAll();
-				DefaultListModel m = new DefaultListModel();
+				setAnimation(chara.animation); DefaultListModel m = new DefaultListModel();
 				for(Layer i : chara.layers) m.addElement(i); layers.setModel(m);
 				if(chara.layers.size() > 0) layers.setSelectedIndex(0);
 				id.setText(Long.toHexString(chara.id)); updatePreview();
@@ -155,9 +164,12 @@ public class Sprite extends Resource {
 			super.setVisible(b);
 		}
 		public void actionPerformed(ActionEvent e) {
+			if(e.getSource() == preview_ani){
+				if(preview_ani.isEnabled()) updateAnimation(); return;
+			}
 			String command = e.getActionCommand();
 			if(command == OK){
-				chara.layers.clear();  ListModel m = layers.getModel();
+				chara.animation = animation; chara.layers.clear(); ListModel m = layers.getModel();
 				for(int i=0; i<m.getSize(); i++) chara.layers.add((Layer)m.getElementAt(i));
 				try{
 					chara.setName(name.getText());
@@ -171,7 +183,18 @@ public class Sprite extends Resource {
 					DefaultListModel m = (DefaultListModel)layers.getModel(); int sz = m.getSize();
 					m.addElement(layer); layers.setSelectedIndex(sz); updatePreview();
 				}
+			} else if(command == MapEditor.SET){
+				AnimationSet a = AnimationSet.choose(getProject(), animation); if(a != null) setAnimation(a);
+			} else if(command == MapEditor.CLEAR){
+				setAnimation(null);
 			} else setVisible(false);
+		}
+		private void setAnimation(AnimationSet a){
+			animation = a; if(animation != null && animation.numAnimations() > 0){
+				ani_label.setText(animation.getName()); preview_ani.setEnabled(false); DefaultComboBoxModel model = (DefaultComboBoxModel)preview_ani.getModel();
+				model.removeAllElements(); for(Animation ani : animation) model.addElement(ani); preview_ani.setSelectedIndex(0); preview_ani.setEnabled(true);
+			} else {ani_label.setText(""); preview_ani.setEnabled(false); ((DefaultComboBoxModel)preview_ani.getModel()).removeAllElements();}
+			updateAnimation();
 		}
 		public void updateDrag(){updatePreview();}
 		public void mouseClicked(MouseEvent e){
@@ -188,6 +211,7 @@ public class Sprite extends Resource {
 		public void mouseExited(MouseEvent e){}
 		public void mousePressed(MouseEvent e){}
 		public void mouseReleased(MouseEvent e){}
+		private BufferedImage cache;
 		private void updatePreview(){
 			BufferedImage b = null; ListModel model = layers.getModel(); int sz = model.getSize();
 			for(int i=0; i<sz; i++){
@@ -199,9 +223,15 @@ public class Sprite extends Resource {
 						tmp.setData(b.getData()); b = tmp;
 					} b.getGraphics().drawImage(im, 0, 0, null);
 				}
-			} if(b != null) image_thumb.setIcon(new ImageIcon(b)); else image_thumb.setIcon(new ImageIcon());
+			} cache = b; updateAnimation();
 		}
-		public Layer editLayer(Layer l){
+		private void updateAnimation(){
+			if(cache != null){
+				if(!preview_ani.isEnabled() || preview_ani.getSelectedIndex() == -1) image_thumb.setIcon(new ImageIcon(cache));
+				else image_thumb.setIcon(animation.getAnimatedIcon(image_thumb, preview_ani.getSelectedIndex(), cache));
+			} else image_thumb.setIcon(new ImageIcon());
+		}
+		private Project getProject(){
 			Project p = WorkspaceBrowser.getProject(chara);
 			if(p == null){
 				WorkspaceBrowser b = chara.editor.getBrowser();
@@ -211,6 +241,10 @@ public class Sprite extends Resource {
 				if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
 			}
 			if(p == null){JOptionPane.showMessageDialog(this, "Sprite is not added to any project, no resources to load...", "Cannot Find Resources", JOptionPane.ERROR_MESSAGE); return null;}
+			return p;
+		}
+		public Layer editLayer(Layer l){
+			Project p = getProject();
 			return (l==null)?chooseLayer(p, null, 0, 0):chooseLayer(p, (l.layer==null)?l.image:l.layer, l.image_id, l.color);
 		}
 	}

@@ -71,6 +71,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import mrpg.display.WorldPanel;
+import mrpg.editor.resource.AnimationSet;
 import mrpg.editor.resource.AutoTile;
 import mrpg.editor.resource.Sprite;
 import mrpg.editor.resource.SpriteLayer;
@@ -591,13 +592,17 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		ScriptEditor.init();
 		setupMenuBar(); setupToolbar(); setupTileToolbar();
 		Resource.register(); Folder.register(); Image.register(); Media.register();
-		Map.register(); Tileset.register(); AutoTile.register(); Sprite.register(); SpriteLayer.register(); Script.register();
+		Map.register(); Tileset.register(); AutoTile.register(); Sprite.register();
+		AnimationSet.register(); SpriteLayer.register(); Script.register();
 		tile_toolbar.addItem(new ToolItem(PencilTool.class));
 		tile_toolbar.addItem(new ToolItem(EraserTool.class));
 		tile_toolbar.addItem(new ToolItem(LineTool.class));
 		tile_toolbar.addItem(new ToolItem(RectTool.class));
 		tile_toolbar.addItem(new ToolItem(FillTool.class));
 		tile_toolbar.children.addAll(tile_toolbar_right.children);
+		//TODO: renaming resources is not working?
+		//TODO: DisplayResource extends Resource which replaces all references to Image classes. This way, types like cropped images can be added, and Sprites/Images/Cropped Images can become interchangable.
+		//TODO: Offsets for sprites to arrange the positions of different layers?
 		//TODO: player twitch when hitting two arrow keys rapidly?
 		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.
 		//TODO: If map is missing tileset, load all Tile.empty for that tileset, don't throw exception!
