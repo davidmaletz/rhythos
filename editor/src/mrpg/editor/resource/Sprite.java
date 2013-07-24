@@ -101,7 +101,7 @@ public class Sprite extends Resource {
 			layers.clear(); for(int i=0; i<nLayers; i++) layers.add(Layer.read(p, in));
 			long id = in.readLong(); AnimationSet ani = null;
 			if(id != 0) try{ani = (AnimationSet)p.getById(AnimationSet.TYPE, id);}catch(Exception ex){}
-			animation = ani; long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+			animation = ani; long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} in.close();
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static Sprite create(Resource parent, MapEditor e, Project p) throws Exception {
@@ -138,7 +138,7 @@ public class Sprite extends Resource {
 			rem.addActionListener(this); JPanel inner2 = new JPanel(new GridLayout(1,2)); inner2.add(add);
 			inner2.add(rem); p.add(inner2, BorderLayout.SOUTH); inner.add(p, BorderLayout.WEST);
 			image_thumb = new JLabel(new ImageIcon());
-			pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			pane = new JScrollPane(image_thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Preview"),
 					BorderFactory.createLoweredBevelBorder())); inner.add(pane, BorderLayout.CENTER); settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Animation")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
@@ -249,20 +249,19 @@ public class Sprite extends Resource {
 		}
 	}
 	private static class Layer {
-		private SpriteLayer layer; private Image image; private int image_id, color;
-		public Layer(Image l){image = l; layer = null;}
+		private SpriteLayer layer; private ImageResource image; private int image_id, color;
+		public Layer(ImageResource l){image = l; layer = null;}
 		public Layer(SpriteLayer l, int i, int c){layer = l; image = null; image_id = i; color = c;}
 		public void write(DataOutputStream out) throws Exception {
 			if(layer == null){
-				if(image == null) out.writeShort(-2); else {out.writeShort(-1); out.writeLong(image.getId());} 
+				out.writeShort(-1); ImageResource.write(out, image); 
 			} else {
 				out.writeShort(image_id); out.writeShort(color); out.writeLong(layer.getId()); 
 			}
 		}
 		public static Layer read(Project p, DataInputStream in) throws Exception {
 			short image_id = in.readShort(); if(image_id < 0){
-				Image img = null; if(image_id == -1) try{img = (Image)p.getImageById(in.readLong());}catch(Exception ex){}
-				return new Layer(img);
+				return new Layer(ImageResource.read(in, p));
 			} else {
 				short color = in.readShort(); SpriteLayer layer = null;
 				try{layer = (SpriteLayer)p.getById(SpriteLayer.TYPE, in.readLong());}catch(Exception ex){}
@@ -296,8 +295,8 @@ public class Sprite extends Resource {
 	
 	private static Layer chooseLayer(Resource root, Resource selected, int image, int color){
 		ResourceChooser c = new ResourceChooser(root, selected, FILTER); if(selected != null) FILTER.set(image, color);
-		c.setVisible(true); Resource r = c.getSelectedResource(); if(r == null) return null; String ext = r.getExt();
-		if(ext == Image.EXT) return new Layer((Image)r); else return new Layer((SpriteLayer)r, FILTER.images.getSelectedIndex(), FILTER.colors.getSelectedIndex());
+		c.setVisible(true); Resource r = c.getSelectedResource(); if(r == null) return null;
+		if(ImageResource.isImage(r)) return new Layer((ImageResource)r); else return new Layer((SpriteLayer)r, FILTER.images.getSelectedIndex(), FILTER.colors.getSelectedIndex());
 	}
 	private static class LFilter extends JPanel implements Filter, ListSelectionListener {
 		private static final long serialVersionUID = 907354882348925575L;
@@ -307,14 +306,14 @@ public class Sprite extends Resource {
 		}
 		public LFilter(){
 			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS)); image_thumb = new JLabel(new ImageIcon());
-			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createLoweredBevelBorder()); add(pane); JPanel p = new JPanel(new GridLayout(1,2));
 			images = new JList(new DefaultListModel()); images.setEnabled(false); images.addListSelectionListener(this);
 			pane = new JScrollPane(images); pane.setPreferredSize(new Dimension(50,100)); p.add(createLabeled(pane, "Images"));
 			colors = new JList(new DefaultListModel()); colors.setEnabled(false); colors.addListSelectionListener(this);
 			pane = new JScrollPane(colors); pane.setPreferredSize(new Dimension(50,100)); p.add(createLabeled(pane, "Colors")); add(p);
 		}
-		public boolean filter(Resource r){String ext = r.getExt(); return ext == null || ext == SpriteLayer.EXT || ext == Image.EXT;}
+		public boolean filter(Resource r){String ext = r.getExt(); return ext == null || ext == SpriteLayer.EXT || ImageResource.isImage(r);}
 		public void set(int image, int color){
 			if(images.isEnabled()) images.setSelectedIndex(image); if(colors.isEnabled()) colors.setSelectedIndex(color);
 		}
@@ -325,7 +324,7 @@ public class Sprite extends Resource {
 		public JPanel getPreview(){reset(null); return this;}
 		public boolean showPreview(Resource r){
 			String ext = r.getExt(); if(ext == null){reset(null); return false;} 
-			else if(ext == Image.EXT){reset(((Image)r).getImage()); return true;}
+			else if(ImageResource.isImage(r)){reset(((ImageResource)r).getImage()); return true;}
 			layer = (SpriteLayer)r; reset(layer.get(0, 0)); DefaultListModel m = (DefaultListModel)images.getModel();
 			int sz = layer.getImageCount(); for(int i=0; i<sz; i++) m.addElement(layer.getImageName(i)); m = (DefaultListModel)colors.getModel();
 			sz = layer.getColorCount(); for(int i=0; i<sz; i++) m.addElement(layer.getColorName(i));

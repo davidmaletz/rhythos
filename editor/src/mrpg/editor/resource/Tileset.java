@@ -57,7 +57,7 @@ public class Tileset extends TileResource implements ActionListener {
 	private static final Icon icon = MapEditor.getIcon("database");
 	public static final String EXT = "btm"; private static final short VERSION=1;
 	public static final String SET_TILESET="set-tileset";
-	private BasicTilemap tilemap; private Properties properties; private Image image; private long id;
+	private BasicTilemap tilemap; private Properties properties; private ImageResource image; private long id;
 	private JMenuItem set_tileset = MapEditor.createMenuItemIcon("Set Tileset", SET_TILESET, this);
 	public Tileset(File f, MapEditor e){super(f,e);}
 	public void contextMenu(JPopupMenu menu){
@@ -68,7 +68,7 @@ public class Tileset extends TileResource implements ActionListener {
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
 	public Icon getIcon(){return icon;}
-	public Image getImage(){return image;}
+	public ImageResource getImage(){return image;}
 	public BasicTilemap getTilemap(){return tilemap;}
 	public void actionPerformed(ActionEvent e) {edit();}
 	private boolean active = false;
@@ -79,14 +79,14 @@ public class Tileset extends TileResource implements ActionListener {
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{out.writeShort(VERSION);
-			out.writeLong(id); out.writeLong(image.getId()); tilemap.write(out); out.flush(); out.close();
+			out.writeLong(id); ImageResource.write(out, image); tilemap.write(out); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
+			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
 			tilemap = new BasicTilemap(in, image.getImage(), getId(), p.tile_size);
 			in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
 			if(active){active = false; editor.getTilesetViewer().setTilemap(tilemap, p);}
@@ -104,7 +104,7 @@ public class Tileset extends TileResource implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		public boolean updated;
 		private final Tileset tileset; private final JTextField name, id;
-		private final TilesetEditor editor; private BasicTilemap tilemap; private Image image;
+		private final TilesetEditor editor; private BasicTilemap tilemap; private ImageResource image;
 		public Properties(Tileset t){
 			super(JOptionPane.getFrameForComponent(t.editor), "Tileset Properties", true); tileset = t;
 			setResizable(false);
@@ -162,7 +162,7 @@ public class Tileset extends TileResource implements ActionListener {
 			} else if(command == MapEditor.SET){
 				Project p = getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				Image im = Image.choose(p, image);
+				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){
 					try{tilemap = new BasicTilemap(im.getImage(), tileset.getId(), p.tile_size); editor.setTilemap(tilemap); image = im;}
 					catch(Exception ex){JOptionPane.showMessageDialog(tileset.editor, "Unable to create Tileset: "+ex.getMessage(), "Tileset Creation Error", JOptionPane.ERROR_MESSAGE); updated = false; tileset.tilemap = null;}

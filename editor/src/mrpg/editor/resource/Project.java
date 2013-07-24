@@ -57,7 +57,6 @@ import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.export.Export;
-import mrpg.export.Graphic;
 import mrpg.script.HaxeCompiler;
 
 
@@ -70,11 +69,11 @@ public class Project extends Folder {
 	}
 	public static final String PROJECT = "project"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(PROJECT); public HaxeCompiler.Result lastCompile = null;
-	private Properties properties; private String target; private Image frame, font, bg; private ArrayList<String> options;
+	private Properties properties; private String target; private ImageResource frame, font, bg; private ArrayList<String> options;
 	public int tile_size;
-	public Graphic getFrame(){return frame.getGraphic();}
-	public Graphic getFont(){return font.getGraphic();}
-	public Graphic getBG(){return bg.getGraphic();}
+	public ImageResource getFrame(){return frame;}
+	public ImageResource getFont(){return font;}
+	public ImageResource getBG(){return bg;}
 	public String getTarget(){return target;}
 	public static Project createProject(MapEditor e) throws Exception {
 		File f; if(folderChooser.showSaveDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
@@ -108,9 +107,8 @@ public class Project extends Folder {
 		File f = new File(getFile().toString(),".project");
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{out.writeShort(VERSION);
-			out.writeUTF(target); out.writeShort(tile_size); if(frame == null) out.writeLong(0); else out.writeLong(frame.getId());
-			if(font == null) out.writeLong(0); else out.writeLong(font.getId());
-			if(bg == null) out.writeLong(0); else out.writeLong(bg.getId()); int sz = options.size();
+			out.writeUTF(target); out.writeShort(tile_size); ImageResource.write(out, frame);
+			ImageResource.write(out, font); ImageResource.write(out, bg); int sz = options.size();
 			out.write(sz); for(int i=0; i<sz; i++) out.writeUTF(options.get(i)); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
@@ -119,9 +117,8 @@ public class Project extends Folder {
 		File f = new File(getFile().toString(),".project");
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			target = in.readUTF(); tile_size = in.readShort(); try{frame = getImageById(in.readLong());}catch(Exception e){frame = null;}
-			try{font = getImageById(in.readLong());}catch(Exception e){font = null;}
-			try{bg = getImageById(in.readLong());}catch(Exception e){bg = null;} int sz = in.read();
+			target = in.readUTF(); tile_size = in.readShort(); frame = ImageResource.read(in, this);
+			font = ImageResource.read(in, this); bg = ImageResource.read(in, this); int sz = in.read();
 			options = new ArrayList<String>(sz); for(int i=0; i<sz; i++) options.add(in.readUTF()); in.close();
 		}catch(Exception e){in.close(); throw e;}
 	}
@@ -196,7 +193,7 @@ public class Project extends Folder {
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private final Project project; private final JTextField name; private final JComboBox target, tile_size;
-		private final JLabel frame_thumb, font_thumb, bg_thumb; private Image frame, font, bg;
+		private final JLabel frame_thumb, font_thumb, bg_thumb; private ImageResource frame, font, bg;
 		private final JTextArea options;
 		private static final String SET_FRAME="set_frame", SET_FONT="set_font", SET_BG="set_bg";
 		public Properties(Project p){
@@ -287,21 +284,21 @@ public class Project extends Folder {
 				try{project.save();}catch(Exception ex){}
 				setVisible(false);
 			} else if(command == SET_FRAME){
-				Image im = Image.choose(project, frame);
+				ImageResource im = ImageResource.choose(project, frame);
 				if(im != null){
 					BufferedImage b = im.getImage(); if(b.getWidth() != 12 || b.getHeight() != 12)
 						JOptionPane.showMessageDialog(this, "Frame images must be 12x12!", "Bad Image Dimensions", JOptionPane.ERROR_MESSAGE);
 					else {frame = im; frame_thumb.setIcon(new ImageIcon(frame.getImage()));}
 				}
 			} else if(command == SET_FONT){
-				Image im = Image.choose(project, font);
+				ImageResource im = ImageResource.choose(project, font);
 				if(im != null){
 					BufferedImage b = im.getImage(); if(b.getWidth() < 792 || Math.floor(b.getWidth()*0.125) != b.getWidth()*0.125 || b.getHeight() != 8)
 						JOptionPane.showMessageDialog(this, "Font images must be 8 pixels high, and >= 792 pixels wide (divisible by 8)!", "Bad Image Dimensions", JOptionPane.ERROR_MESSAGE);
 					else {font = im; font_thumb.setIcon(new ImageIcon(font.getImage()));}
 				}
 			} else if(command == SET_BG){
-				Image im = Image.choose(project, bg);
+				ImageResource im = ImageResource.choose(project, bg);
 				if(im != null){
 					BufferedImage b = im.getImage(); if(b.getWidth() != 200 || b.getHeight() != 150)
 						JOptionPane.showMessageDialog(this, "Background images must be 200x150!", "Bad Image Dimensions", JOptionPane.ERROR_MESSAGE);

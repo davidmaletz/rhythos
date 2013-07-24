@@ -78,7 +78,7 @@ import mrpg.editor.WorkspaceBrowser;
 public class AnimationSet extends Resource implements Iterable<Animation> {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "ani", TYPE = "an"; private static final short VERSION=1;
-	private static final Icon icon = MapEditor.getIcon("chr_appearance"); private Image image; private BufferedImage cache;
+	private static final Icon icon = MapEditor.getIcon("chr_appearance"); private ImageResource image; private BufferedImage cache;
 	private final ArrayList<Animation> animations = new ArrayList<Animation>();
 	private final Properties properties; private long id; private int width, height;
 	public AnimationSet(File f, MapEditor editor){super(f, editor); width = 4; height = 4; properties = new Properties(this);}
@@ -114,7 +114,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); width = in.readShort(); height = in.readShort(); short nAni = in.readShort();
 			animations.clear(); for(int i=0; i<nAni; i++) animations.add(Animation.read(p, in));
-			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} in.close();
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static AnimationSet create(Resource parent, MapEditor e, Project p) throws Exception {
@@ -156,7 +156,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 			inner2.add(rem); p.add(inner2, BorderLayout.SOUTH); inner.add(p, BorderLayout.WEST);
 			image_thumb = new JLabel(new ImageIcon());
 			JPanel panel = new JPanel(new BorderLayout()); panel.setBorder(BorderFactory.createTitledBorder("Preview"));
-			pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			pane = new JScrollPane(image_thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createLoweredBevelBorder()); panel.add(pane, BorderLayout.CENTER); inner2 = new JPanel();
 			JButton set = new JButton("Set"); set.setActionCommand(MapEditor.SET); set.addActionListener(this); inner2.add(set);
 			JButton clear = new JButton("Clear"); clear.setActionCommand(MapEditor.CLEAR); clear.addActionListener(this); inner2.add(clear);
@@ -205,7 +205,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 				if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
 			}
 			if(p == null){JOptionPane.showMessageDialog(this, "Animation Set is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-			Image im = Image.choose(p, animation.image);
+			ImageResource im = ImageResource.choose(p, animation.image);
 			if(im != null){animation.image = im; updateCache();}
 		} else if(command == MapEditor.CLEAR){
 			animation.image = null; updateCache();

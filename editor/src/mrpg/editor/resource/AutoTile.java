@@ -62,7 +62,7 @@ public class AutoTile extends TileResource implements ActionListener {
 	private static final Icon icon = MapEditor.getIcon(TILESET);
 	public static final String EXT = "atm"; private static final short VERSION=1;
 	public static final String ADD_AUTOTILE="set-tileset";
-	private Tilemap autotile; private Properties properties; private Image image; private long id;
+	private Tilemap autotile; private Properties properties; private ImageResource image; private long id;
 	private JMenuItem add_autotile = MapEditor.createMenuItemIcon("Toggle Autotile", ADD_AUTOTILE, this);
 	public AutoTile(File f, MapEditor e){super(f, e);}
 	public void contextMenu(JPopupMenu menu){
@@ -73,7 +73,7 @@ public class AutoTile extends TileResource implements ActionListener {
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
 	public Icon getIcon(){return icon;}
-	public Image getImage(){return image;}
+	public ImageResource getImage(){return image;}
 	public Tilemap getTilemap(){return autotile;}
 	public void actionPerformed(ActionEvent e) {edit();}
 	
@@ -85,14 +85,14 @@ public class AutoTile extends TileResource implements ActionListener {
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
-			out.writeShort(VERSION); out.writeLong(id); out.writeLong(image.getId()); autotile.write(out); out.flush(); out.close();
+			out.writeShort(VERSION); out.writeLong(id); ImageResource.write(out, image); autotile.write(out); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = p.getImageById(in.readLong());
+			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
 			if(image.getImage().getHeight() == p.tile_size*2)
 				autotile = new WallTilemap(in, image.getImage(), getId(), p.tile_size);
 			else autotile = new AutoTilemap(in, image.getImage(), getId(), p.tile_size);
@@ -112,7 +112,7 @@ public class AutoTile extends TileResource implements ActionListener {
 		public boolean updated;
 		private static final String FRAMES = "frames";
 		private final AutoTile autotile; private final JTextField name, id, frames; private ButtonGroup speed = new ButtonGroup();
-		private final AutoTileEditor editor; private Image image; private Tilemap tilemap;
+		private final AutoTileEditor editor; private ImageResource image; private Tilemap tilemap;
 		public Properties(AutoTile t){
 			super(JOptionPane.getFrameForComponent(t.editor), "AutoTile Properties", true); autotile = t;
 			setResizable(false);
@@ -208,7 +208,7 @@ public class AutoTile extends TileResource implements ActionListener {
 			} else if(command == MapEditor.SET){
 				Project p = getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				Image im = Image.choose(p, image);
+				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){
 					try{
 						if(im.getImage().getHeight() == p.tile_size*2)

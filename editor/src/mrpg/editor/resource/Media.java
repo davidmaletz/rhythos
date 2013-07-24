@@ -82,7 +82,7 @@ public class Media extends Resource {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); sound = new Sound(in); long i = WorkspaceBrowser.getProject(this).setMediaId(this, id);
-			if(i != id){id = i; save();}
+			if(i != id){id = i; save();} in.close();
 		}catch(Exception e){in.close(); throw e;}
 	}
 	

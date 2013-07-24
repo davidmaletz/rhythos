@@ -110,7 +110,7 @@ public class SpriteLayer extends Resource {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
 			out.writeShort(VERSION); out.writeLong(id); out.writeShort(images.size()); out.writeShort(colors.size());
-			for(Img i : images){out.writeUTF(i.name); out.writeLong((i.image==null)?0:i.image.getId());}
+			for(Img i : images){out.writeUTF(i.name); ImageResource.write(out, i.image);}
 			for(Color c : colors){
 				out.writeUTF(c.name); for(int i=0; i<20; i++) out.writeFloat((float)c.color.matrix[i]);
 				Glow g = (c.glow == null)?new Glow():c.glow;
@@ -126,8 +126,7 @@ public class SpriteLayer extends Resource {
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); short nImg = in.readShort(), nCol = in.readShort();
 			images.clear(); colors.clear(); for(int i=0; i<nImg; i++){
-				String n = in.readUTF(); long id = in.readLong(); Image img = null;
-				if(id != 0) try{img = p.getImageById(id);}catch(Exception ex){}
+				String n = in.readUTF(); ImageResource img = ImageResource.read(in, p);
 				images.add(new Img(n, img));
 			} for(int c=0; c<nCol; c++){
 				String n = in.readUTF(); double m[] = new double[20];
@@ -135,7 +134,7 @@ public class SpriteLayer extends Resource {
 				Glow g = new Glow(); g.color = new java.awt.Color(in.readInt()); g.blurX = in.readByte();
 				g.blurY = in.readByte(); g.strength = in.readFloat(); g.quality = in.readByte();
 				colors.add(new Color(n, new ColorMatrix(m), g));
-			} long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+			} long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} in.close();
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static SpriteLayer create(Resource parent, MapEditor e, Project p) throws Exception {
@@ -180,7 +179,7 @@ public class SpriteLayer extends Resource {
 			remc.addActionListener(this); inner2 = new JPanel(new GridLayout(1,2)); inner2.add(addc); inner2.add(remc);
 			p.add(inner2, BorderLayout.SOUTH); inner.add(p); settings.add(inner);
 			image_thumb = new JLabel(new ImageIcon());
-			pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			pane = new JScrollPane(image_thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Preview"),
 					BorderFactory.createLoweredBevelBorder())); settings.add(pane);
 			c.add(settings);
@@ -262,7 +261,7 @@ public class SpriteLayer extends Resource {
 			Img i = (Img)images.getSelectedValue(); if(i == null || i.image == null){image_thumb.setIcon(new ImageIcon()); return;}
 			updatePreview(i.image, c, g);
 		}
-		private void updatePreview(Image i, ColorMatrix c, Glow g){
+		private void updatePreview(ImageResource i, ColorMatrix c, Glow g){
 			BufferedImage b = new ColorMatrixFilter(c).filter(i.getImage(), null);
 			if(g != null && g.strength > 0) b = new OuterGlowFilter(g).filter(b, null);
 			image_thumb.setIcon(new ImageIcon(b));
@@ -280,14 +279,14 @@ public class SpriteLayer extends Resource {
 		}
 	}
 	private static class Img {
-		public final String name; public final Image image;
-		public Img(String n, Image i){name = n; image = i;}
+		public final String name; public final ImageResource image;
+		public Img(String n, ImageResource i){name = n; image = i;}
 		public String toString(){return name;}
 	}
 	private static class ImageEdit extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		public boolean updated; private SpriteLayer chara;
-		private final JTextField name; private final JLabel image_thumb; private Image image;
+		private final JTextField name; private final JLabel image_thumb; private ImageResource image;
 		public ImageEdit(JDialog d, SpriteLayer chr){
 			super(JOptionPane.getFrameForComponent(d), "Image", true); chara = chr; setResizable(false);
 			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
@@ -297,7 +296,7 @@ public class SpriteLayer extends Resource {
 			inner.add(name); settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Image"));
 			image_thumb = new JLabel(new ImageIcon());
-			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(pane); JPanel inner2 = new JPanel();
 			inner2.setLayout(new BoxLayout(inner2, BoxLayout.Y_AXIS));
 			JButton set = new JButton("Set"); set.setActionCommand(MapEditor.SET); set.addActionListener(this); inner2.add(set);
@@ -332,7 +331,7 @@ public class SpriteLayer extends Resource {
 					if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
 				}
 				if(p == null){JOptionPane.showMessageDialog(this, "Sprite Layer is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				Image im = Image.choose(p, image);
+				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){image = im; image_thumb.setIcon(new ImageIcon(image.getImage()));}
 			} else if(command == MapEditor.CLEAR){
 				image = null; image_thumb.setIcon(new ImageIcon());

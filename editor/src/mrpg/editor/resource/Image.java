@@ -19,7 +19,6 @@
 package mrpg.editor.resource;
 
 import java.awt.Container;
-import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -34,7 +33,6 @@ import java.io.FileOutputStream;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -45,20 +43,19 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 
-import mrpg.editor.Filter;
 import mrpg.editor.MapEditor;
-import mrpg.editor.ResourceChooser;
 import mrpg.editor.WorkspaceBrowser;
+import mrpg.export.Export;
 import mrpg.export.Graphic;
 
 
-public class Image extends Resource {
+public class Image extends ImageResource {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "mimg"; private static final short VERSION=1;
-	private static final Icon icon = MapEditor.getIcon("image");
 	private final Properties properties; private Graphic graphic; private long id;
 	public Image(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
 	public long getId(){return id;}
+	public String getType(){return Export.IMAGE;}
 	public BufferedImage getImage(){try{return graphic.getBufferedImage();}catch(Exception e){} return null;}
 	public void contextMenu(JPopupMenu menu){
 		menu.add(editor.getBrowser().properties); menu.addSeparator();
@@ -67,7 +64,6 @@ public class Image extends Resource {
 	public boolean edit(){properties(); return true;}
 	public void properties(){properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
-	public Icon getIcon(){return icon;}
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeImageId(this, id); super.remove(delete);
 	}
@@ -83,7 +79,7 @@ public class Image extends Resource {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); graphic = new Graphic(in); long i = WorkspaceBrowser.getProject(this).setImageId(this, id);
-			if(i != id){id = i; save();}
+			if(i != id){id = i; save();} in.close();
 		}catch(Exception e){in.close(); throw e;}
 	}
 	
@@ -91,8 +87,6 @@ public class Image extends Resource {
 		Graphic g = Graphic.decode(img); Image ret = new Image(f, e); ret.id = p.newImageId();
 		ret.graphic = g; ret.save(); p.setImageId(ret, ret.id); return ret;
 	}
-	public static Dimension THUMB_SIZE = new Dimension(150,150);
-	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final String OK = "ok", CANCEL = "cancel";
@@ -113,7 +107,7 @@ public class Image extends Resource {
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Thumbnail"));
 			thumb = new JLabel(new ImageIcon());
-			JScrollPane pane = new JScrollPane(thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			JScrollPane pane = new JScrollPane(thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(pane);
 			settings.add(inner);
 			c.add(settings);
@@ -152,28 +146,4 @@ public class Image extends Resource {
 			MapEditor.instance.getBrowser().importImages();
 		}
 	}
-	
-	public static Image choose(Resource root, Resource selected){
-		ResourceChooser c = new ResourceChooser(root, selected, FILTER);
-		c.setVisible(true); return (Image)c.getSelectedResource();
-	}
-	private static class IFilter extends JPanel implements Filter {
-		private static final long serialVersionUID = 907354882348925575L;
-		private JLabel image_thumb, size;
-		public IFilter(){
-			setLayout(new BoxLayout(this, BoxLayout.Y_AXIS)); image_thumb = new JLabel(new ImageIcon());
-			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
-			pane.setBorder(BorderFactory.createLoweredBevelBorder()); add(pane);
-			size = new JLabel("Dimensions: 0 x 0"); size.setPreferredSize(new Dimension(150,20)); add(size);
-		}
-		public boolean filter(Resource r){String ext = r.getExt(); return ext == null || ext == EXT;}
-		private void reset(){image_thumb.setIcon(new ImageIcon()); size.setText("Dimensions: 0 x 0");}
-		public JPanel getPreview(){reset(); return this;}
-		public boolean showPreview(Resource r){
-			if(r.getExt() == null){reset(); return false;} 
-			BufferedImage im = ((Image)r).getImage(); image_thumb.setIcon(new ImageIcon(im));
-			size.setText("Dimensions: "+im.getWidth()+" x "+im.getHeight());
-			return true;
-		}
-	} public static final Filter FILTER = new IFilter();
 }

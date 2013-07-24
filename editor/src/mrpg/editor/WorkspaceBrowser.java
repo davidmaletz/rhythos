@@ -563,7 +563,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
         dragTo = null; dragLine = null;
         if(e.getX() > getWidth() || e.getY() > getHeight()){setCursor(DragSource.DefaultMoveNoDrop); repaint(); return;}
 		int close = getClosestRowForLocation(e.getX(), e.getY());
-		int r = getRowForLocation(e.getX(), e.getY());
+		int r = getRowForLocation(e.getX(), e.getY()); if(r != -1 && !getResource(getPathForRow(r)).canAddChildren()) r = -1;
 		if(canDrag(close, r)){
 			setCursor(DragSource.DefaultMoveDrop);
 			if(r == close) dragTo = getResource(getPathForRow(close));

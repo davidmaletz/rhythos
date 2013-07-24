@@ -426,7 +426,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 
 	public static MapEditor instance;
 	
-	public static final int DEF_MEDIA=0, DEF_PROJECT=1, DEF_TILEMAP=2, DEF_MAP=3, N_DEF=4;
+	public static final int DEF_MEDIA=0, DEF_IMG_RESOURCE=1, DEF_PROJECT=2, DEF_TILEMAP=3, DEF_MAP=4, N_DEF=5;
 	@SuppressWarnings("unchecked")
 	private static ArrayList<Resource> deferred[] = new ArrayList[N_DEF];
 	static {for(int i=0; i<N_DEF; i++) deferred[i] = new ArrayList<Resource>();}
@@ -600,7 +600,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		tile_toolbar.addItem(new ToolItem(RectTool.class));
 		tile_toolbar.addItem(new ToolItem(FillTool.class));
 		tile_toolbar.children.addAll(tile_toolbar_right.children);
-		//TODO: renaming resources is not working?
+		//TODO: For the demo, I want to have map editing and events working, with the ability to create and preview maps. Maybe battle system too.
 		//TODO: DisplayResource extends Resource which replaces all references to Image classes. This way, types like cropped images can be added, and Sprites/Images/Cropped Images can become interchangable.
 		//TODO: Offsets for sprites to arrange the positions of different layers?
 		//TODO: player twitch when hitting two arrow keys rapidly?

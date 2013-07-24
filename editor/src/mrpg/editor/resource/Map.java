@@ -57,7 +57,7 @@ public class Map extends Modifiable {
 	private static final long serialVersionUID = 3067630717384565840L;
 	public static final String EXT = "map", MAP = "map"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(MAP);
-	private World world; private Properties properties; private Image background; private long id;
+	private World world; private Properties properties; private ImageResource background; private long id;
 	public Map(File f, MapEditor e){super(f,e);}
 	public void contextMenu(JPopupMenu menu){
 		WorkspaceBrowser browser = editor.getBrowser(); menu.add(browser.edit); menu.add(browser.properties); menu.addSeparator();
@@ -80,7 +80,7 @@ public class Map extends Modifiable {
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
-			out.writeShort(VERSION); out.writeLong(id); if(background == null) out.writeByte(0); else {out.writeByte(1); out.writeLong(background.getId());}
+			out.writeShort(VERSION); out.writeLong(id); ImageResource.write(out, background);
 			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this);
 		}catch(Exception e){out.close(); throw e;}
 	}
@@ -89,7 +89,7 @@ public class Map extends Modifiable {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
 			Project p = WorkspaceBrowser.getProject(this);
-			id = in.readLong(); if(in.readByte() == 1) try{background = p.getImageById(in.readLong());}catch(Exception e){background = null;} else background = null;
+			id = in.readLong(); background = ImageResource.read(in, p);
 			world = World.read(new WorldIO(p, in)); in.close(); if(background != null) world.background = background.getImage();
 			long i = p.setMapId(this, id); if(i != id){id = i; save();}
 			if(active){active = false; edit();} setModified(false);
@@ -108,7 +108,7 @@ public class Map extends Modifiable {
 		private static final int MIN_SIZE = 10, MAX_SIZE = 500;
 		public boolean updated;
 		private final Map map; private final JTextField name, id; private final JSpinner width, height;
-		private final JCheckBox x_wrap, y_wrap; private final JLabel image_thumb; private Image background;
+		private final JCheckBox x_wrap, y_wrap; private final JLabel image_thumb; private ImageResource background;
 		public Properties(Map m){
 			super(JOptionPane.getFrameForComponent(m.editor), "Map Properties", true); map = m;
 			setResizable(false);
@@ -135,7 +135,7 @@ public class Map extends Modifiable {
 			settings.add(inner);
 			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Background"));
 			image_thumb = new JLabel(new ImageIcon());
-			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(Image.THUMB_SIZE);
+			JScrollPane pane = new JScrollPane(image_thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(pane); JPanel inner2 = new JPanel();
 			inner2.setLayout(new BoxLayout(inner2, BoxLayout.Y_AXIS));
 			JButton set = new JButton("Set"); set.setActionCommand(MapEditor.SET); set.addActionListener(this); inner2.add(set);
@@ -188,7 +188,7 @@ public class Map extends Modifiable {
 					if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
 				}
 				if(p == null){JOptionPane.showMessageDialog(this, "Map is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-				Image im = Image.choose(p, background);
+				ImageResource im = ImageResource.choose(p, background);
 				if(im != null){background = im; image_thumb.setIcon(new ImageIcon(background.getImage()));}
 			} else if(command == MapEditor.CLEAR){
 				background = null; image_thumb.setIcon(new ImageIcon());
