@@ -97,7 +97,7 @@ public class CroppedImage extends ImageResource {
 			String dir = parent.getFile().toString(); File f = new File(dir,name+"."+EXT); if(f.exists()) throw new Exception();
 			CroppedImage ret = new CroppedImage(f,im.editor); ret.image = im;
 			ret.x = x; ret.y = y; ret.w = w; ret.h = h; Project p = WorkspaceBrowser.getProject(im); ret.id = p.newId(TYPE);
-			p.setId(TYPE, ret, ret.id); im.editor.getBrowser().addResource(ret, parent); return ret;
+			p.setId(TYPE, ret, ret.id); im.editor.getBrowser().addResource(ret, parent); ret.save(); return ret;
 		}catch(Exception e){return null;}
 	}
 
@@ -178,8 +178,8 @@ public class CroppedImage extends ImageResource {
 			int dX = e.getX()-mX, dY = e.getY()-mY;
 			switch(type){
 			case INSIDE:
-				x1 = Math.min(image.getWidth()-1, Math.max(pX1+dX, 0)); y1 = Math.min(image.getHeight()-1, Math.max(pY1+dY, 0));
-				x2 = Math.max(Math.min(image.getWidth(), pX2+dX), x1+SZ2); y2 = Math.max(y1+SZ2, Math.min(image.getHeight(), pY2+dY)); repaint(); break;
+				x1 = Math.max(Math.min(image.getWidth()-(pX2-pX1), pX1+dX), 0); y1 = Math.max(Math.min(image.getHeight()-(pY2-pY1), pY1+dY), 0);
+				x2 = x1+(pX2-pX1); y2 = y1+(pY2-pY1); repaint(); break;
 			case LEFT: x1 = Math.min(x2-SZ2, Math.max(pX1+dX, 0)); repaint(); break;
 			case RIGHT: x2 = Math.max(Math.min(image.getWidth(), pX2+dX), x1+SZ2); repaint(); break;
 			case UP: y1 = Math.min(y2-SZ2, Math.max(pY1+dY, 0)); repaint(); break;

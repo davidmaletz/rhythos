@@ -70,6 +70,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 				b.append("*."); b.append(e); if(e != ext[ext.length-1]) b.append(",");
 			} b.append(")"); name = b.toString();
 		}
+		public String[] getExt(){return ext;}
 		public boolean accept(File f){
 			if(f == null || f.toString() == null) return false; if(f.isDirectory()) return true;
 			String s = f.toString(); for(String e : ext){
@@ -572,4 +573,11 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		repaint();
 	}
 	public void mouseMoved(MouseEvent e) {}
+	private boolean innerExpand(Resource r, File f){
+		for(int i=0; i<r.getChildCount(); i++){
+			Resource c = r.getChild(i); if(innerExpand(c, f)) return true;
+			if(c.getFile().equals(f)){expandPath(new TreePath(c.getPath())); return true;}
+		} return false;
+	}
+	public void expand(File f){innerExpand(getWorkspace(), f);}
 }

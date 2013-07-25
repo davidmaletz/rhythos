@@ -31,6 +31,7 @@ import javax.swing.Icon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 
@@ -143,6 +144,11 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	public abstract String getExt();
 	public static void register(String name, String ext, Class<? extends Resource> r){
 		resources.put(ext, r); resourceChooser.addChoosableFileFilter(new ExtFileFilter(name, new String[]{ext}));
+	}
+	public static void unregister(String ext){
+		resources.remove(ext); for(FileFilter f : resourceChooser.getChoosableFileFilters()){
+			if(((ExtFileFilter)f).getExt()[0] == ext){resourceChooser.removeChoosableFileFilter(f); break;}
+		}
 	}
 	public static Resource readFile(File f, MapEditor e) throws Exception {
 		if(f.isDirectory()){

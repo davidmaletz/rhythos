@@ -91,6 +91,7 @@ import mrpg.editor.tools.PencilTool;
 import mrpg.editor.tools.RectTool;
 import mrpg.editor.tools.SelectTool;
 import mrpg.editor.tools.ZoomTool;
+import mrpg.plugin.PluginManager;
 import mrpg.script.ScriptEditor;
 import mrpg.world.World;
 
@@ -120,7 +121,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	private Map current_map;
 	
 	private final History history = new History(); private final Clipboard clipboard = new Clipboard();
-	private TilesetViewer tileset_viewer; private MediaPlayer media_player = null;
+	private TilesetViewer tileset_viewer; private MediaPlayer media_player = null; private JPanel tileset;
 
 	public MapEditor(){
 		super("Rhythos! Game Builder");
@@ -149,10 +150,10 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		tileset_viewer = new TilesetViewer();
 		world_overlay = new WorldOverlay(this, w); tileset_viewer.overlay = world_overlay;
 		w.overlay = tileset_viewer.overlay; w.showLevel(0);
-		JPanel tileset = new JPanel(new BorderLayout());
+		tileset = new JPanel(new BorderLayout());
 		SelectTool select = (SelectTool)SELECT_TOOL.getTool(); select.listener = this;
 		ZoomTool zoom = (ZoomTool)ZOOM_TOOL.getTool(); zoom.listener = this;
-		tileset.add(tile_toolbar.getToolbar(), BorderLayout.NORTH);
+		tileset.add(tile_toolbar_right.addItemsTo(tile_toolbar.getToolbar()), BorderLayout.NORTH);
 		tileset.add(new JScrollPane(tileset_viewer), BorderLayout.CENTER);
 		pane.add(tileset);
 		pane.add(new JScrollPane(browser));
@@ -188,7 +189,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		
 		w.startAnim();
 		addWindowListener(this);
-		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); setSize(800,600); setVisible(true);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); setSize(800,600);
 	}
 	
 	public WorldOverlay getOverlay(){return world_overlay;}
@@ -242,6 +243,14 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	
 	public static final Menu menu_bar = new Menu(), toolbar = new Menu(), tile_toolbar = new Menu(), tile_toolbar_right = new Menu();
 
+	public void updateMenuBar(){setJMenuBar(menu_bar.getMenuBar());}
+	public void updateToolbar(){
+		Container c = getContentPane(); c.remove(0); c.add(toolbar.getToolbar(), BorderLayout.NORTH, 0); c.validate();
+	}
+	public void updateTileToolbar(){
+		tileset.remove(0); tileset.add(tile_toolbar_right.addItemsTo(tile_toolbar.getToolbar()), BorderLayout.NORTH, 0); tileset.validate();
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand(); SelectTool select = (SelectTool)SELECT_TOOL.getTool();
 		if(command == SAVE){
@@ -451,7 +460,11 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		try{
 			Document doc = document_factory.newDocumentBuilder().newDocument();
 			Element root = doc.createElement("workspace"); doc.appendChild(root);
-			Element element = doc.createElement("projectDirectory");
+			Element element = doc.createElement("windowSize");
+			element.setTextContent(getWidth()+"x"+getHeight()); root.appendChild(element);
+			element = doc.createElement("windowPos");
+			element.setTextContent(getX()+"x"+getY()); root.appendChild(element);
+			element = doc.createElement("projectDirectory");
 			element.setTextContent(Project.folderChooser.getCurrentDirectory().toString()); root.appendChild(element);
 			element = doc.createElement("imageDirectory");
 			element.setTextContent(WorkspaceBrowser.imgChooser.getCurrentDirectory().toString()); root.appendChild(element);
@@ -476,7 +489,11 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 					Element elem = doc.createElement("map"); elem.setTextContent(Long.toString(current_map.getId()));
 					element.appendChild(elem);
 				} tileset_viewer.addElements(doc, element, p); root.appendChild(element);
-			}
+			} Enumeration<TreePath> e = browser.getExpandedDescendants(new TreePath(browser.getWorkspace()));
+			while(e.hasMoreElements()){
+				File f = ((Resource)e.nextElement().getLastPathComponent()).getFile(); if(f == null) continue;
+				element = doc.createElement("expanded"); element.setTextContent(f.getAbsolutePath()); root.appendChild(element);
+			} PluginManager.getInstalledPlugins(doc, root);
 			Transformer transformer = transformer_factory.newTransformer(); transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 			StreamResult result = new StreamResult(new File(".workspace"));
 			transformer.transform(new DOMSource(doc), result);
@@ -486,10 +503,12 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		while(i > 0){e.nextElement(); i--;} return e.nextElement();
 	}
 	public void run(){
-		File f = new File(".workspace");
+		PluginManager.setInitStatus("Loading Settings..."); File f = new File(".workspace");
 		if(f.exists()) try{
 			Document doc = document_factory.newDocumentBuilder().parse(f);
 			Element root = doc.getDocumentElement();
+			try{String ar[] = root.getElementsByTagName("windowSize").item(0).getTextContent().split("x"); setSize(Integer.parseInt(ar[0].trim()), Integer.parseInt(ar[1].trim()));}catch(Exception ex){}
+			try{String ar[] = root.getElementsByTagName("windowPos").item(0).getTextContent().split("x"); setLocation(Integer.parseInt(ar[0].trim()), Integer.parseInt(ar[1].trim()));}catch(Exception ex){}
 			try{Project.folderChooser.setCurrentDirectory(new File(root.getElementsByTagName("projectDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			try{WorkspaceBrowser.imgChooser.setCurrentDirectory(new File(root.getElementsByTagName("imageDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			try{WorkspaceBrowser.sndChooser.setCurrentDirectory(new File(root.getElementsByTagName("mediaDirectory").item(0).getTextContent()));}catch(Exception ex){}
@@ -510,8 +529,13 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 					for(int j=0; j<n.getLength(); j++)
 						try{p.getTilemapById(Long.parseLong(n.item(j).getTextContent())).edit();}catch(Exception exx){}
 				}catch(Exception ex){}
-			}			
-		} catch(Exception e){e.printStackTrace();}
+			} list = root.getElementsByTagName("expanded");
+			for(int i=0; i<list.getLength(); i++){
+				try{
+					File file = new File(((Element)list.item(i)).getTextContent()); browser.expand(file);
+				}catch(Exception ex){}
+			} PluginManager.installPlugins(doc, root);
+		} catch(Exception e){e.printStackTrace();} setVisible(true);
 	}
 	private static void setupMenuBar(){
 		Menu menu = menu_bar.addMenu("File", null);
@@ -589,7 +613,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		tile_toolbar_right.addItem(prop);
 	}
 	public static void main(String[] args){
-		ScriptEditor.init();
+		PluginManager.showInitWindow(); PluginManager.setInitStatus("Initializing..."); ScriptEditor.init();
 		setupMenuBar(); setupToolbar(); setupTileToolbar();
 		Resource.register(); Folder.register(); Image.register(); Media.register();
 		Map.register(); Tileset.register(); AutoTile.register(); Sprite.register();
@@ -599,7 +623,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		tile_toolbar.addItem(new ToolItem(LineTool.class));
 		tile_toolbar.addItem(new ToolItem(RectTool.class));
 		tile_toolbar.addItem(new ToolItem(FillTool.class));
-		tile_toolbar.children.addAll(tile_toolbar_right.children);
+		//TODO: Save media player and script editor visible/location/size info in workspace?
 		//TODO: For the demo, I want to have map editing and events working, with the ability to create and preview maps. Maybe battle system too.
 		//TODO: Offsets for sprites to arrange the positions of different layers?
 		//TODO: player twitch when hitting two arrow keys rapidly?

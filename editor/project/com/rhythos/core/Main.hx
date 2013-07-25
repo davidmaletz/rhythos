@@ -171,6 +171,10 @@ class Main extends Sprite {
 		var c = getAsset(type+id); if(c == null){ResourceError("data",type+id); return null;}
 		return cast(c, ByteArray);
 	}
+	public static function getImageResource(b:ByteArray):BitmapData {
+		var t = b.readUTF(); if(t.length == 0) return null;
+		var id = Main.readID(b); return getBitmap(id); //TODO: use t to load other image resource types
+	}
 	public static function getBGM(id:String):Sound {
 		var c = getAsset("s"+id); if(c == null){ResourceError("sound (bgm)",id); return null;}
 		return cast(c, Sound);

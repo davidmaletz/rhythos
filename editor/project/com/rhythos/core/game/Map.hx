@@ -32,9 +32,7 @@ class Map extends Sprite {
 	private var w:Int; private var h:Int; private var max_level:Int; private var cells:Array<Cell>;
 	private var wrapX:Bool; private var wrapY:Bool; private var event_layer:Int; private var background:BitmapData;
 	public function new(d:ByteArray){
-		super(); if(d.readByte() == 1){
-			background = Main.getBitmap(Main.readID(d));
-		} else background = null;
+		super(); background = Main.getImageResource(d);
 		var tilemaps = new Array<Tilemap>(); var len = d.readUnsignedByte();
 		for(i in 0...len) tilemaps.push(Tilemap.get(Main.readID(d)));
 		w = d.readShort(); h = d.readShort(); var wrap:Int = d.readUnsignedByte(); wrapX = (wrap & 1) != 0; wrapY = (wrap & 2) != 0;

@@ -189,6 +189,12 @@ public class Project extends Folder {
 	public Resource getById(String type, long id) throws Exception {return getById(get(type), id);}
 	public Iterable<Resource> getResources(String type){return get(type).values();}
 	public Iterable<String> getResourceTypes(){return assets.keySet();}
+	public void removeType(String type){
+		if(!assets.containsKey(type)) return;
+		for(Resource r : getResources(type)){
+			editor.getBrowser().removeResource(r, false);
+		} assets.remove(type);
+	}
 	
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;

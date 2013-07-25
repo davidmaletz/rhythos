@@ -31,8 +31,8 @@ import nme.utils.ByteArray;
 class Tilemap {
 	private var tilesheet:Tilesheet; private var walkable:Array<Int>; private var tiles:Array<Tile>;
 	public function new(d:ByteArray){
-		d.readUTF(); //TODO: load tileset from the classname - don't ignore!
-		var b:BitmapData = Main.getBitmap(Main.readID(d));
+		trace(d.readUTF()); //TODO: load tileset from the classname - don't ignore!
+		var b:BitmapData = Main.getImageResource(d);
 		var w:Int=Math.floor(b.width/Tile.tile_size), h:Int = Math.floor(b.height/Tile.tile_size);
 		tilesheet = new Tilesheet(b); walkable = new Array<Int>(); tiles = new Array<Tile>();
 		for(y in 0...h) for(x in 0...w){

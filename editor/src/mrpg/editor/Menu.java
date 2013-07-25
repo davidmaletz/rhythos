@@ -41,10 +41,14 @@ public class Menu implements MenuItem {
 		if(ret == null){ret = new Menu(title, icon); children.add(ret);}
 		return ret;
 	}
-	public void addItem(String text, String icon, ActionListener listener){addItem(text, icon, 0, 0, listener);}
-	public void addItem(String text, String icon, int keyCode, int modifiers, ActionListener listener){
-		children.add(new BasicMenuItem(text, icon, keyCode, modifiers, listener));
+	public MenuItem addItem(String text, String icon, ActionListener listener){return addItem(text, icon, 0, 0, listener);}
+	public MenuItem addItem(String text, String icon, int keyCode, int modifiers, ActionListener listener){
+		MenuItem ret = new BasicMenuItem(text, icon, keyCode, modifiers, listener); children.add(ret); return ret;
 	}
+	public void remove(MenuItem i){children.remove(i);}
+	public void remove(int i){children.remove(i);}
+	public MenuItem get(int i){return children.get(i);}
+	public int getIndexOf(MenuItem i){return children.indexOf(i);}
 	public void addItem(MenuItem i){children.add(i);}
 	public void addSeparator(){children.add(null);}
 	public JMenuItem getMenuItem(){return getMenuItem(true);}
@@ -57,14 +61,18 @@ public class Menu implements MenuItem {
 	}
 	public JMenuBar getMenuBar(){return getMenuBar(true);}
 	public JMenuBar getMenuBar(boolean allowAccelerator){
-		JMenuBar bar = new JMenuBar();
+		JMenuBar bar = new JMenuBar(); return addItemsTo(bar, allowAccelerator);
+	}
+	public JMenuBar addItemsTo(JMenuBar bar, boolean allowAccelerator){
 		for(MenuItem o : children){
 			if(o != null) bar.add(o.getMenuItem(allowAccelerator));
 		} return bar;
 	}
 	public JComponent getToolbarItem(){return getMenuItem(false);}
 	public JToolBar getToolbar(){
-		JToolBar bar = new JToolBar(); bar.setFloatable(false); bar.setRollover(false);
+		JToolBar bar = new JToolBar(); bar.setFloatable(false); bar.setRollover(false); return addItemsTo(bar);
+	}
+	public JToolBar addItemsTo(JToolBar bar){
 		for(MenuItem o : children){
 			if(o == null) bar.addSeparator();
 			else bar.add(o.getToolbarItem());
