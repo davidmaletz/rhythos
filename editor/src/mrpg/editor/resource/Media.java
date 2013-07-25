@@ -134,7 +134,7 @@ public class Media extends Resource {
 			if(command == OK){
 				try{
 					media.setName(name.getText());
-				}catch(Exception ex){}
+				}catch(Exception ex){name.setText(media.getName()); return;}
 			}
 			setVisible(false);
 		}

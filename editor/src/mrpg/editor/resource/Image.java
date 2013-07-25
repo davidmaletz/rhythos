@@ -37,6 +37,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -49,7 +50,7 @@ import mrpg.export.Export;
 import mrpg.export.Graphic;
 
 
-public class Image extends ImageResource {
+public class Image extends ImageResource implements ActionListener {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "mimg"; private static final short VERSION=1;
 	private final Properties properties; private Graphic graphic; private long id;
@@ -57,10 +58,12 @@ public class Image extends ImageResource {
 	public long getId(){return id;}
 	public String getType(){return Export.IMAGE;}
 	public BufferedImage getImage(){try{return graphic.getBufferedImage();}catch(Exception e){} return null;}
+	private JMenuItem crop_image = MapEditor.createMenuItemIcon("Crop Image", ImageResource.ICON, this);
 	public void contextMenu(JPopupMenu menu){
-		menu.add(editor.getBrowser().properties); menu.addSeparator();
+		menu.add(editor.getBrowser().properties); menu.add(crop_image); menu.addSeparator();
 		super.contextMenu(menu);
 	}
+	public void actionPerformed(ActionEvent e){CroppedImage.create(this);}
 	public boolean edit(){properties(); return true;}
 	public void properties(){properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
@@ -131,7 +134,7 @@ public class Image extends ImageResource {
 			if(command == OK){
 				try{
 					image.setName(name.getText());
-				} catch(Exception ex){}
+				} catch(Exception ex){name.setText(image.getName()); return;}
 			}
 			setVisible(false);
 		}
@@ -140,6 +143,7 @@ public class Image extends ImageResource {
 	public static void register(){
 		Resource.register("Image Files", Image.EXT, Image.class);
 		Folder.import_options.addItem("Image File", "image", KeyEvent.VK_I, ActionEvent.CTRL_MASK, new ImportImageAction());
+		Resource.register("Cropped Image Files", CroppedImage.EXT, CroppedImage.class);
 	}
 	private static class ImportImageAction implements ActionListener {
 		public void actionPerformed(ActionEvent e){

@@ -21,7 +21,8 @@ import mrpg.editor.ResourceChooser;
 public abstract class ImageResource extends Resource {
 	private static final long serialVersionUID = 8050024073339824076L;
 	public static Dimension THUMB_SIZE = new Dimension(150,150);
-	private static final Icon icon = MapEditor.getIcon("image");
+	public static final String ICON = "image";
+	private static final Icon icon = MapEditor.getIcon(ICON);
 	protected ImageResource(File f, MapEditor e){super(f,e);}
 	public Icon getIcon(){return icon;}
 	public abstract BufferedImage getImage();

@@ -280,7 +280,7 @@ public class Project extends Folder {
 				project.options.clear(); for(int i=0; i<o.length; i++) project.options.add(o[i]);
 				try{
 					project.setName(name.getText());
-				}catch(Exception ex){}
+				}catch(Exception ex){name.setText(project.getName()); return;}
 				try{project.save();}catch(Exception ex){}
 				setVisible(false);
 			} else if(command == SET_FRAME){

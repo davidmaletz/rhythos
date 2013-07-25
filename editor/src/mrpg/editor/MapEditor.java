@@ -601,17 +601,13 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		tile_toolbar.addItem(new ToolItem(FillTool.class));
 		tile_toolbar.children.addAll(tile_toolbar_right.children);
 		//TODO: For the demo, I want to have map editing and events working, with the ability to create and preview maps. Maybe battle system too.
-		//TODO: DisplayResource extends Resource which replaces all references to Image classes. This way, types like cropped images can be added, and Sprites/Images/Cropped Images can become interchangable.
 		//TODO: Offsets for sprites to arrange the positions of different layers?
 		//TODO: player twitch when hitting two arrow keys rapidly?
 		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.
-		//TODO: If map is missing tileset, load all Tile.empty for that tileset, don't throw exception!
 		//TODO: GUI UI Form Builder
 		//TODO: fix up autotile management to work with the new system. Allow an autotile to be a subset in a tilemap.
 		//TODO: when target changes, script editor has to refresh, as monsters might reference DIFFERENT database entries. Register script quick commands too!
 		//TODO: read plugin directory, and install plugins.
-		//TODO: Project "get by id" has to allow new types via plugins (hash map from long to table?)
-		//TODO: enable/disable resources in a project based on target.
 		//TODO: built in error checking and exception handling in the client - so we know what went wrong when something goes wrong.
 		//TODO: Image Editing based on the map editor? Or perhaps based on jhlabs image editor?
 		//TODO: Animation Editing based on VIDE?
