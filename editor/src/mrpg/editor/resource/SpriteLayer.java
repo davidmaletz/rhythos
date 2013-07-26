@@ -63,7 +63,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.tree.TreePath;
 
 import com.jhlabs.image.ColorMatrix;
 import com.jhlabs.image.ColorMatrixFilter;
@@ -322,14 +321,7 @@ public class SpriteLayer extends Resource {
 			if(command == MapEditor.OK){
 				updated = true; setVisible(false);
 			} else if(command == MapEditor.SET){
-				Project p = WorkspaceBrowser.getProject(chara);
-				if(p == null){
-					WorkspaceBrowser b = chara.editor.getBrowser();
-					TreePath path; if(b.isSelectionEmpty() && b.getRowCount() == 0){path = null;}
-					else if(b.isSelectionEmpty()) path = b.getPathForRow(0);
-					else path = b.getSelectionPath();
-					if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
-				}
+				Project p = chara.getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Sprite Layer is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
 				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){image = im; image_thumb.setIcon(new ImageIcon(image.getImage()));}

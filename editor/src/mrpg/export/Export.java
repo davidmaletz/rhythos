@@ -25,12 +25,12 @@ import mrpg.editor.resource.Image;
 import mrpg.editor.resource.Media;
 
 public abstract class Export {
-	public static String IMAGE = "i", SOUND = "s", TILEMAP = "t", MAP = "m";
+	public static String IMAGE = "i", SOUND = "s";
 	public void addImage(Image i) throws Exception {addImage(i.getGraphic(), i.getId(), i.getFile().lastModified());}
 	public abstract void addImage(Graphic b, long i, long modified) throws Exception ;
 	public void addMedia(Media m) throws Exception {addSound(m.getSound(), m.getId(), m.getFile().lastModified());}
 	public abstract void addSound(Sound s, long i, long modified) throws Exception ;
-	public abstract void addData(byte[] header, InputStream in, String t, long i, long modified) throws Exception ;
+	public abstract void addData(InputStream in, String t, long i, long modified) throws Exception ;
 	public void finish() throws Exception {}
 	
 	private static byte buf[] = new byte[4096];

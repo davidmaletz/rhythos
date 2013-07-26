@@ -30,7 +30,7 @@ class Game extends Sprite {
 	private var player:Character; private var playerX:Int; private var playerY:Int; private var map:Map;
 	//private var enemy:Character; TODO: event handling, collision, it shouldn't be done with a static variable!
 	public function new() {
-		super(); map = Map.get("285cd0f1dd5f85bf"); addChild(map); player = Main.getPlayer(); playerX = 0; playerY = 1; resetPlayer(); Main.safeEnterFrame(this, enter_frame);
+		super(); map = Map.get("50425635ce09bb53"); addChild(map); player = Main.getPlayer(); playerX = 0; playerY = 1; resetPlayer(); Main.safeEnterFrame(this, enter_frame);
 		//TODO: read what layer the player should render on in the map, then add the player to that layer (sorting all events by y)
 	}
 	public function resetPlayer():Void { //TODO: play map bgm Main.playBGM(Main.getBGM("menu"));

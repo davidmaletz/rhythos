@@ -26,6 +26,7 @@ import org.w3c.dom.NodeList;
 import com.sun.awt.AWTUtilities;
 
 public class PluginManager {
+	//TODO: needs a UI
 	public static class PluginData {
 		private final File file; private Plugin plugin; private int installed;
 		public final String name, desc, author, version; private final String main;

@@ -24,14 +24,18 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 
 import mrpg.media.Audio;
 
 public class NekoExport extends Export {
-	private File dir;
-	public NekoExport(File f){dir = f; if(!dir.exists()) dir.mkdir();}
+	private File dir; private ArrayList<File> assets;
+	public NekoExport(File f){dir = f; if(!dir.exists()) dir.mkdir(); assets = new ArrayList<File>();}
+	private boolean checkAsset(File f, long modified){
+		assets.add(f); return f.exists() && f.lastModified() >= modified;
+	}
 	public void addImage(Graphic b, long i, long modified) throws Exception {
-		File f = new File(dir, "A"+IMAGE+Long.toHexString(i)); if(f.exists() && f.lastModified() >= modified) return;
+		File f = new File(dir, "A"+IMAGE+Long.toHexString(i)); if(checkAsset(f, modified)) return;
 		b.write(f);
 	}
 	private static byte RIFF[] = null; static{try{RIFF = "RIFF".getBytes("UTF-8");}catch(Exception e){}}
@@ -39,7 +43,7 @@ public class NekoExport extends Export {
 	private static byte DATA[] = null; static{try{DATA = "data".getBytes("UTF-8");}catch(Exception e){}}
 	public void addSound(Sound s, long i, long modified) throws Exception {
 		boolean mp3 = s.getFormat() == Audio.MP3;
-		File f = new File(dir, "A"+SOUND+Long.toHexString(i)+((mp3)?".mp3":".wav")); if(f.exists() && f.lastModified() >= modified) return;
+		File f = new File(dir, "A"+SOUND+Long.toHexString(i)+((mp3)?".mp3":".wav")); if(checkAsset(f, modified)) return;
 		FileOutputStream out = new FileOutputStream(f);
 		if(mp3) out.write(s.getData());
 		else {
@@ -50,9 +54,12 @@ public class NekoExport extends Export {
 			bb.put(DATA); bb.putInt(data.length); out.write(bb.array()); out.write(data);
 		} out.flush(); out.close();
 	}
-	public void addData(byte[] header, InputStream in, String t, long i, long modified) throws Exception {
-		File f = new File(dir, "A"+t+Long.toHexString(i)); if(f.exists() && f.lastModified() >= modified) return;
-		BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(f)); if(header != null) out.write(header);
+	public void addData(InputStream in, String t, long i, long modified) throws Exception {
+		File f = new File(dir, "A"+t+Long.toHexString(i)); if(checkAsset(f, modified)) return;
+		BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(f));
 		Export.writeAll(in, out); out.flush(); out.close();
+	}
+	public void finish() throws Exception {
+		for(File f : dir.listFiles()) if(!assets.contains(f)) f.delete();
 	}
 }

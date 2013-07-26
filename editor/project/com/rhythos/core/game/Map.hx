@@ -34,7 +34,7 @@ class Map extends Sprite {
 	public function new(d:ByteArray){
 		super(); background = Main.getImageResource(d);
 		var tilemaps = new Array<Tilemap>(); var len = d.readUnsignedByte();
-		for(i in 0...len) tilemaps.push(Tilemap.get(Main.readID(d)));
+		for(i in 0...len) tilemaps.push(Tilemap.get(d.readUTF(), Main.readID(d)));
 		w = d.readShort(); h = d.readShort(); var wrap:Int = d.readUnsignedByte(); wrapX = (wrap & 1) != 0; wrapY = (wrap & 2) != 0;
 		cells = new Array<Cell>(); event_layer = 2; max_level = event_layer; for(y in 0...h) for(x in 0...w){
 			var tiles:Int = d.readUnsignedByte(); if(tiles == 0) cells.push(null);

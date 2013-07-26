@@ -23,6 +23,8 @@ import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
+import mrpg.editor.resource.AutoTile;
+
 public class WallTilemap implements Tilemap {
 	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null; private final long id;
 	public WallTilemap(BufferedImage image, long _id, int tile_size) throws Exception {
@@ -143,6 +145,7 @@ public class WallTilemap implements Tilemap {
 		else{out.writeShort(frames.length); for(int i=0; i<frames.length; i++) out.writeInt(frames[i]);}
 	}
 	public long getId(){return id;}
+	public String getType(){return AutoTile.TYPE;}
 	private static final void copyTile(Graphics g, BufferedImage image, int dx, int dy, int sx, int sy, int w, int h){
 		g.drawImage(image, dx, dy, dx+w, dy+h, sx, sy, sx+w, sy+h, null);
 	}

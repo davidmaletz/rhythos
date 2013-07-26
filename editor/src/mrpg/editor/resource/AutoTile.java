@@ -35,7 +35,6 @@ import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -45,7 +44,6 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
-import javax.swing.tree.TreePath;
 
 import mrpg.editor.AutoTileEditor;
 import mrpg.editor.MapEditor;
@@ -58,9 +56,7 @@ import mrpg.world.WallTilemap;
 
 public class AutoTile extends TileResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
-	public static final String TILESET = "database";
-	private static final Icon icon = MapEditor.getIcon(TILESET);
-	public static final String EXT = "atm"; private static final short VERSION=1;
+	public static final String EXT = "atm", TYPE = "at"; private static final short VERSION=1;
 	public static final String ADD_AUTOTILE="set-tileset";
 	private Tilemap autotile; private Properties properties; private ImageResource image; private long id;
 	private JMenuItem add_autotile = MapEditor.createMenuItemIcon("Toggle Autotile", ADD_AUTOTILE, this);
@@ -69,43 +65,43 @@ public class AutoTile extends TileResource implements ActionListener {
 		WorkspaceBrowser browser = editor.getBrowser(); menu.add(add_autotile); menu.add(browser.properties); menu.addSeparator();
 	}
 	public long getId(){return id;}
+	public String getType(){return TYPE;}
 	public boolean edit(){editor.getTilesetViewer().toggleAutoTile(autotile, WorkspaceBrowser.getProject(this)); return true;}
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
-	public Icon getIcon(){return icon;}
 	public ImageResource getImage(){return image;}
 	public Tilemap getTilemap(){return autotile;}
 	public void actionPerformed(ActionEvent e) {edit();}
 	
 	private boolean active = false;
 	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeTilemapId(this, id); super.remove(delete);
+		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
 		active = editor.getTilesetViewer().removeAutoTile(autotile);
 	}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
-			out.writeShort(VERSION); out.writeLong(id); ImageResource.write(out, image); autotile.write(out); out.flush(); out.close();
+			out.writeShort(VERSION); out.writeLong(id); writeTileSize(out); ImageResource.write(out, image); autotile.write(out); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
+			id = in.readLong(); checkTileSize(in); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
 			if(image.getImage().getHeight() == p.tile_size*2)
 				autotile = new WallTilemap(in, image.getImage(), getId(), p.tile_size);
 			else autotile = new AutoTilemap(in, image.getImage(), getId(), p.tile_size);
-			in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
+			in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 			if(active){active = false; editor.getTilesetViewer().addAutoTile(autotile, p);}
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static AutoTile createAutoTile(Resource parent, MapEditor e, Project p) throws Exception {
 		String dir = parent.getFile().toString();
 		File f = new File(dir,"New AutoTile"+"."+EXT);
-		AutoTile ret = new AutoTile(f, e); ret._setName(null); ret.id = p.newTilemapId();
+		AutoTile ret = new AutoTile(f, e); ret._setName(null); ret.id = p.newId(TYPE);
 		ret.properties(); if(!ret.properties.updated) throw new Exception();
-		p.setTilemapId(ret, ret.id); return ret;
+		p.setId(TYPE, ret, ret.id); return ret;
 	}
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
@@ -144,17 +140,7 @@ public class AutoTile extends TileResource implements ActionListener {
 			setTilemap(null);
 			pack();
 		}
-		private Project getProject(){
-			Project p = WorkspaceBrowser.getProject(autotile);
-			if(p == null){
-				WorkspaceBrowser b = autotile.editor.getBrowser();
-				TreePath path; if(b.isSelectionEmpty() && b.getRowCount() == 0){path = null;}
-				else if(b.isSelectionEmpty()) path = b.getPathForRow(0);
-				else path = b.getSelectionPath();
-				if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
-			} return p;
-		}
-		private int getTileSize(){Project p = getProject(); if(p == null) return TilesetViewer.TILE_SIZE; else return p.tile_size;}
+		private int getTileSize(){Project p = autotile.getProject(); if(p == null) return TilesetViewer.TILE_SIZE; else return p.tile_size;}
 		private void setTilemap(Tilemap t){
 			tilemap = t;
 			boolean b = false; StringBuffer fr = new StringBuffer(); String sp = "";
@@ -206,7 +192,7 @@ public class AutoTile extends TileResource implements ActionListener {
 				if(image != null && tilemap != null) try{autotile.save(); updated = true;}catch(Exception ex){}
 				setVisible(false); MapEditor.instance.refreshTilesets();
 			} else if(command == MapEditor.SET){
-				Project p = getProject();
+				Project p = autotile.getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
 				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){

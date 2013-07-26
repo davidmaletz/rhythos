@@ -22,6 +22,8 @@ import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
+import mrpg.editor.resource.Tileset;
+
 public class BasicTilemap implements Tilemap {
 	private final int width; private final Tile tiles[]; private byte walkable[]; private final long id;
 	public BasicTilemap(BufferedImage image, long _id, int tile_size) throws Exception {
@@ -47,6 +49,7 @@ public class BasicTilemap implements Tilemap {
 		for(int i=0; i<walkable.length; i++) out.writeByte(walkable[i]);
 	}
 	public long getId(){return id;}
+	public String getType(){return Tileset.TYPE;}
 	public int getTilesX(){return width;}
 	public int getTilesY(){return tiles.length/width;}
 	public Tile getTile(int index){return tiles[index];}

@@ -523,11 +523,17 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 				try{
 					Element element = (Element)list.item(i);
 					Project p = browser.addProject(new File(element.getAttribute("directory")));
-					try{p.getMapById(Long.parseLong(element.getElementsByTagName("map").item(0).getTextContent())).edit();}catch(Exception exx){}
-					try{p.getTilemapById(Long.parseLong(element.getElementsByTagName("tileset").item(0).getTextContent())).edit();}catch(Exception exx){}
+					try{p.getById(Map.TYPE, Long.parseLong(element.getElementsByTagName("map").item(0).getTextContent())).edit();}catch(Exception exx){}
+					try{
+						Element e = (Element)element.getElementsByTagName("tileset").item(0);
+						p.getById(e.getAttribute("type"), Long.parseLong(e.getTextContent())).edit();
+					}catch(Exception exx){}
 					NodeList n = element.getElementsByTagName("autotile");
 					for(int j=0; j<n.getLength(); j++)
-						try{p.getTilemapById(Long.parseLong(n.item(j).getTextContent())).edit();}catch(Exception exx){}
+						try{
+							Element e = (Element)n.item(j);
+							p.getById(e.getAttribute("type"), Long.parseLong(e.getTextContent())).edit();
+						}catch(Exception exx){}
 				}catch(Exception ex){}
 			} list = root.getElementsByTagName("expanded");
 			for(int i=0; i<list.getLength(); i++){
@@ -623,11 +629,13 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		tile_toolbar.addItem(new ToolItem(LineTool.class));
 		tile_toolbar.addItem(new ToolItem(RectTool.class));
 		tile_toolbar.addItem(new ToolItem(FillTool.class));
+		//TODO: Clean up client side API to make it easy to manage resources, right now it's very messy.
 		//TODO: Save media player and script editor visible/location/size info in workspace?
 		//TODO: For the demo, I want to have map editing and events working, with the ability to create and preview maps. Maybe battle system too.
 		//TODO: Offsets for sprites to arrange the positions of different layers?
 		//TODO: player twitch when hitting two arrow keys rapidly?
 		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.
+		//TODO: debugging info
 		//TODO: GUI UI Form Builder
 		//TODO: fix up autotile management to work with the new system. Allow an autotile to be a subset in a tilemap.
 		//TODO: when target changes, script editor has to refresh, as monsters might reference DIFFERENT database entries. Register script quick commands too!

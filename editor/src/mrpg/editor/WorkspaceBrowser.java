@@ -309,7 +309,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		else if(command == MapEditor.OPEN){
 			try{
 				Project p = Project.openProject(editor, (Workspace)getModel().getRoot()); addProject(p);
-				MapEditor.doDeferredRead(false); if(!editor.hasMap()) p.getMaps().iterator().next().edit();
+				MapEditor.doDeferredRead(false); if(!editor.hasMap()) p.getResources(Map.TYPE).iterator().next().edit();
 			}catch(Exception ex){}
 		} else if(command == MapEditor.DELETE){
 			deleteSelection();
@@ -334,7 +334,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		} else if(command == MapEditor.PROPERTIES){getSelectedResource().properties();
 		} else if(command == Project.PROJECT) try{
 			Project p = Project.createProject(editor); addProject(p); MapEditor.doDeferredRead(true);
-			if(!editor.hasMap()) p.getMaps().iterator().next().edit();
+			if(!editor.hasMap()) p.getResources(Map.TYPE).iterator().next().edit();
 			}catch(Exception ex){}
 		else if(command == MapEditor.BUILD){
 			try{

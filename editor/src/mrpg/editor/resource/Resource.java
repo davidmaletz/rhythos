@@ -34,8 +34,10 @@ import javax.swing.JPopupMenu;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 
 import mrpg.editor.MapEditor;
+import mrpg.editor.WorkspaceBrowser;
 import mrpg.editor.WorkspaceBrowser.ExtFileFilter;
 
 
@@ -83,6 +85,9 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			throw new Exception();
 		}
 	}
+	//Returns the amount of bytes at the beginning of the resource only used for editing purposes and should be skipped in game.
+	//Default = 10 bytes, 2 byte version, 8 byte id
+	public int getHeaderSize(){return 10;}
 	public void properties(){}
 	public boolean hasProperties(){return false;}
 	public void contextMenu(JPopupMenu menu){}
@@ -134,6 +139,20 @@ public abstract class Resource extends DefaultMutableTreeNode {
 		remove(false); removeAllChildren(); read(file);
 	}
 	public String toString(){return getName();}
+	
+	//A synonym for WorkspaceBrowser.getProject(this) if the resource is added to a project. Otherwise, it returns the project where
+	//this resource WILL be inserted (assuming it is being added in the tree view), or null if there are no projects.
+	//Use to get the Project during resource creation (before it has been added).
+	public Project getProject(){
+		Project p = WorkspaceBrowser.getProject(this);
+		if(p == null){
+			WorkspaceBrowser b = editor.getBrowser();
+			TreePath path; if(b.isSelectionEmpty() && b.getRowCount() == 0){path = null;}
+			else if(b.isSelectionEmpty()) path = b.getPathForRow(0);
+			else path = b.getSelectionPath();
+			if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
+		} return p;
+	}
 	
 	private static final HashMap<String, Class<? extends Resource>> resources = new HashMap<String, Class<? extends Resource>>();
 	public static JFileChooser resourceChooser = new JFileChooser();

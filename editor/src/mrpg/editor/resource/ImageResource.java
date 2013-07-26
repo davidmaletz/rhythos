@@ -27,6 +27,7 @@ public abstract class ImageResource extends Resource {
 	public Icon getIcon(){return icon;}
 	public abstract BufferedImage getImage();
 	public abstract String getType();
+	public static int getSize(ImageResource r){return (r==null)?2:10+r.getType().length();}
 	public static void write(DataOutputStream out, ImageResource r) throws Exception {
 		if(r == null) out.writeUTF(""); else {out.writeUTF(r.getType()); out.writeLong(r.getId());}
 	}

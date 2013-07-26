@@ -173,16 +173,6 @@ public class Project extends Folder {
 	public void removeMediaId(Media r, long id) throws Exception {removeId(get(Export.SOUND), r, id);}
 	public Media getMediaById(long id) throws Exception {return (Media)getById(get(Export.SOUND), id);}
 	public Iterable<Media> getMedia(){return new ConvertIterable<Media>(get(Export.SOUND).values());}
-	public long newTilemapId(){return newId(get(Export.TILEMAP));}
-	public long setTilemapId(TileResource r, long id) throws Exception {return setId(get(Export.TILEMAP), r, id);}
-	public void removeTilemapId(TileResource r, long id) throws Exception {removeId(get(Export.TILEMAP), r, id);}
-	public TileResource getTilemapById(long id) throws Exception {return (TileResource)getById(get(Export.TILEMAP), id);}
-	public Iterable<TileResource> getTilemaps(){return new ConvertIterable<TileResource>(get(Export.TILEMAP).values());}
-	public long newMapId(){return newId(get(Export.MAP));}
-	public long setMapId(Map r, long id) throws Exception {return setId(get(Export.MAP), r, id);}
-	public void removeMapId(Map r, long id) throws Exception {removeId(get(Export.MAP), r, id);}
-	public Map getMapById(long id) throws Exception {return (Map)getById(get(Export.MAP), id);}
-	public Iterable<Map> getMaps(){return new ConvertIterable<Map>(get(Export.MAP).values());}
 	public long newId(String type){return newId(get(type));}
 	public long setId(String type, Resource r, long id) throws Exception {return setId(get(type), r, id);}
 	public void removeId(String type, Resource r, long id) throws Exception {removeId(get(type), r, id);}
@@ -276,7 +266,7 @@ public class Project extends Folder {
 				try{
 					int ts = Integer.parseInt(tile_size.getSelectedItem().toString());
 					if(ts != project.tile_size){
-						if(project.getTilemaps().iterator().hasNext() || project.getMaps().iterator().hasNext()){
+						if(project.getResources(Tileset.TYPE).iterator().hasNext() || project.getResources(Map.TYPE).iterator().hasNext()){
 							JOptionPane.showMessageDialog(this, "You cannot change the tilesize of a project already containing maps and tilesets (as it would break them).\nIf you really wish to change the tile size, delete all maps and tilesets and try again.", "Unable to change Tile Size", JOptionPane.ERROR_MESSAGE);
 						} else project.tile_size = ts;
 					}

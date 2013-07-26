@@ -23,6 +23,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.Hashtable;
 
+import mrpg.editor.resource.AutoTile;
+
 public class AutoTilemap implements Tilemap {
 	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null;
 	private final long id; public final int tile_size;
@@ -68,6 +70,7 @@ public class AutoTilemap implements Tilemap {
 		else{out.writeShort(frames.length); for(int i=0; i<frames.length; i++) out.writeInt(frames[i]);}
 	}
 	public long getId(){return id;}
+	public String getType(){return AutoTile.TYPE;}
 	private Coords getCoords(int i){
 		int half_tile = tile_size>>1, half_tile3 = tile_size+half_tile, half_tile5 = half_tile3+tile_size;
 		int x1, y1, x2, y2, x3, y3, x4, y4;

@@ -45,9 +45,9 @@ public class SWFExport extends Export {
 	public void addSound(Sound s, long i, long modified) throws Exception {
 		String type = "A"+SOUND+Long.toHexString(i); movie.add(s.getSound(id)); sounds.add(id, type); id++;
 	}
-	public void addData(byte[] header, InputStream in, String t, long i, long modified) throws Exception {
-		out.reset(); if(header != null) out.write(header); Export.writeAll(in, out);
-		String type = "A"+t+Long.toHexString(i); movie.add(new DefineData(id, out.toByteArray())); bytearrays.add(id, type); id++;
+	public void addData(InputStream in, String t, long i, long modified) throws Exception {
+		out.reset(); Export.writeAll(in, out); String type = "A"+t+Long.toHexString(i);
+		movie.add(new DefineData(id, out.toByteArray())); bytearrays.add(id, type); id++;
 	}
 	public void finish() throws Exception {
 		movie.add(bitmaps); movie.add(sounds); movie.add(bytearrays); movie.add(ShowFrame.getInstance()); movie.encodeToFile(f);

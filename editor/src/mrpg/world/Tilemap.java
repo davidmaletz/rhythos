@@ -25,6 +25,7 @@ public interface Tilemap {
 	public Tile getTile(int idx);
 	public boolean indexNeighbors();
 	public long getId();
+	public String getType();
 	
 	public byte getWalkable(int index);
 	public void setWalkable(int index, byte w);

@@ -22,8 +22,6 @@ import java.awt.Desktop;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,11 +36,9 @@ import java.util.ArrayList;
 
 import mrpg.editor.resource.Folder;
 import mrpg.editor.resource.Image;
-import mrpg.editor.resource.Map;
 import mrpg.editor.resource.Media;
 import mrpg.editor.resource.Project;
 import mrpg.editor.resource.Resource;
-import mrpg.editor.resource.TileResource;
 import mrpg.export.Export;
 import mrpg.export.NekoExport;
 import mrpg.export.SWFExport;
@@ -108,12 +104,12 @@ public class HaxeCompiler {
 		} for(Media m : p.getMedia()){
 			out.write("class As"); out.write(Long.toHexString(m.getId()));
 			out.write(" extends nme.media.Sound { }"); out.newLine();
-		} for(TileResource tm : p.getTilemaps()){
-			out.write("class At"); out.write(Long.toHexString(tm.getId()));
-			out.write(" extends nme.utils.ByteArray { }"); out.newLine();
-		} for(Map m : p.getMaps()){
-			out.write("class Am"); out.write(Long.toHexString(m.getId()));
-			out.write(" extends nme.utils.ByteArray { }"); out.newLine();
+		} for(String type : p.getResourceTypes()){
+			if(type.equals(Export.IMAGE) || type.equals(Export.SOUND)) continue;
+			for(Resource rs : p.getResources(type)){
+				out.write("class A"); out.write(type); out.write(Long.toHexString(rs.getId()));
+				out.write(" extends nme.utils.ByteArray { }"); out.newLine();
+			}
 		} out.flush(); out.close();
 	}
 	private static Result inner_parse(Project p, File fbase, File fbin) throws Exception {
@@ -171,16 +167,11 @@ public class HaxeCompiler {
 		else throw new Exception();
 		for(Image i : p.getImages()) export.addImage(i);
 		for(Media m : p.getMedia()) export.addMedia(m);
-		ByteArrayOutputStream ar = new ByteArrayOutputStream(); DataOutputStream dout = new DataOutputStream(ar);
 		for(String type : p.getResourceTypes()){
 			if(type.equals(Export.IMAGE) || type.equals(Export.SOUND)) continue;
-			boolean tileset = type.equals(Export.TILEMAP);
 			for(Resource rs : p.getResources(type)){
 				BufferedInputStream in = new BufferedInputStream(new FileInputStream(rs.getFile()));
-				in.skip(10); byte[] header = null; if(tileset){
-					String name = ((TileResource)rs).getTilemap().getClass().getSimpleName();
-					ar.reset(); dout.writeUTF(name); dout.flush(); header = ar.toByteArray();
-				} export.addData(header, in, type, rs.getId(), rs.getFile().lastModified());
+				in.skip(rs.getHeaderSize()); export.addData(in, type, rs.getId(), rs.getFile().lastModified());
 			}
 		} export.finish();
 	}

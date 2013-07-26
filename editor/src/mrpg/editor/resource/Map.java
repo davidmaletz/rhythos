@@ -45,7 +45,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.tree.TreePath;
 
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
@@ -55,7 +54,7 @@ import mrpg.world.World;
 
 public class Map extends Modifiable {
 	private static final long serialVersionUID = 3067630717384565840L;
-	public static final String EXT = "map", MAP = "map"; private static final short VERSION=1;
+	public static final String EXT = "map", MAP = "map", TYPE = "m"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(MAP);
 	private World world; private Properties properties; private ImageResource background; private long id;
 	public Map(File f, MapEditor e){super(f,e);}
@@ -73,7 +72,7 @@ public class Map extends Modifiable {
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	private boolean active = false;
 	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeMapId(this, id); super.remove(delete); active = editor.removeMap(this);
+		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete); active = editor.removeMap(this);
 	}
 	public boolean hasProperties(){return true;}
 	public Icon getIcon(){return icon;}
@@ -91,7 +90,7 @@ public class Map extends Modifiable {
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); background = ImageResource.read(in, p);
 			world = World.read(new WorldIO(p, in)); in.close(); if(background != null) world.background = background.getImage();
-			long i = p.setMapId(this, id); if(i != id){id = i; save();}
+			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 			if(active){active = false; edit();} setModified(false);
 		}catch(Exception e){in.close(); throw e;}
 	}
@@ -99,9 +98,9 @@ public class Map extends Modifiable {
 	public static Map createMap(Resource parent, MapEditor e, Project p) throws Exception{
 		String dir = parent.getFile().toString();
 		File f = new File(dir,"New Map"+"."+EXT);
-		Map ret = new Map(f,e); ret._setName(null); ret.world = new World(20,15); ret.id = p.newMapId(); ret.properties();
+		Map ret = new Map(f,e); ret._setName(null); ret.world = new World(20,15); ret.id = p.newId(TYPE); ret.properties();
 		if(!ret.properties.updated) throw new Exception();
-		p.setMapId(ret, ret.id); return ret;
+		p.setId(TYPE, ret, ret.id); return ret;
 	}
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
@@ -179,14 +178,7 @@ public class Map extends Modifiable {
 				} try{map.save(); map.editor.updateSaveButtons(); updated = true;}catch(Exception ex){}
 				setVisible(false);
 			} else if(command == MapEditor.SET){
-				Project p = WorkspaceBrowser.getProject(map);
-				if(p == null){
-					WorkspaceBrowser b = map.editor.getBrowser();
-					TreePath path; if(b.isSelectionEmpty() && b.getRowCount() == 0){path = null;}
-					else if(b.isSelectionEmpty()) path = b.getPathForRow(0);
-					else path = b.getSelectionPath();
-					if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
-				}
+				Project p = map.getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Map is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
 				ImageResource im = ImageResource.choose(p, background);
 				if(im != null){background = im; image_thumb.setIcon(new ImageIcon(background.getImage()));}

@@ -66,7 +66,6 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.tree.TreePath;
 
 import mrpg.editor.DragList;
 import mrpg.editor.Filter;
@@ -99,11 +98,12 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
 	}
+	public int getHeaderSize(){return super.getHeaderSize()+ImageResource.getSize(image);}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
-			out.writeShort(VERSION); out.writeLong(id); out.writeShort(width); out.writeShort(height);
-			out.writeShort(animations.size()); for(Animation a : animations) a.write(out);
+			out.writeShort(VERSION); out.writeLong(id); ImageResource.write(out, image); out.writeShort(width);
+			out.writeShort(height); out.writeShort(animations.size()); for(Animation a : animations) a.write(out);
 			out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
@@ -111,8 +111,8 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			Project p = WorkspaceBrowser.getProject(this);
-			id = in.readLong(); width = in.readShort(); height = in.readShort(); short nAni = in.readShort();
+			Project p = WorkspaceBrowser.getProject(this); id = in.readLong(); image = ImageResource.read(in, p);
+			width = in.readShort(); height = in.readShort(); short nAni = in.readShort();
 			animations.clear(); for(int i=0; i<nAni; i++) animations.add(Animation.read(p, in));
 			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} in.close();
 		}catch(Exception e){in.close(); throw e;}
@@ -130,7 +130,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		private static final String OK = "ok", CANCEL = "cancel", ADD = "add", REM = "rem";
 		public boolean updated;
 		private final AnimationSet animation; private final JTextField name, id; private final JSpinner width, height;
-		private final JLabel image_thumb; private final JList animations;
+		private final JLabel image_thumb; private final JList animations; private ImageResource image;
 		public Properties(AnimationSet ani){
 			super(JOptionPane.getFrameForComponent(ani.editor), "Animation Set Properties", true); animation = ani;
 			setResizable(false);
@@ -170,7 +170,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		}
 		public void setVisible(boolean b){
 			if(b == true){
-				updated = false; name.setText(animation.getName()); name.requestFocus(); name.selectAll();
+				updated = false; name.setText(animation.getName()); name.requestFocus(); name.selectAll(); image = animation.image;
 				width.setValue(animation.width); height.setValue(animation.height); DefaultListModel m = new DefaultListModel();
 				for(Animation i : animation.animations) m.addElement(i); animations.setModel(m);
 				if(animation.animations.size() > 0) animations.setSelectedIndex(0);
@@ -181,7 +181,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(command == OK){
-				animation.animations.clear(); ListModel m = animations.getModel();
+				animation.image = image; animation.animations.clear(); ListModel m = animations.getModel();
 				for(int i=0; i<m.getSize(); i++) animation.animations.add((Animation)m.getElementAt(i));
 				animation.width = (Integer)width.getValue(); animation.height = (Integer)height.getValue(); try{
 					animation.setName(name.getText());
@@ -196,20 +196,13 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 					m.addElement(ani); animations.setSelectedIndex(sz);
 				}
 			} else if(command == MapEditor.SET){
-			Project p = WorkspaceBrowser.getProject(animation);
-			if(p == null){
-				WorkspaceBrowser b = animation.editor.getBrowser();
-				TreePath path; if(b.isSelectionEmpty() && b.getRowCount() == 0){path = null;}
-				else if(b.isSelectionEmpty()) path = b.getPathForRow(0);
-				else path = b.getSelectionPath();
-				if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
-			}
-			if(p == null){JOptionPane.showMessageDialog(this, "Animation Set is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
-			ImageResource im = ImageResource.choose(p, animation.image);
-			if(im != null){animation.image = im; updateCache();}
-		} else if(command == MapEditor.CLEAR){
-			animation.image = null; updateCache();
-		} else setVisible(false);
+				Project p = animation.getProject();
+				if(p == null){JOptionPane.showMessageDialog(this, "Animation Set is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
+				ImageResource im = ImageResource.choose(p, image);
+				if(im != null){image = im; updateCache();}
+			} else if(command == MapEditor.CLEAR){
+				image = null; updateCache();
+			} else setVisible(false);
 		}
 		public void mouseClicked(MouseEvent e){
 			if(e.getClickCount() == 2){
@@ -232,11 +225,11 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		private static final Color trans_black = new Color(0x88000000,true), trans_white = new Color(0xAAffffff,true); 
 		private void updateCache(){
 			int w = (Integer)width.getValue(), h = (Integer)height.getValue(); BufferedImage b;
-			if(animation.image == null){
+			if(image == null){
 				b = new BufferedImage(TilesetViewer.TILE_SIZE*w, TilesetViewer.TILE_SIZE*h, BufferedImage.TYPE_INT_ARGB);
 				Graphics g = b.getGraphics(); g.setColor(Color.white); g.fillRect(0, 0, b.getWidth(), b.getHeight());
 			} else {
-				BufferedImage im = animation.image.getImage(); ColorModel cm = im.getColorModel();
+				BufferedImage im = image.getImage(); ColorModel cm = im.getColorModel();
 				b = new BufferedImage(cm, im.copyData(null), cm.isAlphaPremultiplied(), null);
 			} int iw = b.getWidth()/w, ih = b.getHeight()/h; Graphics g = b.getGraphics();
 			g.setFont(g.getFont().deriveFont(Font.BOLD, 16)); g.setColor(trans_black);

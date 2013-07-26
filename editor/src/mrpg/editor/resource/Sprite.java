@@ -57,7 +57,6 @@ import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.tree.TreePath;
 
 import mrpg.editor.DragList;
 import mrpg.editor.Filter;
@@ -232,14 +231,7 @@ public class Sprite extends Resource {
 			} else image_thumb.setIcon(new ImageIcon());
 		}
 		private Project getProject(){
-			Project p = WorkspaceBrowser.getProject(chara);
-			if(p == null){
-				WorkspaceBrowser b = chara.editor.getBrowser();
-				TreePath path; if(b.isSelectionEmpty() && b.getRowCount() == 0){path = null;}
-				else if(b.isSelectionEmpty()) path = b.getPathForRow(0);
-				else path = b.getSelectionPath();
-				if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
-			}
+			Project p = chara.getProject();
 			if(p == null){JOptionPane.showMessageDialog(this, "Sprite is not added to any project, no resources to load...", "Cannot Find Resources", JOptionPane.ERROR_MESSAGE); return null;}
 			return p;
 		}

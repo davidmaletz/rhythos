@@ -34,7 +34,6 @@ import java.io.FileOutputStream;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -44,7 +43,6 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.tree.TreePath;
 
 import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetEditor;
@@ -54,8 +52,7 @@ import mrpg.world.BasicTilemap;
 
 public class Tileset extends TileResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
-	private static final Icon icon = MapEditor.getIcon("database");
-	public static final String EXT = "btm"; private static final short VERSION=1;
+	public static final String EXT = "btm", TYPE = "bt"; private static final short VERSION=1;
 	public static final String SET_TILESET="set-tileset";
 	private BasicTilemap tilemap; private Properties properties; private ImageResource image; private long id;
 	private JMenuItem set_tileset = MapEditor.createMenuItemIcon("Set Tileset", SET_TILESET, this);
@@ -64,31 +61,31 @@ public class Tileset extends TileResource implements ActionListener {
 		WorkspaceBrowser browser = editor.getBrowser(); menu.add(set_tileset); menu.add(browser.properties); menu.addSeparator();
 	}
 	public long getId(){return id;}
+	public String getType(){return TYPE;}
 	public boolean edit(){editor.getTilesetViewer().setTilemap(tilemap, WorkspaceBrowser.getProject(this)); return true;}
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	public boolean hasProperties(){return true;}
-	public Icon getIcon(){return icon;}
 	public ImageResource getImage(){return image;}
 	public BasicTilemap getTilemap(){return tilemap;}
 	public void actionPerformed(ActionEvent e) {edit();}
 	private boolean active = false;
 	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeTilemapId(this, id); super.remove(delete);
+		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
 		active = editor.getTilesetViewer().removeTilemap(tilemap);
 	}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{out.writeShort(VERSION);
-			out.writeLong(id); ImageResource.write(out, image); tilemap.write(out); out.flush(); out.close();
+			out.writeLong(id); writeTileSize(out); ImageResource.write(out, image); tilemap.write(out); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
+			id = in.readLong(); checkTileSize(in); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
 			tilemap = new BasicTilemap(in, image.getImage(), getId(), p.tile_size);
-			in.close(); long i = p.setTilemapId(this, id); if(i != id){id = i; save();}
+			in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 			if(active){active = false; editor.getTilesetViewer().setTilemap(tilemap, p);}
 		}catch(Exception e){in.close(); throw e;}
 	}
@@ -96,9 +93,9 @@ public class Tileset extends TileResource implements ActionListener {
 	public static Tileset createTileset(Resource parent, MapEditor e, Project p) throws Exception {
 		String dir = parent.getFile().toString();
 		File f = new File(dir,"New Tileset"+"."+EXT);
-		Tileset ret = new Tileset(f, e); ret._setName(null); ret.id = p.newTilemapId();
+		Tileset ret = new Tileset(f, e); ret._setName(null); ret.id = p.newId(TYPE);
 		ret.properties(); if(!ret.properties.updated) throw new Exception();
-		p.setTilemapId(ret, ret.id); return ret;
+		p.setId(TYPE, ret, ret.id); return ret;
 	}
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
@@ -128,17 +125,7 @@ public class Tileset extends TileResource implements ActionListener {
 			c.add(inner);
 			pack();
 		}
-		private Project getProject(){
-			Project p = WorkspaceBrowser.getProject(tileset);
-			if(p == null){
-				WorkspaceBrowser b = tileset.editor.getBrowser();
-				TreePath path; if(b.isSelectionEmpty() && b.getRowCount() == 0){path = null;}
-				else if(b.isSelectionEmpty()) path = b.getPathForRow(0);
-				else path = b.getSelectionPath();
-				if(path != null && path.getPathCount() > 1) p = (Project)path.getPathComponent(1);
-			} return p;
-		}
-		private int getTileSize(){Project p = getProject(); if(p == null) return TilesetViewer.TILE_SIZE; else return p.tile_size;}
+		private int getTileSize(){Project p = tileset.getProject(); if(p == null) return TilesetViewer.TILE_SIZE; else return p.tile_size;}
 		public void setVisible(boolean b){
 			if(b == true){
 				updated = false; id.setText(Long.toHexString(tileset.id));
@@ -160,7 +147,7 @@ public class Tileset extends TileResource implements ActionListener {
 				if(image != null && tilemap != null) try{tileset.save(); updated = true;}catch(Exception ex){}
 				setVisible(false); MapEditor.instance.refreshTilesets();
 			} else if(command == MapEditor.SET){
-				Project p = getProject();
+				Project p = tileset.getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
 				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){

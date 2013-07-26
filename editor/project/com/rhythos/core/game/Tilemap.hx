@@ -31,7 +31,6 @@ import nme.utils.ByteArray;
 class Tilemap {
 	private var tilesheet:Tilesheet; private var walkable:Array<Int>; private var tiles:Array<Tile>;
 	public function new(d:ByteArray){
-		trace(d.readUTF()); //TODO: load tileset from the classname - don't ignore!
 		var b:BitmapData = Main.getImageResource(d);
 		var w:Int=Math.floor(b.width/Tile.tile_size), h:Int = Math.floor(b.height/Tile.tile_size);
 		tilesheet = new Tilesheet(b); walkable = new Array<Int>(); tiles = new Array<Tile>();
@@ -45,8 +44,8 @@ class Tilemap {
 	public inline function drawTiles(g:Graphics, tiles:Array<Float>):Void {tilesheet.drawTiles(g, tiles);}
 	
 	private static var cache:Hash<Tilemap> = new Hash<Tilemap>();
-	public static function get(id:String):Tilemap {
-		if(cache.exists(id)) return cache.get(id);
-		var t = new Tilemap(Main.getData("t", id)); cache.set(id, t); return t;
+	public static function get(type:String, id:String):Tilemap {
+		if(cache.exists(id)) return cache.get(id); trace(type);
+		var t = new Tilemap(Main.getData(type, id)); cache.set(id, t); return t;
 	}
 }

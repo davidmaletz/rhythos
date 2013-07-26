@@ -25,37 +25,38 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import mrpg.editor.resource.Project;
+import mrpg.editor.resource.TileResource;
 import mrpg.world.Tile;
 
 public class WorldIO {
-	private final ArrayList<Long> tilemaps; private final ByteArrayOutputStream buf;
+	private final ArrayList<Long> tilemaps; private final ArrayList<String> types; private final ByteArrayOutputStream buf;
 	private final DataOutputStream obuf; private final DataInputStream in; private final Project project;
 	public WorldIO(Project p, DataInputStream _in) throws IOException {
 		in = _in; buf = null; obuf = null; project = p;
-		int sz = in.read(); tilemaps = new ArrayList<Long>(sz);
-		for(int i=0; i<sz; i++) tilemaps.add(in.readLong());
+		int sz = in.read(); tilemaps = new ArrayList<Long>(sz); types = new ArrayList<String>(sz);
+		for(int i=0; i<sz; i++){types.add(in.readUTF()); tilemaps.add(in.readLong());}
 	}
 	public WorldIO(){
 		in = null; buf = new ByteArrayOutputStream(); obuf = new DataOutputStream(buf);
-		tilemaps = new ArrayList<Long>(255); project = null;
+		tilemaps = new ArrayList<Long>(255); types = new ArrayList<String>(255); project = null;
 	}
 	public ByteArrayOutputStream getBuffer(){return buf;}
 	public void resetBuffer(){buf.reset();}
-	public ArrayList<Long> getTilemaps(){return tilemaps;}
 	public Tile readTile() throws IOException {
 		int map = in.read(); if(map == 255) return Tile.empty; short id = in.readShort();
 		try{
-			return project.getTilemapById(tilemaps.get(map)).getTilemap().getTile(id); 
+			return ((TileResource)project.getById(types.get(map), tilemaps.get(map))).getTilemap().getTile(id); 
 		}catch(Exception e){return Tile.empty;}
 	}
 	public void writeTile(Tile t) throws IOException {
 		if(t == Tile.empty){obuf.write(255); return;}
 		long id = t.info.map.getId(); int i = tilemaps.indexOf(id); if(i == -1){
 			i = tilemaps.size(); if(i == 255) throw new IOException("Only 255 Tilemaps per Map allowed."); tilemaps.add(id);
+			types.add(t.info.map.getType());
 		} obuf.write(i); obuf.writeShort(t.info.index);
 	}
 	public void write(DataOutputStream out) throws IOException {
-		int sz = tilemaps.size(); out.write(sz); for(int i=0; i<sz; i++) out.writeLong(tilemaps.get(i));
+		int sz = tilemaps.size(); out.write(sz); for(int i=0; i<sz; i++){out.writeUTF(types.get(i)); out.writeLong(tilemaps.get(i));}
 		out.write(buf.toByteArray());
 	}
 	public int read() throws IOException {return in.read();}

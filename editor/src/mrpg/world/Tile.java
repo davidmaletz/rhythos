@@ -24,6 +24,7 @@ import java.awt.image.ImageObserver;
 import java.io.IOException;
 
 import mrpg.editor.resource.Project;
+import mrpg.editor.resource.TileResource;
 import mrpg.export.WorldIO;
 
 public class Tile {
@@ -37,7 +38,7 @@ public class Tile {
 	public Tile refresh(Project p){
 		if(info.map == null) return this;
 		try{
-			Tilemap t = p.getTilemapById(info.map.getId()).getTilemap(); if(t == info.map) return this;
+			Tilemap t = TileResource.refresh(info.map, p); if(t == info.map) return this;
 			else return t.getTile(info.index);
 		}catch(Exception e){return this;}
 	}

@@ -36,6 +36,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import mrpg.editor.resource.Project;
+import mrpg.editor.resource.TileResource;
 import mrpg.world.BasicTilemap;
 import mrpg.world.Direction;
 import mrpg.world.Tile;
@@ -74,8 +75,8 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 	}
 	public void refresh(){
 		if(project == null) return; try{
-			if(mainMap != null) mainMap = (BasicTilemap)project.getTilemapById(mainMap.getId()).getTilemap();
-			if(extraTiles != null) for(int i=0; i<extraTiles.size(); i++) extraTiles.set(i, project.getTilemapById(extraTiles.get(i).getId()).getTilemap());
+			if(mainMap != null) mainMap = (BasicTilemap)TileResource.refresh(mainMap,project);
+			if(extraTiles != null) for(int i=0; i<extraTiles.size(); i++) extraTiles.set(i, TileResource.refresh(extraTiles.get(i),project));
 			computeSize();
 		} catch(Exception e){}
 	}
@@ -103,9 +104,11 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 	public void addElements(Document doc, Element element, Project p){
 		if(project != p) return;
 		if(mainMap != null){
-			Element elem = doc.createElement("tileset"); elem.setTextContent(Long.toString(mainMap.getId())); element.appendChild(elem);
+			Element elem = doc.createElement("tileset"); elem.setAttribute("type", mainMap.getType());
+			elem.setTextContent(Long.toString(mainMap.getId())); element.appendChild(elem);
 		} if(extraTiles != null) for(Tilemap t : extraTiles){
-			Element elem = doc.createElement("autotile"); elem.setTextContent(Long.toString(t.getId())); element.appendChild(elem);
+			Element elem = doc.createElement("autotile"); elem.setAttribute("type", t.getType());
+			elem.setTextContent(Long.toString(t.getId())); element.appendChild(elem);
 		}
 	}
 	public void paint(Graphics g){
