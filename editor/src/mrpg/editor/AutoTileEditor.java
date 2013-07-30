@@ -33,15 +33,17 @@ import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
+import mrpg.editor.resource.Animation;
+import mrpg.editor.resource.AnimationSet;
 import mrpg.world.Direction;
 import mrpg.world.Tile;
 import mrpg.world.Tilemap;
 
 
-public class AutoTileEditor extends JPanel implements ActionListener, MouseListener, MouseMotionListener {
+public class AutoTileEditor extends JPanel implements MouseListener, MouseMotionListener, ActionListener {
 	private static final long serialVersionUID = -2758279297055018804L;
-	private int frame_num = 0; private Timer timer = new Timer(100, this);
 	private Tilemap tilemap; private final Rectangle rect = new Rectangle(); private int edge=0, tile_size;
+	private Animation ani; private int frame = 0, ct; private Timer timer;
 	public AutoTileEditor(int ts){
 		tile_size = ts; setPreferredSize(new Dimension(TilesetViewer.TILE_SIZE, TilesetViewer.TILE_SIZE));
 		addMouseListener(this); addMouseMotionListener(this);
@@ -49,8 +51,19 @@ public class AutoTileEditor extends JPanel implements ActionListener, MouseListe
 	public void setTilemap(Tilemap t){
 		tilemap = t; repaint();
 	}
+	public void setAnimation(AnimationSet animation, int aid){
+		if(aid < 0 || animation == null || aid >= animation.numAnimations()) ani = null;
+		else{ani = animation.getAnimation(aid); ct = ani.speed;}
+	}
+	public void actionPerformed(ActionEvent e){
+		if(ani == null || !isShowing()){timer.stop(); timer = null;} else{
+			ct--; if(ct == 0){ct = ani.speed; frame++; if(frame >= ani.numFrames()) frame = 0; repaint();}
+		}
+	}
 	public void paint(Graphics g){
-		Graphics2D g2d = (Graphics2D)g;
+		if(timer == null && ani != null && ani.numFrames() > 1){
+			timer = new Timer(83, this); timer.start();
+		} Graphics2D g2d = (Graphics2D)g;
 		super.paint(g);
 		Graphics2D g2 = (Graphics2D)g.create(); double s = ((double)TilesetViewer.TILE_SIZE)/tile_size;
 		g2.scale(s,s); g2.getClipBounds(rect); g2.clearRect(rect.x, rect.y, rect.width, rect.height);
@@ -58,8 +71,8 @@ public class AutoTileEditor extends JPanel implements ActionListener, MouseListe
 			BufferedImage image = (BufferedImage)tilemap.getTile(0).image;
 			int w = Math.min(rect.x+rect.width, image.getWidth())-rect.x;
 			int h = Math.min(rect.y+rect.height, image.getHeight())-rect.y;
-			if(w > 0 && h > 0){
-				tilemap.getTile(0).paint(g2, frame_num, rect.x, rect.y, rect.x, rect.y, w, h, this);
+			if(w > 0 && h > 0){int f = 0; if(ani != null) f = frame*ani.speed;
+				tilemap.getTile(0).paint(g2, ani, f, rect.x, rect.y, rect.x, rect.y, w, h, this);
 				g.getClipBounds(rect);
 				int d = 4, first = (TilesetViewer.TILE_SIZE-(5*d))/2+1;
 					byte walkable = tilemap.getTile(0).info.getWalkable();
@@ -114,13 +127,4 @@ public class AutoTileEditor extends JPanel implements ActionListener, MouseListe
 		}
 	}
 	public void mouseReleased(MouseEvent e) {}
-	
-	public void start(){frame_num = 0; timer.start();}
-	public void stop(){timer.stop();}
-	
-	public void actionPerformed(ActionEvent e) {
-		frame_num++;
-		if(tilemap != null) repaint();
-		if(MapEditor.instance == null) timer.stop();
-	}
 }

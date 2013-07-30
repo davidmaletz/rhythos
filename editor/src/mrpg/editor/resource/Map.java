@@ -66,13 +66,19 @@ public class Map extends Modifiable {
 	public void setName(String n) throws Exception {
 		super.setName(n); if(editor.getWorld() == world) editor.setMapName(getName());
 	}
-	public boolean isCompatible(Project p){return p.tile_size == WorkspaceBrowser.getProject(this).tile_size;}
+	public boolean isCompatible(Project p){return p.tile_size == WorkspaceBrowser.getProject(this).tile_size && super.isCompatible(p);}
 	public World getWorld(){return world;}
 	public boolean edit(){editor.setMap(this); return true;}
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	private boolean active = false;
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete); active = editor.removeMap(this);
+	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+		if(background != null && WorkspaceBrowser.getProject(background) != p){
+			try{background = p.getImageById(background.getId());}catch(Exception ex){background = null;}
+		} world.refresh(p, true);
 	}
 	public boolean hasProperties(){return true;}
 	public Icon getIcon(){return icon;}
@@ -90,8 +96,7 @@ public class Map extends Modifiable {
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); background = ImageResource.read(in, p);
 			world = World.read(new WorldIO(p, in)); in.close(); if(background != null) world.background = background.getImage();
-			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-			if(active){active = false; edit();} setModified(false);
+			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} if(active){active = false; edit();} setModified(false);
 		}catch(Exception e){in.close(); throw e;}
 	}
 	

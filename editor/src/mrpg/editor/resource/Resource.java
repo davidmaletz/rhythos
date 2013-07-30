@@ -85,6 +85,9 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			throw new Exception();
 		}
 	}
+	public void addToProject(Project p) throws Exception {
+		for(int i=0; i<getChildCount(); i++) getChild(i).addToProject(p);
+	}
 	//Returns the amount of bytes at the beginning of the resource only used for editing purposes and should be skipped in game.
 	//Default = 10 bytes, 2 byte version, 8 byte id
 	public int getHeaderSize(){return 10;}
@@ -104,8 +107,9 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	protected abstract void read(File f) throws Exception ;
 	public void deferredRead(File f) throws Exception {}
 	public boolean isCompatible(Project p){return true;}
-	public File changeDirectory(File dir, Project p, boolean allowRename) throws Exception {
-		if((!allowRename && dir.equals(file.getParentFile())) || !isCompatible(p)) throw new Exception();
+	public void copyAssets(Project p) throws Exception {}
+	public File changeDirectory(File dir, Project p, boolean allowRename, boolean checkCompatible) throws Exception {
+		if((!allowRename && dir.equals(file.getParentFile())) || (checkCompatible && !isCompatible(p))) throw new Exception();
 		String ext = file.getName(); int idx = ext.lastIndexOf('.');
 		if(idx == -1) ext = ""; else ext = ext.substring(idx);
 		File f = new File(dir.toString(),name+ext);
@@ -131,8 +135,8 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			}catch(Exception e){}
 		}
 	}
-	public File copy(File dir, Project p) throws Exception {
-		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, p, true);
+	public File copy(File dir, Project p, boolean checkCompatible) throws Exception {
+		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, p, true, checkCompatible);
 		copyFile(file, f); return f;
 	}
 	public void refresh() throws Exception {

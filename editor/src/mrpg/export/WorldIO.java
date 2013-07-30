@@ -49,10 +49,10 @@ public class WorldIO {
 		}catch(Exception e){return Tile.empty;}
 	}
 	public void writeTile(Tile t) throws IOException {
-		if(t == Tile.empty){obuf.write(255); return;}
-		long id = t.info.map.getId(); int i = tilemaps.indexOf(id); if(i == -1){
+		if(t == Tile.empty){obuf.write(255); return;} TileResource r = t.info.map.getResource();
+		long id = r.getId(); int i = tilemaps.indexOf(id); if(i == -1){
 			i = tilemaps.size(); if(i == 255) throw new IOException("Only 255 Tilemaps per Map allowed."); tilemaps.add(id);
-			types.add(t.info.map.getType());
+			types.add(r.getType());
 		} obuf.write(i); obuf.writeShort(t.info.index);
 	}
 	public void write(DataOutputStream out) throws IOException {

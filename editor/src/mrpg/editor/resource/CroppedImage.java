@@ -61,6 +61,19 @@ public class CroppedImage extends ImageResource {
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
 	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+		if(WorkspaceBrowser.getProject(image) != p){
+			image = p.getImageById(image.getId());
+		}
+	}
+	public boolean isCompatible(Project p){
+		try{p.getImageById(image.getId()); return super.isCompatible(p);}catch(Exception e){return false;}
+	}
+	public void copyAssets(Project p) throws Exception {
+		if(!image.isCompatible(p)) image.copyAssets(p);
+		p.editor.getBrowser().addResource(Resource.readFile(image.copy(p.getFile(), p, false), p.editor), p);
+	}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
@@ -75,8 +88,7 @@ public class CroppedImage extends ImageResource {
 		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
 			if(image == null) throw new Exception();
-			x = in.readShort(); y = in.readShort(); w = in.readShort(); h = in.readShort(); long i = p.setId(TYPE, this, id);
-			if(i != id){id = i; save();} in.close();
+			x = in.readShort(); y = in.readShort(); w = in.readShort(); h = in.readShort(); in.close(); addToProject(p);
 		}catch(Exception e){e.printStackTrace(); in.close(); throw e;}
 	}
 	

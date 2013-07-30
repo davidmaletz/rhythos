@@ -47,7 +47,7 @@ public class WorldPanel extends JPanel implements ActionListener, Scrollable {
 	private int frame_num = 0; private Timer timer; private boolean show_grid = false; private double scale = 1;
 	private int edit_level = 0, show_level = -1; private static final Color transparent = new Color(0, 0, 0, 80);
 	public int tile_size = TilesetViewer.TILE_SIZE;
-	public WorldPanel(int _width, int _height){worldSize(_width, _height); timer = new Timer(100, this);}
+	public WorldPanel(int _width, int _height){worldSize(_width, _height); timer = new Timer(83, this);}
 	public void startAnim(){timer.start();}
 	public void worldSize(int _width, int _height){
 		width = _width; height = _height;

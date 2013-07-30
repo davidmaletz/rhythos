@@ -23,54 +23,40 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.Hashtable;
 
-import mrpg.editor.resource.AutoTile;
+import mrpg.editor.resource.TileResource;
 
 public class AutoTilemap implements Tilemap {
-	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null;
-	private final long id; public final int tile_size;
-	public AutoTilemap(BufferedImage image, long _id, int ts) throws Exception {
-		id = _id; tile_size = ts;
+	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR;
+	private final TileResource resource; public final int tile_size;
+	public AutoTilemap(BufferedImage image, TileResource r, int ts) throws Exception {
+		resource = r; tile_size = ts;
 		if(image.getWidth()%tile_size != 0 || image.getHeight()%tile_size != 0)
 			throw new Exception("Tilemap dimensions must be divisible by the tile size ("+ts+" px).");
 		int height = image.getHeight()/tile_size;
-		if(height != 3) throw new Exception("Auto tilemap images must have a height of 3 tiles.");
+		if(height%3 != 0) throw new Exception("Auto tilemap images must have multiple of 3 tiles height.");
 		int width = image.getWidth()/tile_size;
 		if(width%2 != 0) throw new Exception("Auto tilemap images must have multiple of 2 tiles width.");
-		int frames = width/2;
-		if(frames == 0) throw new Exception("Auto tilemap images must have at least one frame.");
+		if(width == 0 || height == 0) throw new Exception("Auto tilemap images must not be empty (0x0).");
 		tiles = new Tile[256];
 		Hashtable<Coords, Tile> tilemap = new Hashtable<Coords, Tile>();
-		if(frames > 1){
-			this.frames = new int[frames*2-2]; int f = 0;
-			for(int i=0; i<frames; i++) this.frames[f++] = tile_size*2*i;
-			for(int i=frames-2; i>0; i--) this.frames[f++] = tile_size*2*i;
-			for(int i=0; i<256; i++){
-				Coords c = getCoords(i);
-				if(tilemap.containsKey(c)) tiles[i] = tilemap.get(c);
-				else {
-					tiles[i] = AnimatedTile.Quad.createTile(image, c.x1, c.y1, c.x2, c.y2, c.x3, c.y3, c.x4, c.y4, new Tile.Info(this, i), tile_size);
-					tilemap.put(c, tiles[i]);}
-			}
-		} else {
-			for(int i=0; i<256; i++){
-				Coords c = getCoords(i);
-				if(tilemap.containsKey(c)) tiles[i] = tilemap.get(c);
-				else {
-					tiles[i] = SplitTile.Quad.createTile(image, c.x1, c.y1, c.x2, c.y2, c.x3, c.y3, c.x4, c.y4, new Tile.Info(this, i), tile_size);
-					tilemap.put(c, tiles[i]);}
-			}
+		for(int i=0; i<256; i++){
+			Coords c = getCoords(i);
+			if(tilemap.containsKey(c)) tiles[i] = tilemap.get(c);
+			else {
+				tiles[i] = SplitTile.Quad.createTile(image, c.x1, c.y1, c.x2, c.y2, c.x3, c.y3, c.x4, c.y4, new Tile.Info(this, i), tile_size);
+				tilemap.put(c, tiles[i]);}
 		}
 	}
-	public AutoTilemap(DataInputStream in, BufferedImage image, long _id, int tile_size) throws Exception {
-		this(image, _id, tile_size); walkable = in.readByte(); speed = in.readByte(); int len = in.readShort();
-		if(len == 0) frames = null; else {frames = new int[len]; for(int i=0; i<len; i++) frames[i] = in.readInt();}
+	public AutoTilemap(DataInputStream in, BufferedImage image, TileResource r, int tile_size) throws Exception {
+		this(image, r, tile_size); walkable = in.readByte();
 	}
 	public void write(DataOutputStream out) throws Exception {
-		out.writeByte(walkable); out.writeByte(speed); if(frames == null) out.writeShort(0);
-		else{out.writeShort(frames.length); for(int i=0; i<frames.length; i++) out.writeInt(frames[i]);}
+		out.writeByte(walkable);
 	}
-	public long getId(){return id;}
-	public String getType(){return AutoTile.TYPE;}
+	public int getTileSize(){return tile_size;}
+	public int getTilesX(){return 2;}
+	public int getTilesY(){return 3;}
+	public TileResource getResource(){return resource;}
 	private Coords getCoords(int i){
 		int half_tile = tile_size>>1, half_tile3 = tile_size+half_tile, half_tile5 = half_tile3+tile_size;
 		int x1, y1, x2, y2, x3, y3, x4, y4;
@@ -121,8 +107,4 @@ public class AutoTilemap implements Tilemap {
 	}
 	public byte getWalkable(int index) {return walkable;}
 	public void setWalkable(int index, byte w){walkable = w;}
-	public int[] getFrames(int index){return frames;}
-	public void setFrames(int index, int[] f){frames = f;}
-	public int getSpeed(int index){return (int)speed;}
-	public void setSpeed(int index, int s){speed = (byte)s;}
 }

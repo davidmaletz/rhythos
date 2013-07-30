@@ -71,6 +71,9 @@ public class Media extends Resource {
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeMediaId(this, id); super.remove(delete);
 	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setMediaId(this, id); if(i != id){id = i; save();}
+	}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
@@ -81,8 +84,7 @@ public class Media extends Resource {
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			id = in.readLong(); sound = new Sound(in); long i = WorkspaceBrowser.getProject(this).setMediaId(this, id);
-			if(i != id){id = i; save();} in.close();
+			id = in.readLong(); sound = new Sound(in); in.close(); addToProject(WorkspaceBrowser.getProject(this));
 		}catch(Exception e){in.close(); throw e;}
 	}
 	

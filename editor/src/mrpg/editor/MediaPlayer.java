@@ -78,7 +78,7 @@ public class MediaPlayer extends JFrame implements TreeSelectionListener, FrameL
 		c.add(inner, BorderLayout.NORTH);
 		JScrollPane sp = new JScrollPane(tree);
 		sp.setPreferredSize(new Dimension(300, 300)); c.add(sp, BorderLayout.CENTER);
-		pack();
+		setIconImages(MapEditor.getWindowIcon()); pack(); MapEditor.addFrame("media", this);
 	}
 	public void setProject(Project p){
 		DefaultTreeModel m = (DefaultTreeModel)tree.getModel();

@@ -37,6 +37,7 @@ public abstract class TileResource extends Resource {
 	public abstract ImageResource getImage();
 	public abstract Tilemap getTilemap();
 	public abstract String getType();
+	public Animation getAnimation(){return null;}
 	public void writeTileSize(DataOutputStream out) throws Exception {out.writeShort(getProject().tile_size);}
 	public void checkTileSize(DataInputStream in) throws Exception {
 		if(in.readShort() != WorkspaceBrowser.getProject(this).tile_size) throw new Exception();
@@ -51,8 +52,5 @@ public abstract class TileResource extends Resource {
 		long id = in.readLong(); try{return (TileResource)p.getById(type, id);}catch(Exception e){return null;}
 	}
 	public static boolean isTileResource(Resource r){return r instanceof TileResource;}
-	public boolean isCompatible(Project p){return p.tile_size == WorkspaceBrowser.getProject(this).tile_size;}
-	public static Tilemap refresh(Tilemap t, Project p) throws Exception {
-		return ((TileResource)p.getById(t.getType(), t.getId())).getTilemap();
-	}
+	public boolean isCompatible(Project p){return p.tile_size == WorkspaceBrowser.getProject(this).tile_size && super.isCompatible(p);}
 }

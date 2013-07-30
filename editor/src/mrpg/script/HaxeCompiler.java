@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 
+import mrpg.editor.MapEditor;
 import mrpg.editor.resource.Folder;
 import mrpg.editor.resource.Image;
 import mrpg.editor.resource.Media;
@@ -45,6 +46,8 @@ import mrpg.export.SWFExport;
 
 public class HaxeCompiler {
 	private static Process host, test; private static int port = 0; private static String neko_exe = null;
+	private static class close implements MapEditor.OnClose {public void onClose(){destroy();}}
+	static {MapEditor.on_close.add(new close());}
 	private static boolean isClosed(Process p){
 		try{p.exitValue(); return true;} catch(Exception e){return false;}
 	}

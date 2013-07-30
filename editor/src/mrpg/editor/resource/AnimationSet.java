@@ -41,10 +41,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Iterator;
 
+import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -56,6 +59,7 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
@@ -92,11 +96,17 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 	public Icon getIcon(){return icon;}
 	public int numAnimations(){return animations.size();}
 	public Iterator<Animation> iterator(){return animations.iterator();}
+	public Animation getAnimation(int i){return animations.get(i);}
+	public int getWidth(){return width;}
+	public int getHeight(){return height;}
 	public Icon getAnimatedIcon(JLabel l, int i, BufferedImage img){
 		return new Animation.Icon(l, animations.get(i), img, width, height);
 	}
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
+	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 	}
 	public int getHeaderSize(){return super.getHeaderSize()+ImageResource.getSize(image);}
 	public void save() throws Exception {
@@ -113,8 +123,8 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		try{if(in.readShort() != VERSION) throw new Exception();
 			Project p = WorkspaceBrowser.getProject(this); id = in.readLong(); image = ImageResource.read(in, p);
 			width = in.readShort(); height = in.readShort(); short nAni = in.readShort();
-			animations.clear(); for(int i=0; i<nAni; i++) animations.add(Animation.read(p, in));
-			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} in.close();
+			animations.clear(); for(int i=0; i<nAni; i++) animations.add(Animation.read(p, in, this));
+			in.close(); addToProject(p);
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static AnimationSet create(Resource parent, MapEditor e, Project p) throws Exception {
@@ -125,7 +135,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		p.setId(TYPE, ret, ret.id); return ret;
 	}
 	
-	private static class Properties extends JDialog implements ActionListener, MouseListener, ListSelectionListener, ChangeListener {
+	private static class Properties extends JDialog implements ActionListener, MouseListener, ListSelectionListener, ChangeListener, DragList.Listener {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final String OK = "ok", CANCEL = "cancel", ADD = "add", REM = "rem";
 		public boolean updated;
@@ -148,7 +158,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 			settings.add(inner); inner = new JPanel(new BorderLayout()); p = new JPanel(new BorderLayout());
 			p.setBorder(BorderFactory.createTitledBorder("Animations"));
 			animations = new JList(); animations.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-			animations.addMouseListener(this); animations.addListSelectionListener(this); new DragList(animations, Animation.class);
+			animations.addMouseListener(this); animations.addListSelectionListener(this); new DragList(animations, Animation.class, this);
 			JScrollPane pane = new JScrollPane(animations); pane.setPreferredSize(new Dimension(150,120));
 			p.add(pane, BorderLayout.CENTER); JButton add = new JButton("+"); add.setActionCommand(ADD);
 			add.addActionListener(this); JButton rem = new JButton("-"); rem.setActionCommand(REM);
@@ -253,10 +263,22 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 			if(ani_edit == null) ani_edit = new AnimationEdit(this, animation);
 			ani_edit.show(i, (Integer)width.getValue(), (Integer)height.getValue()); if(ani_edit.updated) return ani_edit.get(); else return null;
 		}
+		public void updateDrag(){}
+		public Object paste(Object o){
+			Animation clipboard = (Animation)o; String name = clipboard.getName(); int copy = 0; boolean changed = true;
+			while(changed){
+				changed = false; ListModel m = animations.getModel(); for(int i=0; i<m.getSize(); i++){
+					Animation a = (Animation)m.getElementAt(i);
+					if(a.getName().equals(name) && a.getDir() == clipboard.getDir()){
+						copy++; name = clipboard.getName()+" copy"+((copy==1)?"":" "+copy); changed = true; break;
+					}
+				}
+			} return new Animation(name, (byte)clipboard.getDir(), clipboard.speed, animation, clipboard.getFramesList()); 
+		}
 	}
 	private static class AnimationEdit extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
-		public boolean updated; private final JTextField frames; private Animation cur;
+		public boolean updated; private final JTextField frames; private Animation cur; private ButtonGroup speed;
 		private final JComboBox name, dir; private final FrameSelector image_thumb; private AnimationSet animation;
 		public AnimationEdit(JDialog d, AnimationSet ani){
 			super(JOptionPane.getFrameForComponent(d), "Animation", true); animation = ani; setResizable(true);
@@ -272,6 +294,12 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 			pane.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(pane, BorderLayout.CENTER);
 			settings.add(inner); inner = new JPanel(new BorderLayout()); inner.setBorder(BorderFactory.createTitledBorder("Frames"));
 			frames = new JTextField(); inner.add(frames, BorderLayout.CENTER); settings.add(inner);
+			speed = new ButtonGroup(); inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Animation Speed"));
+			JRadioButton r = new JRadioButton("Slowest"); r.setActionCommand("5"); speed.add(r); inner.add(r);
+			r = new JRadioButton("Slower"); r.setActionCommand("4"); speed.add(r); inner.add(r);
+			r = new JRadioButton("Slow"); r.setActionCommand("3"); speed.add(r); inner.add(r);
+			r = new JRadioButton("Normal"); r.setSelected(true); r.setActionCommand("2"); speed.add(r); inner.add(r);
+			r = new JRadioButton("Fast"); r.setActionCommand("1"); speed.add(r); inner.add(r); settings.add(inner);
 			c.add(settings);
 			inner = new JPanel();
 			JButton b = new JButton("Ok"); b.setActionCommand(MapEditor.OK); b.addActionListener(this); inner.add(b);
@@ -283,9 +311,17 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 			updated = false; cur = i; if(i != null){name.setSelectedItem(i.getName()); dir.setSelectedIndex(i.getDir()); frames.setText(i.getFrames());}
 			else {name.setSelectedItem(Animation.default_ani[0]); dir.setSelectedIndex(0); frames.setText("");}
 			JTextField t = (JTextField)name.getEditor().getEditorComponent(); t.requestFocus(); t.selectAll();
-			image_thumb.set(new ImageIcon(animation.cache),w,h); setVisible(true);
+			if(i != null){
+				Enumeration<AbstractButton> e = speed.getElements();
+				String sp = Byte.toString(i.speed); while(e.hasMoreElements()){
+					AbstractButton r = e.nextElement(); if(r.getActionCommand().equals(sp)) r.setSelected(true);
+				}
+			} image_thumb.set(new ImageIcon(animation.cache),w,h); setVisible(true);
 		}
-		public Animation get(){return new Animation(name.getSelectedItem().toString(), (byte)dir.getSelectedIndex(), frames.getText());}
+		public Animation get(){
+			return new Animation(name.getSelectedItem().toString(), (byte)dir.getSelectedIndex(),
+					Byte.parseByte(speed.getSelection().getActionCommand()), animation, frames.getText());
+		}
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(command == MapEditor.OK){

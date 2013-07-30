@@ -46,7 +46,7 @@ public class RectTool implements Tool {
 				int dx = (x-stX)%selWidth; if(dx < 0) dx += selWidth;
 				int dy = (y-stY)%selHeight; if(dy < 0) dy += selHeight;
 				Tile tile = viewer.getSelectedTile(dx, dy);
-				tile.paint(g, 0, x*world.tile_size, y*world.tile_size, 0, 0, world.tile_size, world.tile_size, world);
+				tile.paint(g, x*world.tile_size, y*world.tile_size, 0, 0, world.tile_size, world.tile_size, world);
 			}
 		((Graphics2D)g).setComposite(c);
 	}

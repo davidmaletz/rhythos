@@ -33,25 +33,30 @@ import javax.swing.Timer;
 public class Animation {
 	public static final String default_ani[] = {"Idle", "Walk", "Slash", "Thrust", "Shoot", "Cast", "Death"},
 	dirs[] = {"Left", "Right", "Up", "Down"};
-	private String name; private byte dir; private final ArrayList<Integer> frames = new ArrayList<Integer>();
-	public Animation(String n, byte d){name = n; dir = d;}
-	public Animation(String n, byte d, String frames){
-		this(n, d); String[] params = frames.split(",");
+	private final String name; private final byte dir; public final byte speed; private final AnimationSet parent;
+	private final ArrayList<Integer> frames = new ArrayList<Integer>();
+	public Animation(String n, byte d, byte s, AnimationSet p){name = n; dir = d; speed = s; parent = p;}
+	public Animation(String n, byte d, byte s, AnimationSet p, ArrayList<Integer> f){this(n, d, s, p); frames.addAll(f);}
+	public Animation(String n, byte d, byte s, AnimationSet p, String frames){
+		this(n, d, s, p); String[] params = frames.split(",");
 		for(int i=0; i<params.length; i++) try{this.frames.add(Integer.parseInt(params[i].trim())-1);}catch(Exception e){}
 	}
+	public int getWidth(){return parent.getWidth();}
 	public String getName(){return name;}
 	public int getDir(){return dir;}
 	public int numFrames(){return frames.size();}
+	public int getFrame(int i){return frames.get(i);}
+	public ArrayList<Integer> getFramesList(){return frames;}
 	public String getFrames(){
 		StringBuilder ret = new StringBuilder();
 		for(int i=0; i<frames.size(); i++){if(i != 0) ret.append(','); ret.append(frames.get(i)+1);}
 		return ret.toString();
 	}
 	public void write(DataOutputStream out) throws Exception {
-		out.writeUTF(name); out.write(dir); out.writeShort(frames.size()); for(Integer i : frames) out.write(i);
+		out.writeUTF(name); out.write(dir); out.write(speed); out.writeShort(frames.size()); for(Integer i : frames) out.write(i);
 	}
-	public static Animation read(Project p, DataInputStream in) throws Exception {
-		Animation ret = new Animation(in.readUTF(), (byte)in.read()); int len = in.readShort();
+	public static Animation read(Project p, DataInputStream in, AnimationSet parent) throws Exception {
+		Animation ret = new Animation(in.readUTF(), (byte)in.read(), (byte)in.read(), parent); int len = in.readShort();
 		for(int i=0; i<len; i++) ret.frames.add(in.read());
 		return ret;
 	}
@@ -59,15 +64,15 @@ public class Animation {
 	
 	public static class Icon implements javax.swing.Icon, ActionListener {
 		private Animation ani; private BufferedImage img; private int width, height, iwidth, iheight;
-		private int frame = 0; private Timer timer; private JLabel label;
+		private int frame = 0, ct; private Timer timer; private JLabel label;
 		public Icon(JLabel l, Animation a, BufferedImage i, int w, int h){
-			label = l; ani = a; img = i; width = w; height = h; iwidth = img.getWidth()/w; iheight = img.getHeight()/h;
+			label = l; ani = a; img = i; width = w; height = h; iwidth = img.getWidth()/w; iheight = img.getHeight()/h; ct = a.speed;
 		}
 		public int getIconWidth(){return iwidth;}
 		public int getIconHeight(){return iheight;}
 		public void actionPerformed(ActionEvent e){
-			if(label.getIcon() != this || !label.isShowing()) timer.stop(); else{
-				frame++; if(frame >= ani.numFrames()) frame = 0; label.repaint();
+			if(label.getIcon() != this || !label.isShowing()){timer.stop(); timer = null;} else{
+				ct--; if(ct == 0){ct = ani.speed; frame++; if(frame >= ani.numFrames()) frame = 0; label.repaint();}
 			}
 		}
 		public void paintIcon(Component c, Graphics g, int x, int y){

@@ -23,16 +23,24 @@ import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Map.Entry;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
@@ -100,7 +108,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	private static final long serialVersionUID = 7934438411041874443L;
 	
 	public static final String NEW = "new", OPEN = "open", SAVE = "save", SAVE_ALL = "save_all", IMPORT = "import",
-		EXPORT = "export", TEST = "test", BUILD = "build", SEARCH = "search", HELP = "help", ABOUT = "about";
+		EXPORT = "export", TEST = "test", BUILD = "build", SEARCH = "search", HELP = "help", ABOUT = "about", PLUGINS = "plugins";
 	public static final String CUT = "cut", COPY = "copy", PASTE = "paste", DELETE = "delete", REFRESH = "refresh", REVERT = "revert", REMOVE = "remove", SEL_ALL = "sel_all",
 		DSEL_ALL = "dsel_all", SHOW_ALL = "show_all", SHOW_GRID = "grid", NEXT_LAYER = "next_l", PREV_LAYER = "prev_l";
 	public static final String RENAME = "rename";
@@ -121,7 +129,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	private Map current_map;
 	
 	private final History history = new History(); private final Clipboard clipboard = new Clipboard();
-	private TilesetViewer tileset_viewer; private MediaPlayer media_player = null; private JPanel tileset;
+	private TilesetViewer tileset_viewer; private MediaPlayer media_player; private JPanel tileset;
 
 	public MapEditor(){
 		super("Rhythos! Game Builder");
@@ -188,7 +196,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		deselect(); historyChanged(); clipboardChanged(); valueChanged(null);
 		
 		w.startAnim();
-		addWindowListener(this);
+		addWindowListener(this); setIconImages(getWindowIcon());
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); setSize(800,600);
 	}
 	
@@ -293,7 +301,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 			if(media_player == null) media_player = new MediaPlayer(getBrowser());
 			TreePath p = browser.getSelectionPath(); if(p != null) media_player.setProject(WorkspaceBrowser.getProject(p));
 			media_player.setVisible(true);
-		}
+		} else if(command == PLUGINS) PluginManager.openManager();
 		if(!browser_focus){
 			if(world_overlay.getTool() != select) deselect();
 			removeFocus();
@@ -348,8 +356,15 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	}
 	
 	public TilesetViewer getTilesetViewer(){return tileset_viewer;}
+	private boolean refresh_tileset=false;
+	private class TilesetRefresher implements Runnable {
+		public void run(){
+			tileset_viewer.refresh(); if(current_map != null) current_map.getWorld().refresh(WorkspaceBrowser.getProject(current_map));
+			refresh_tileset = false;
+		}
+	} private TilesetRefresher tileset_refresh = new TilesetRefresher();
 	public void refreshTilesets(){
-		tileset_viewer.refresh(); if(current_map != null) current_map.getWorld().refresh(WorkspaceBrowser.getProject(current_map));
+		if(!refresh_tileset){SwingUtilities.invokeLater(tileset_refresh); refresh_tileset = true;}
 	}
 	public boolean hasMap(){return current_map != null;}
 	public World getWorld(){return world_overlay.getPanel().getWorld();}
@@ -414,9 +429,62 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	
 	public void windowActivated(WindowEvent e) {}
 	public void windowClosed(WindowEvent e) {}
+	private static class FrameHandler implements ComponentListener {
+		private JFrame frame; private Rectangle bounds; private boolean maximize;
+		private FrameHandler(){}
+		private FrameHandler(JFrame f){
+			frame = f; bounds = frame.getBounds(); maximize = frame.getExtendedState() == JFrame.MAXIMIZED_BOTH;
+			frame.addComponentListener(this);
+		}
+		private void loadElement(Element e){
+			bounds = new Rectangle();
+			try{
+				String ar[] = e.getAttribute("pos").split("x");
+				bounds.x = Integer.parseInt(ar[0].trim()); bounds.y = Integer.parseInt(ar[1].trim());
+			}catch(Exception ex){}
+			try{
+				String ar[] = e.getAttribute("size").split("x");
+				bounds.width = Integer.parseInt(ar[0].trim()); bounds.height = Integer.parseInt(ar[1].trim());
+			}catch(Exception ex){}
+			maximize = e.hasAttribute("maximize");
+			if(frame != null) updateFrame();
+		}
+		private void updateFrame(){
+			frame.setBounds(bounds); if(maximize) frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+		}
+		public void setFrame(JFrame f){
+			if(frame != null) return; frame = f; updateFrame(); frame.addComponentListener(this);
+		}
+		public void updateElement(Element e){
+			e.setAttribute("pos", bounds.x+"x"+bounds.y);
+			e.setAttribute("size", bounds.width+"x"+bounds.height);
+			if(frame != null && frame.getExtendedState() == JFrame.MAXIMIZED_BOTH) e.setAttribute("maximize", "true"); else e.removeAttribute("maximize");
+		}
+		public void dispose(){if(frame != null && frame != instance){frame.removeComponentListener(this); frame.dispose();}}
+		public void componentHidden(ComponentEvent e) {}
+		public void componentMoved(ComponentEvent e) {
+			if(frame != null && (frame.getExtendedState()&JFrame.MAXIMIZED_BOTH)==0){
+				Rectangle r = frame.getBounds(); bounds.x = r.x; bounds.y = r.y;
+			}
+		}
+		public void componentResized(ComponentEvent e) {
+			if(frame != null && (frame.getExtendedState()&JFrame.MAXIMIZED_BOTH)==0){
+				Rectangle r = frame.getBounds(); bounds.width = r.width; bounds.height = r.height;
+			}
+		}
+		public void componentShown(ComponentEvent e) {}
+	}
+	private static final HashMap<String, FrameHandler> frames = new HashMap<String, FrameHandler>();
+	public static void addFrame(String name, JFrame f){
+		FrameHandler h = frames.get(name); if(h == null){
+			frames.put(name, new FrameHandler(f));
+		} else h.setFrame(f);
+	}
+	public static interface OnClose {public void onClose();}
+	public static final ArrayList<OnClose> on_close = new ArrayList<OnClose>();
 	public void dispose(){
-		if(media_player != null) media_player.dispose(); 
-		ScriptEditor.destroy();
+		for(FrameHandler f : frames.values()) f.dispose();
+		for(OnClose c : on_close) c.onClose();
 		super.dispose();
 	}
 	public void windowClosing(WindowEvent e) {
@@ -460,11 +528,10 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		try{
 			Document doc = document_factory.newDocumentBuilder().newDocument();
 			Element root = doc.createElement("workspace"); doc.appendChild(root);
-			Element element = doc.createElement("windowSize");
-			element.setTextContent(getWidth()+"x"+getHeight()); root.appendChild(element);
-			element = doc.createElement("windowPos");
-			element.setTextContent(getX()+"x"+getY()); root.appendChild(element);
-			element = doc.createElement("projectDirectory");
+			for(Entry<String, FrameHandler> entry : frames.entrySet()){
+				Element e = doc.createElement("window"); e.setAttribute("name", entry.getKey());
+				entry.getValue().updateElement(e); root.appendChild(e);
+			} Element element = doc.createElement("projectDirectory");
 			element.setTextContent(Project.folderChooser.getCurrentDirectory().toString()); root.appendChild(element);
 			element = doc.createElement("imageDirectory");
 			element.setTextContent(WorkspaceBrowser.imgChooser.getCurrentDirectory().toString()); root.appendChild(element);
@@ -486,7 +553,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 				Attr attr = doc.createAttribute("directory");
 				attr.setValue(p.getFile().toString()); element.setAttributeNode(attr);
 				if(current_map != null && WorkspaceBrowser.getProject(current_map) == p){
-					Element elem = doc.createElement("map"); elem.setTextContent(Long.toString(current_map.getId()));
+					Element elem = doc.createElement("map"); elem.setTextContent(Long.toHexString(current_map.getId()));
 					element.appendChild(elem);
 				} tileset_viewer.addElements(doc, element, p); root.appendChild(element);
 			} Enumeration<TreePath> e = browser.getExpandedDescendants(new TreePath(browser.getWorkspace()));
@@ -507,9 +574,14 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		if(f.exists()) try{
 			Document doc = document_factory.newDocumentBuilder().parse(f);
 			Element root = doc.getDocumentElement();
-			try{String ar[] = root.getElementsByTagName("windowSize").item(0).getTextContent().split("x"); setSize(Integer.parseInt(ar[0].trim()), Integer.parseInt(ar[1].trim()));}catch(Exception ex){}
-			try{String ar[] = root.getElementsByTagName("windowPos").item(0).getTextContent().split("x"); setLocation(Integer.parseInt(ar[0].trim()), Integer.parseInt(ar[1].trim()));}catch(Exception ex){}
-			try{Project.folderChooser.setCurrentDirectory(new File(root.getElementsByTagName("projectDirectory").item(0).getTextContent()));}catch(Exception ex){}
+			NodeList list = root.getElementsByTagName("window");
+			for(int i=0; i<list.getLength(); i++){
+				try{
+					Element element = (Element)list.item(i); String n = element.getAttribute("name");
+					FrameHandler h = frames.get(n); if(h == null){h = new FrameHandler(); frames.put(n, h);}
+					h.loadElement(element);
+				}catch(Exception ex){}
+			} try{Project.folderChooser.setCurrentDirectory(new File(root.getElementsByTagName("projectDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			try{WorkspaceBrowser.imgChooser.setCurrentDirectory(new File(root.getElementsByTagName("imageDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			try{WorkspaceBrowser.sndChooser.setCurrentDirectory(new File(root.getElementsByTagName("mediaDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			try{Resource.resourceChooser.setCurrentDirectory(new File(root.getElementsByTagName("resourceDirectory").item(0).getTextContent()));}catch(Exception ex){}
@@ -518,21 +590,21 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 			try{layer_spinner.setValue(Integer.parseInt(root.getElementsByTagName("layer").item(0).getTextContent()));}catch(Exception ex){}
 			try{zoom_spinner.setValue(Double.parseDouble(root.getElementsByTagName("zoom").item(0).getTextContent()));}catch(Exception ex){}
 			try{getByIndex(tools.getElements(), Integer.parseInt(root.getElementsByTagName("tool").item(0).getTextContent())).doClick();}catch(Exception ex){}
-			NodeList list = root.getElementsByTagName("project");
+			list = root.getElementsByTagName("project");
 			for(int i=0; i<list.getLength(); i++){
 				try{
 					Element element = (Element)list.item(i);
 					Project p = browser.addProject(new File(element.getAttribute("directory")));
-					try{p.getById(Map.TYPE, Long.parseLong(element.getElementsByTagName("map").item(0).getTextContent())).edit();}catch(Exception exx){}
+					try{p.getById(Map.TYPE, new BigInteger(element.getElementsByTagName("map").item(0).getTextContent(),16).longValue()).edit();}catch(Exception exx){}
 					try{
 						Element e = (Element)element.getElementsByTagName("tileset").item(0);
-						p.getById(e.getAttribute("type"), Long.parseLong(e.getTextContent())).edit();
+						p.getById(e.getAttribute("type"), new BigInteger(e.getTextContent(),16).longValue()).edit();
 					}catch(Exception exx){}
 					NodeList n = element.getElementsByTagName("autotile");
 					for(int j=0; j<n.getLength(); j++)
 						try{
 							Element e = (Element)n.item(j);
-							p.getById(e.getAttribute("type"), Long.parseLong(e.getTextContent())).edit();
+							p.getById(e.getAttribute("type"), new BigInteger(e.getTextContent(),16).longValue()).edit();
 						}catch(Exception exx){}
 				}catch(Exception ex){}
 			} list = root.getElementsByTagName("expanded");
@@ -541,7 +613,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 					File file = new File(((Element)list.item(i)).getTextContent()); browser.expand(file);
 				}catch(Exception ex){}
 			} PluginManager.installPlugins(doc, root);
-		} catch(Exception e){e.printStackTrace();} setVisible(true);
+		} catch(Exception e){e.printStackTrace();} addFrame("main", this); setVisible(true);
 	}
 	private static void setupMenuBar(){
 		Menu menu = menu_bar.addMenu("File", null);
@@ -587,6 +659,8 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		menu = menu_bar.addMenu("Help", null);
 		menu.addItem("Help Contents", HELP, KeyEvent.VK_F1, 0, actionListener);
 		menu.addItem("About", ABOUT, actionListener);
+		menu.addSeparator();
+		menu.addItem("Plugins", PLUGINS, actionListener);
 	}
 	public static void setupToolbar(){
 		Menu file = (Menu)menu_bar.children.get(0);
@@ -629,26 +703,38 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		tile_toolbar.addItem(new ToolItem(LineTool.class));
 		tile_toolbar.addItem(new ToolItem(RectTool.class));
 		tile_toolbar.addItem(new ToolItem(FillTool.class));
+		//TODO: Events, Plugin system
+		//TODO: Map wrap and background don't work client side.
 		//TODO: Clean up client side API to make it easy to manage resources, right now it's very messy.
-		//TODO: Save media player and script editor visible/location/size info in workspace?
 		//TODO: For the demo, I want to have map editing and events working, with the ability to create and preview maps. Maybe battle system too.
 		//TODO: Offsets for sprites to arrange the positions of different layers?
 		//TODO: player twitch when hitting two arrow keys rapidly?
-		//TODO: drag and select region for tilemaps and autotiles - autotiles may be a subset of the tilemap.
 		//TODO: debugging info
 		//TODO: GUI UI Form Builder
-		//TODO: fix up autotile management to work with the new system. Allow an autotile to be a subset in a tilemap.
+		//TODO: fix up autotile management to work with the new system.
 		//TODO: when target changes, script editor has to refresh, as monsters might reference DIFFERENT database entries. Register script quick commands too!
-		//TODO: read plugin directory, and install plugins.
 		//TODO: built in error checking and exception handling in the client - so we know what went wrong when something goes wrong.
 		//TODO: Image Editing based on the map editor? Or perhaps based on jhlabs image editor?
 		//TODO: Animation Editing based on VIDE?
 		//TODO: Sound Editing based on ??
 		instance = new MapEditor(); instance.init();
+		PluginManager.setInitStatus("Starting Editor...");
 		SwingUtilities.invokeLater(instance);
 	}
 	
 	private static class Listener implements ActionListener {
 		public void actionPerformed(ActionEvent e){MapEditor.instance.actionPerformed(e);}
 	} public static final Listener actionListener = new Listener();
+	
+	private static ArrayList<BufferedImage> ico;
+	public static ArrayList<BufferedImage> getWindowIcon(){
+		if(ico == null){
+			ico = new ArrayList<BufferedImage>();
+			try{ico.add(ImageIO.read(MapEditor.class.getResource("/data/icon16.png")));}catch(Exception e){}
+			try{ico.add(ImageIO.read(MapEditor.class.getResource("/data/icon24.png")));}catch(Exception e){}
+			try{ico.add(ImageIO.read(MapEditor.class.getResource("/data/icon32.png")));}catch(Exception e){}
+			try{ico.add(ImageIO.read(MapEditor.class.getResource("/data/icon48.png")));}catch(Exception e){}
+			try{ico.add(ImageIO.read(MapEditor.class.getResource("/data/icon64.png")));}catch(Exception e){}
+		} return ico;
+	}
 }

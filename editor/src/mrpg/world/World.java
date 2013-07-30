@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import javax.swing.JOptionPane;
+
+import mrpg.editor.MapEditor;
 import mrpg.editor.resource.Project;
 import mrpg.export.WorldIO;
 
@@ -44,9 +47,21 @@ public class World {
 			cells.add((c == null)?null:new Cell(c, this));
 		}
 	}
-	public void refresh(Project p){
-		boolean u = false; for(Cell c : cells) if(c != null) u |= c.refresh(p);
+	public void refresh(Project p){refresh(p, false);}
+	public void refresh(Project p, boolean prompt_add){
+		PromptAdd prompt = (prompt_add)?new PromptAdd():null;
+		boolean u = false; for(Cell c : cells) if(c != null) u |= c.refresh(p, prompt);
 		if(u) updateNeighbors();
+	}
+	public static class PromptAdd {
+		private static final int PROMPT=0, DONT_ADD=1, ADD=2;
+		private int state = PROMPT;
+		public boolean copyTileset(){
+			if(state == PROMPT){
+				int i = JOptionPane.showConfirmDialog(MapEditor.instance, "The project you are moving this map to is missing tilesets the map needs. Do you wish to copy the tilesets over?", "Moving Map", JOptionPane.YES_NO_OPTION);
+				state = (i == JOptionPane.YES_OPTION)?ADD:DONT_ADD;
+			} return state == ADD;
+		}
 	}
 	public int getWidth(){return width;} public int getHeight(){return height;}
 	public Cell getCell(int x, int y){

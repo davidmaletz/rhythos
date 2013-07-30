@@ -71,7 +71,20 @@ public class Tileset extends TileResource implements ActionListener {
 	private boolean active = false;
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
-		active = editor.getTilesetViewer().removeTilemap(tilemap);
+		active = editor.getTilesetViewer().removeTilemap(tilemap); MapEditor.instance.refreshTilesets();
+	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+		if(WorkspaceBrowser.getProject(image) != p){
+			image = p.getImageById(image.getId());
+		}
+	}
+	public boolean isCompatible(Project p){
+		try{p.getImageById(image.getId()); return super.isCompatible(p);}catch(Exception e){return false;}
+	}
+	public void copyAssets(Project p) throws Exception {
+		if(!image.isCompatible(p)) image.copyAssets(p);
+		p.editor.getBrowser().addResource(Resource.readFile(image.copy(p.getFile(), p, false), p.editor), p);
 	}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
@@ -84,8 +97,8 @@ public class Tileset extends TileResource implements ActionListener {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); checkTileSize(in); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
-			tilemap = new BasicTilemap(in, image.getImage(), getId(), p.tile_size);
-			in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+			tilemap = new BasicTilemap(in, image.getImage(), this, p.tile_size);
+			in.close(); addToProject(p);
 			if(active){active = false; editor.getTilesetViewer().setTilemap(tilemap, p);}
 		}catch(Exception e){in.close(); throw e;}
 	}
@@ -151,7 +164,7 @@ public class Tileset extends TileResource implements ActionListener {
 				if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
 				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){
-					try{tilemap = new BasicTilemap(im.getImage(), tileset.getId(), p.tile_size); editor.setTilemap(tilemap); image = im;}
+					try{tilemap = new BasicTilemap(im.getImage(), tileset, p.tile_size); editor.setTilemap(tilemap); image = im;}
 					catch(Exception ex){JOptionPane.showMessageDialog(tileset.editor, "Unable to create Tileset: "+ex.getMessage(), "Tileset Creation Error", JOptionPane.ERROR_MESSAGE); updated = false; tileset.tilemap = null;}
 				}
 			}

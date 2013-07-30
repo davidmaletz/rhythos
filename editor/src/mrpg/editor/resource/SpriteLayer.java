@@ -94,6 +94,14 @@ public class SpriteLayer extends Resource {
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
 	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+		for(Img img : images){
+			if(img != null && img.image != null && WorkspaceBrowser.getProject(img.image) != p){
+				try{img.image = p.getImageById(img.image.getId());}catch(Exception ex){img.image = null;}
+			}
+		}
+	}
 	public int getImageCount(){return images.size();}
 	public int getColorCount(){return colors.size();}
 	public String getImageName(int i){return (i < 0 || i >= images.size())?"":images.get(i).name;}
@@ -133,7 +141,7 @@ public class SpriteLayer extends Resource {
 				Glow g = new Glow(); g.color = new java.awt.Color(in.readInt()); g.blurX = in.readByte();
 				g.blurY = in.readByte(); g.strength = in.readFloat(); g.quality = in.readByte();
 				colors.add(new Color(n, new ColorMatrix(m), g));
-			} long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} in.close();
+			} in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static SpriteLayer create(Resource parent, MapEditor e, Project p) throws Exception {
@@ -278,7 +286,7 @@ public class SpriteLayer extends Resource {
 		}
 	}
 	private static class Img {
-		public final String name; public final ImageResource image;
+		public final String name; public ImageResource image;
 		public Img(String n, ImageResource i){name = n; image = i;}
 		public String toString(){return name;}
 	}

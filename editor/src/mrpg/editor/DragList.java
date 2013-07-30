@@ -90,10 +90,13 @@ public class DragList extends DragSource implements DragSourceListener, DragGest
 			switch(e.getKeyCode()){
 			case 'c': case 'C': if(o != null) clipboard = o; break;
 			case 'v': case 'V':
-				if(clipboard != null && clipboard.getClass() == type){((DefaultListModel)list.getModel()).addElement(clipboard); listener.updateDrag();}
-				break;
+				if(clipboard != null && clipboard.getClass() == type){
+					Object paste = clipboard; if(listener == null || (paste=listener.paste(clipboard))!=null){
+						((DefaultListModel)list.getModel()).addElement(paste); if(listener != null) listener.updateDrag();
+					}
+				} break;
 			case 'x': case 'X':
-				if(o != null){clipboard = o; ((DefaultListModel)list.getModel()).removeElementAt(list.getSelectedIndex()); listener.updateDrag();}
+				if(o != null){clipboard = o; ((DefaultListModel)list.getModel()).removeElementAt(list.getSelectedIndex()); if(listener != null) listener.updateDrag();}
 				break;
 			}
 		}
@@ -124,11 +127,13 @@ public class DragList extends DragSource implements DragSourceListener, DragGest
 					Object o = transferable.getObject();
 					if(support.getDropAction() != DnDConstants.ACTION_COPY) transferable.remove();
 					m.add(dropIndex, o); list.setSelectedIndex(dropIndex);
-				} listener.updateDrag(); return true;
+				} if(listener != null) listener.updateDrag(); return true;
 			}catch(Exception e){return false;}
 		  }
 		}
 	public static interface Listener {
 		public void updateDrag();
+		//Called when user wants to paste clipboard. Returns the object to paste (or clipboard if you can paste an exact copy of clipboard), or null if this action is not possible.
+		public Object paste(Object clipboard);
 	}
 }

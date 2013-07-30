@@ -20,7 +20,10 @@ package mrpg.world;
 
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.image.ImageObserver;
+
+import mrpg.editor.resource.Animation;
 
 public class SplitTile {
 	public static class Horiz extends Tile {
@@ -29,9 +32,9 @@ public class SplitTile {
 			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2; tile_size = ts;
 		}
 		
-		public void paint(Graphics g, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
+		public void paint(Graphics g, Animation a, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
 			if(image != null){
-				int half_tile = tile_size>>1;
+				int half_tile = tile_size>>1; if(info.map != null && a != null){Point p = frameOffset(info.map, a, frame); sx += p.x; sy += p.y;}
 				int _h = Math.min(sy+h, half_tile)-sy;
 				if(_h > 0){
 					g.drawImage(image, dx, dy, dx+w, dy+_h, x+sx, y+sy, x+sx+w, y+sy+_h, observer);
@@ -48,16 +51,17 @@ public class SplitTile {
 			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2; tile_size = ts;
 		}
 		
-		public void paint(Graphics g, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
+		public void paint(Graphics g, Animation a, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
 			if(image != null){
 				int half_tile = tile_size>>1;
+				int _x=0, _y=0; if(info.map != null && a != null){Point p = frameOffset(info.map, a, frame); _x = p.x; _y = p.y;}
 				int _w = Math.min(sx+w, half_tile)-sx;
 				if(_w > 0){
-					g.drawImage(image, dx, dy, dx+_w, dy+h, x+sx, y+sy, x+sx+_w, y+sy+h, observer);
+					g.drawImage(image, dx, dy, dx+_w, dy+h, x+sx+_x, y+sy+_y, x+sx+_x+_w, y+sy+_y+h, observer);
 					dx += _w; sx = 0; w -= _w;
 				} else sx -= half_tile;
 				_w = Math.min(sx+w, half_tile)-sx;
-				if(_w > 0) g.drawImage(image, dx, dy, dx+_w, dy+h, x2+sx, y2+sy, x2+sx+_w, y2+sy+h, observer);
+				if(_w > 0) g.drawImage(image, dx, dy, dx+_w, dy+h, x2+sx+_x, y2+sy+_y, x2+sx+_x+_w, y2+sy+_y+h, observer);
 			}
 		}
 	}
@@ -67,22 +71,23 @@ public class SplitTile {
 			super(_image, _x1, _y1, info); x2 = _x2; y2 = _y2; x3 = _x3; y3 = _y3; x4 = _x4; y4 = _y4; tile_size = ts;
 		}
 		
-		public void paint(Graphics g, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
+		public void paint(Graphics g, Animation a, int frame, int dx, int dy, int sx, int sy, int w, int h, ImageObserver observer){
 			if(image != null){
 				int half_tile = tile_size>>1;
+				int _x=0, _y=0; if(info.map != null && a != null){Point p = frameOffset(info.map, a, frame); _x = p.x; _y = p.y;}
 				int _w = Math.min(sx+w, half_tile)-sx, _h = Math.min(sy+h, half_tile)-sy;
 				int odx = dx, osx = sx, ow = w, _ow = _w;
-				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x+sx, y+sy, x+sx+_w, y+sy+_h, observer);
+				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x+sx+_x, y+sy+_y, x+sx+_x+_w, y+sy+_y+_h, observer);
 				if(_w > 0){dx += _w; sx = 0; w -= _w;} else sx -= half_tile;
 				_w = Math.min(sx+w, half_tile)-sx;
-				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x2+sx, y2+sy, x2+sx+_w, y2+sy+_h, observer);
+				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x2+sx+_x, y2+sy+_y, x2+sx+_x+_w, y2+sy+_y+_h, observer);
 				if(_h > 0){dy += _h; sy = 0; h -= _h;} else sy -= half_tile;
 				dx = odx; sx = osx; w = ow; int _ow2 = _w; _w = _ow;
 				_h = Math.min(sy+h, half_tile)-sy;
-				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x3+sx, y3+sy, x3+sx+_w, y3+sy+_h, observer);
+				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x3+sx+_x, y3+sy+_y, x3+sx+_x+_w, y3+sy+_y+_h, observer);
 				if(_w > 0){dx += _w; sx = 0;} else sx -= half_tile;
 				_w = _ow2;
-				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x4+sx, y4+sy, x4+sx+_w, y4+sy+_h, observer);
+				if(_w > 0 && _h > 0) g.drawImage(image, dx, dy, dx+_w, dy+_h, x4+sx+_x, y4+sy+_y, x4+sx+_x+_w, y4+sy+_y+_h, observer);
 			}
 		}
 		

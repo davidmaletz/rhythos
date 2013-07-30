@@ -20,17 +20,18 @@ package mrpg.world;
 
 import java.io.DataOutputStream;
 
+import mrpg.editor.resource.TileResource;
+
 public interface Tilemap {
 	public void write(DataOutputStream out) throws Exception;
 	public Tile getTile(int idx);
 	public boolean indexNeighbors();
-	public long getId();
-	public String getType();
+	public TileResource getResource();
 	
 	public byte getWalkable(int index);
 	public void setWalkable(int index, byte w);
-	public int[] getFrames(int index);
-	public void setFrames(int index, int[] f);
-	public int getSpeed(int index);
-	public void setSpeed(int index, int s);
+	
+	public int getTileSize();
+	public int getTilesX();
+	public int getTilesY();
 }

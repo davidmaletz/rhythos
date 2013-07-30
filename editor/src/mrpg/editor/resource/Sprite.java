@@ -83,6 +83,18 @@ public class Sprite extends Resource {
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
 	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+		if(animation != null && WorkspaceBrowser.getProject(animation) != p)
+			try{animation = (AnimationSet)p.getById(AnimationSet.TYPE, animation.getId());}catch(Exception ex){animation = null;}
+		for(Layer l : layers){
+			if(l != null && l.image != null && WorkspaceBrowser.getProject(l.image) != p){
+				try{l.image = p.getImageById(l.image.getId());}catch(Exception ex){l.image = null;}
+			} if(l != null && l.layer != null && WorkspaceBrowser.getProject(l.layer) != p){
+				try{l.layer = (SpriteLayer)p.getById(SpriteLayer.TYPE, l.layer.getId());}catch(Exception ex){l.layer = null;}
+			}
+		}
+	}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
 		try{
@@ -98,9 +110,9 @@ public class Sprite extends Resource {
 			Project p = WorkspaceBrowser.getProject(this);
 			id = in.readLong(); short nLayers = in.readShort();
 			layers.clear(); for(int i=0; i<nLayers; i++) layers.add(Layer.read(p, in));
-			long id = in.readLong(); AnimationSet ani = null;
-			if(id != 0) try{ani = (AnimationSet)p.getById(AnimationSet.TYPE, id);}catch(Exception ex){}
-			animation = ani; long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} in.close();
+			long aid = in.readLong(); AnimationSet ani = null;
+			if(aid != 0) try{ani = (AnimationSet)p.getById(AnimationSet.TYPE, aid);}catch(Exception ex){}
+			animation = ani; in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
 		}catch(Exception e){in.close(); throw e;}
 	}
 	public static Sprite create(Resource parent, MapEditor e, Project p) throws Exception {
@@ -196,6 +208,7 @@ public class Sprite extends Resource {
 			updateAnimation();
 		}
 		public void updateDrag(){updatePreview();}
+		public Object paste(Object o){return o;}
 		public void mouseClicked(MouseEvent e){
 			if(e.getClickCount() == 2){
 				int idx = ((JList)e.getSource()).getSelectedIndex(); if(idx == -1) return;

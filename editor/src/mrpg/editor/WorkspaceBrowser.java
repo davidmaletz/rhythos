@@ -380,16 +380,14 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 		int ct = getSelectionCount();
 		String del = (ct == 1)?"\""+getResource(getSelectionPath())+"\"?":"the "+ct+" selected resources?";
 		if(JOptionPane.showConfirmDialog(this, "Are you sure you wish to permanently delete "+del+"?\nThis operation cannot be undone.") == JOptionPane.YES_OPTION){
-			DefaultTreeModel m = (DefaultTreeModel)getModel();
 			for(TreePath p : getSelectionPathsTrimChildren()){
 				if(p == null) continue;
 				Resource r = getResource(p);
 				try{
-					r.remove(true); m.removeNodeFromParent(r);
+					removeResource(r, true);
 				} catch(Exception ex){}
 			}
-		}
-		editor.updateSaveButtons();
+		} editor.updateSaveButtons();
 	}
 	public void refreshSelection(){
 		DefaultTreeModel m = (DefaultTreeModel)getModel();
@@ -448,7 +446,7 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 			TreePath path = getSelectionPath();
 			Resource parent = getInsertResource();
 			for(int i=0; i<clipboard.length; i++){
-				addResource(Resource.readFile(clipboard[i].copy(parent.getFile(), getProject(parent)),editor), parent);
+				addResource(Resource.readFile(clipboard[i].copy(parent.getFile(), getProject(parent), true),editor), parent);
 				if(path == null) clearSelection(); else setSelectionPath(path);
 			}
 		} MapEditor.doDeferredRead(true);
@@ -463,8 +461,11 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 					if(p == null) continue;
 					Resource r = getResource(p);
 					try{
-						r.rename(r.changeDirectory(dragTo.getFile(),getProject(dragTo),false));
-						m.removeNodeFromParent(r); m.insertNodeInto(r, dragTo, dragTo.getChildCount());
+						Project project = getProject(dragTo); r.rename(r.changeDirectory(dragTo.getFile(),project,false,true));
+						if(project != WorkspaceBrowser.getProject(r)){
+							removeResource(r, false); r.addToProject(project);
+						} else m.removeNodeFromParent(r);
+						m.insertNodeInto(r, dragTo, dragTo.getChildCount());
 					} catch(Exception ex){}
 				}
 			} else {
@@ -474,8 +475,11 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 						if(p == null) continue;
 						Resource r = getResource(p);
 						try{
-							r.rename(r.changeDirectory(parent.getFile(),getProject(parent),false));
-							m.removeNodeFromParent(r); m.insertNodeInto(r, parent, parent.getIndex(dragLine));
+							Project project = getProject(parent); r.rename(r.changeDirectory(parent.getFile(),project,false,true));
+							if(project != WorkspaceBrowser.getProject(r)){
+								removeResource(r, false); r.addToProject(project);
+							} else m.removeNodeFromParent(r);
+							m.insertNodeInto(r, parent, parent.getIndex(dragLine));
 						} catch(Exception ex){}
 					}
 				}

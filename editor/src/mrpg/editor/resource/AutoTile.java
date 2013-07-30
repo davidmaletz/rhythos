@@ -29,20 +29,18 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.Enumeration;
 
-import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
 import mrpg.editor.AutoTileEditor;
@@ -59,6 +57,7 @@ public class AutoTile extends TileResource implements ActionListener {
 	public static final String EXT = "atm", TYPE = "at"; private static final short VERSION=1;
 	public static final String ADD_AUTOTILE="set-tileset";
 	private Tilemap autotile; private Properties properties; private ImageResource image; private long id;
+	private AnimationSet animation; private int aid;
 	private JMenuItem add_autotile = MapEditor.createMenuItemIcon("Toggle Autotile", ADD_AUTOTILE, this);
 	public AutoTile(File f, MapEditor e){super(f, e);}
 	public void contextMenu(JPopupMenu menu){
@@ -76,23 +75,40 @@ public class AutoTile extends TileResource implements ActionListener {
 	private boolean active = false;
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
-		active = editor.getTilesetViewer().removeAutoTile(autotile);
+		active = editor.getTilesetViewer().removeAutoTile(autotile); MapEditor.instance.refreshTilesets();
+	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+		if(WorkspaceBrowser.getProject(image) != p){
+			image = p.getImageById(image.getId());
+			if(animation != null) try{animation = (AnimationSet)p.getById(AnimationSet.TYPE, animation.getId());}catch(Exception ex){animation = null;}
+		}
 	}
 	public void save() throws Exception {
 		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 		try{
-			out.writeShort(VERSION); out.writeLong(id); writeTileSize(out); ImageResource.write(out, image); autotile.write(out); out.flush(); out.close();
+			out.writeShort(VERSION); out.writeLong(id); writeTileSize(out); ImageResource.write(out, image); autotile.write(out);
+			out.writeLong((animation==null)?0:animation.getId()); out.writeShort(aid); out.flush(); out.close();
 		}catch(Exception e){out.close(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
+	public boolean isCompatible(Project p){
+		try{p.getImageById(image.getId()); return super.isCompatible(p);}catch(Exception e){return false;}
+	}
+	public void copyAssets(Project p) throws Exception {
+		if(!image.isCompatible(p)) image.copyAssets(p);
+		p.editor.getBrowser().addResource(Resource.readFile(image.copy(p.getFile(), p, false), p.editor), p);
+	}
 	public void deferredRead(File f) throws Exception {
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
 			id = in.readLong(); checkTileSize(in); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
 			if(image.getImage().getHeight() == p.tile_size*2)
-				autotile = new WallTilemap(in, image.getImage(), getId(), p.tile_size);
-			else autotile = new AutoTilemap(in, image.getImage(), getId(), p.tile_size);
-			in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
+				autotile = new WallTilemap(in, image.getImage(), this, p.tile_size);
+			else autotile = new AutoTilemap(in, image.getImage(), this, p.tile_size);
+			long asid = in.readLong(); AnimationSet ani = null;
+			if(asid != 0) try{ani = (AnimationSet)p.getById(AnimationSet.TYPE, asid);}catch(Exception ex){}
+			animation = ani; aid = in.readShort(); in.close(); addToProject(p);
 			if(active){active = false; editor.getTilesetViewer().addAutoTile(autotile, p);}
 		}catch(Exception e){in.close(); throw e;}
 	}
@@ -103,12 +119,16 @@ public class AutoTile extends TileResource implements ActionListener {
 		ret.properties(); if(!ret.properties.updated) throw new Exception();
 		p.setId(TYPE, ret, ret.id); return ret;
 	}
+	public Animation getAnimation(){
+		if(aid < 0 || animation == null || aid >= animation.numAnimations()) return null;
+		return animation.getAnimation(aid);
+	}
 	private static class Properties extends JDialog implements ActionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
-		public boolean updated;
-		private static final String FRAMES = "frames";
-		private final AutoTile autotile; private final JTextField name, id, frames; private ButtonGroup speed = new ButtonGroup();
-		private final AutoTileEditor editor; private ImageResource image; private Tilemap tilemap;
+		public boolean updated; private static final String SET_A = "set_a", CLEAR_A = "clear_a";
+		private final AutoTile autotile; private final JTextField name, id; private AnimationSet animation;
+		private final JTextField ani_label;
+		private final AutoTileEditor editor; private ImageResource image; private Tilemap tilemap; private final JComboBox preview_ani;
 		public Properties(AutoTile t){
 			super(JOptionPane.getFrameForComponent(t.editor), "AutoTile Properties", true); autotile = t;
 			setResizable(false);
@@ -125,12 +145,12 @@ public class AutoTile extends TileResource implements ActionListener {
 			p = new JPanel(); p.add(editor); p.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(p);
 			JButton set = new JButton("Set"); set.setActionCommand(MapEditor.SET); set.addActionListener(this); inner.add(set);
 			settings.add(inner);
-			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Frames"));
-			frames = new JTextField(20); frames.setActionCommand(FRAMES); frames.addActionListener(this); inner.add(frames); settings.add(inner);
-			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Animation Speed"));
-			JRadioButton r = new JRadioButton("Slow"); r.setActionCommand("3"); r.addActionListener(this); speed.add(r); inner.add(r);
-			r = new JRadioButton("Normal"); r.setSelected(true); r.setActionCommand("2"); r.addActionListener(this); speed.add(r); inner.add(r);
-			r = new JRadioButton("Fast"); r.setActionCommand("1"); r.addActionListener(this); speed.add(r); inner.add(r);
+			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Animation")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
+			p = new JPanel(); ani_label = new JTextField("", 15); ani_label.setEditable(false); p.add(ani_label);
+			set = new JButton("Set"); set.setActionCommand(SET_A); set.addActionListener(this); p.add(set);
+			JButton clear = new JButton("Clear"); clear.setActionCommand(CLEAR_A); clear.addActionListener(this); p.add(clear);
+			inner.add(p); p = new JPanel(); p.add(new JLabel("Use: ")); preview_ani = new JComboBox(); preview_ani.setEnabled(false);
+			preview_ani.addActionListener(this); preview_ani.setPreferredSize(ani_label.getPreferredSize()); p.add(preview_ani); inner.add(p);
 			settings.add(inner);
 			c.add(settings);
 			inner = new JPanel();
@@ -143,47 +163,22 @@ public class AutoTile extends TileResource implements ActionListener {
 		private int getTileSize(){Project p = autotile.getProject(); if(p == null) return TilesetViewer.TILE_SIZE; else return p.tile_size;}
 		private void setTilemap(Tilemap t){
 			tilemap = t;
-			boolean b = false; StringBuffer fr = new StringBuffer(); String sp = "";
-			if(t != null && t.getFrames(0) != null){
-				b = true; int tile_size = getTileSize();
-				int ar[] = t.getFrames(0);
-				for(int i=0; i<ar.length; i++){if(i != 0) fr.append(','); fr.append(ar[i]/(tile_size*2));}
-				sp = Integer.toString(t.getSpeed(0));
-			}
-			frames.setEnabled(b); frames.setText(fr.toString());
-			Enumeration<AbstractButton> e = speed.getElements();
-			while(e.hasMoreElements()){AbstractButton r = e.nextElement(); if(r.getActionCommand().equals(sp)) r.setSelected(true); r.setEnabled(b);}
 		}
 		public void setVisible(boolean b){
 			if(b == true){
 				updated = false; id.setText(Long.toHexString(autotile.id));
 				name.setText(autotile.getName()); name.requestFocus(); name.selectAll();
 				image = autotile.image; setTilemap(autotile.autotile);
-				editor.setTilemap(tilemap); editor.start();
-			} else editor.stop();
-			super.setVisible(b);
-		}
-		private boolean updateFrames(){
-			try{int tile_size = getTileSize();
-				String[] params = frames.getText().split(",");
-				int[] f = new int[params.length];
-				for(int i=0; i<params.length; i++) f[i] = Integer.parseInt(params[i])*tile_size*2;
-				tilemap.setFrames(0, f);
-				return true;
-			} catch(Exception ex){
-				JOptionPane.showMessageDialog(this, "Could not parse frames field! Frames should be numbers separated by commas.", "Parse Error", JOptionPane.ERROR_MESSAGE);
-				setTilemap(tilemap);
-				return false;
-			}
+				editor.setTilemap(tilemap); setAnimation(autotile.animation, autotile.aid);
+			} super.setVisible(b);
 		}
 		public void actionPerformed(ActionEvent e) {
+			if(e.getSource() == preview_ani){
+				if(preview_ani.isEnabled()) updateAnimation(); return;
+			}
 			String command = e.getActionCommand();
 			if(command == MapEditor.OK){
-				if(frames.isEnabled()){
-					if(!updateFrames()) return;
-					tilemap.setSpeed(0, Integer.parseInt(speed.getSelection().getActionCommand()));
-				}
-				autotile.image = image; autotile.autotile = tilemap;
+				autotile.image = image; autotile.autotile = tilemap; autotile.animation = animation; autotile.aid = preview_ani.getSelectedIndex();
 				try{
 					autotile.setName(name.getText());
 				} catch(Exception ex){
@@ -198,16 +193,32 @@ public class AutoTile extends TileResource implements ActionListener {
 				if(im != null){
 					try{
 						if(im.getImage().getHeight() == p.tile_size*2)
-							tilemap = new WallTilemap(im.getImage(), autotile.getId(), p.tile_size);
-						else tilemap = new AutoTilemap(im.getImage(), autotile.getId(), p.tile_size);
+							tilemap = new WallTilemap(im.getImage(), autotile, p.tile_size);
+						else tilemap = new AutoTilemap(im.getImage(), autotile, p.tile_size);
 						setTilemap(tilemap);
 						image = im; editor.setTilemap(tilemap);
 					}catch(Exception ex){JOptionPane.showMessageDialog(autotile.editor, "Unable to create AutoTile: "+ex.getMessage(), "AutoTile Creation Error", JOptionPane.ERROR_MESSAGE); updated = false; autotile.autotile = null;}
 				}
-			}
-			else if(command == MapEditor.CANCEL) setVisible(false);
-			else if(command == FRAMES){if(frames.isEnabled()){updateFrames();}}
-			else if(frames.isEnabled()) tilemap.setSpeed(0, Integer.parseInt(command));
+			} else if(command == SET_A){
+				AnimationSet a = AnimationSet.choose(getProject(), animation); if(a != null) setAnimation(a,0);
+			} else if(command == CLEAR_A){
+				setAnimation(null,0);
+			} else setVisible(false);
+		}
+		private Project getProject(){
+			Project p = autotile.getProject();
+			if(p == null){JOptionPane.showMessageDialog(this, "Tileset is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return null;}
+			return p;
+		}
+		private void setAnimation(AnimationSet a, int aid){
+			animation = a; if(animation != null && animation.numAnimations() > 0){
+				ani_label.setText(animation.getName()); preview_ani.setEnabled(false); DefaultComboBoxModel model = (DefaultComboBoxModel)preview_ani.getModel();
+				model.removeAllElements(); for(Animation ani : animation) model.addElement(ani); preview_ani.setSelectedIndex(aid); preview_ani.setEnabled(true);
+			} else {ani_label.setText(""); preview_ani.setEnabled(false); ((DefaultComboBoxModel)preview_ani.getModel()).removeAllElements();}
+			updateAnimation();
+		}
+		private void updateAnimation(){
+			editor.setAnimation(animation, preview_ani.getSelectedIndex());
 		}
 	}
 	public String getExt(){return EXT;}

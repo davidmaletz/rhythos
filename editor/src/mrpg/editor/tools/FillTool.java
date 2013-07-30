@@ -48,7 +48,7 @@ public class FillTool implements Tool {
 			int dx = (i.deltaX()+stX-mouseX)%selWidth; if(dx < 0) dx += selWidth;
 			int dy = (i.deltaY()+stY-mouseY)%selHeight; if(dy < 0) dy += selHeight;
 			int x = mouseX+dx, y = mouseY+dy; Tile tile = i.next();
-			tile.paint(g, 0, x*world.tile_size, y*world.tile_size, 0, 0, world.tile_size, world.tile_size, viewer);
+			tile.paint(g, x*world.tile_size, y*world.tile_size, 0, 0, world.tile_size, world.tile_size, viewer);
 		}
 		((Graphics2D)g).setComposite(c);
 	}

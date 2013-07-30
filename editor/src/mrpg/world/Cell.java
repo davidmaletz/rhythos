@@ -34,10 +34,10 @@ public class Cell implements Iterable<Tile> {
 		else tiles = new ArrayList<Tile>(c.tiles);
 	}
 	
-	public boolean refresh(Project p){
+	public boolean refresh(Project p, World.PromptAdd prompt_add){
 		if(tiles != null){
 			int sz = tiles.size(); boolean u = false; for(int i=0; i<sz; i++){
-				Tile t1 = tiles.get(i); Tile t2 = t1.refresh(p); if(t1 != t2){
+				Tile t1 = tiles.get(i); Tile t2 = t1.refresh(p, prompt_add); if(t1 != t2){
 					tiles.set(i, t2); u = true;
 				}
 			} return u;

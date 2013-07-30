@@ -70,6 +70,9 @@ public class Image extends ImageResource implements ActionListener {
 	public void remove(boolean delete) throws Exception {
 		WorkspaceBrowser.getProject(this).removeImageId(this, id); super.remove(delete);
 	}
+	public void addToProject(Project p) throws Exception {
+		long i = p.setImageId(this, id); if(i != id){id = i; save();}
+	}
 	public Graphic getGraphic(){return graphic;}
 	public void save() throws Exception {
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
@@ -81,8 +84,7 @@ public class Image extends ImageResource implements ActionListener {
 	public void deferredRead(File f) throws Exception{
 		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
 		try{if(in.readShort() != VERSION) throw new Exception();
-			id = in.readLong(); graphic = new Graphic(in); long i = WorkspaceBrowser.getProject(this).setImageId(this, id);
-			if(i != id){id = i; save();} in.close();
+			id = in.readLong(); graphic = new Graphic(in); in.close(); addToProject(WorkspaceBrowser.getProject(this));
 		}catch(Exception e){in.close(); throw e;}
 	}
 	

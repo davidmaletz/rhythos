@@ -18,144 +18,88 @@
  ******************************************************************************/
 package mrpg.world;
 
-import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.Hashtable;
 
-import mrpg.editor.resource.AutoTile;
+import mrpg.editor.resource.TileResource;
 
 public class WallTilemap implements Tilemap {
-	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR, speed=2; private int frames[] = null; private final long id;
-	public WallTilemap(BufferedImage image, long _id, int tile_size) throws Exception {
-		id = _id;
+	private final Tile tiles[]; private byte walkable = (byte)Direction.LINEAR; private final TileResource resource; public final int tile_size;
+	public WallTilemap(BufferedImage image, TileResource r, int ts) throws Exception {
+		resource = r; tile_size = ts;
 		if(image.getWidth()%tile_size != 0 || image.getHeight()%tile_size != 0)
 			throw new Exception("Tilemap dimensions must be divisible by the tile size ("+tile_size+" px).");
 		int height = image.getHeight()/tile_size;
-		if(height != 2) throw new Exception("Wall tilemap images must have a height of 2 tiles.");
+		if(height%2 != 0) throw new Exception("Wall tilemap images must have multiple of 2 tiles height.");
 		int width = image.getWidth()/tile_size;
 		if(width%2 != 0) throw new Exception("Wall tilemap images must have multiple of 2 tiles width.");
-		int frames = width/2;
-		if(frames == 0) throw new Exception("Wall tilemap images must have at least one frame.");
+		if(width == 0 || height == 0) throw new Exception("Wall tilemap images must not be empty (0x0).");
 		tiles = new Tile[16];
-		BufferedImage i2 = new BufferedImage(tile_size*16*frames, tile_size, image.getType());
-		Graphics g = i2.getGraphics();
-		int half_tile = tile_size>>1;
-		int dx = 0;
-		for(int i=0; i<tile_size*2*frames; i+=tile_size*2){
-			copyTile(g, image, dx, 0, i, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+tile_size+half_tile, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size+half_tile, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i+tile_size, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+tile_size+half_tile, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size+half_tile, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+half_tile, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+half_tile, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i+tile_size, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+half_tile, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+half_tile, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i, tile_size, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+tile_size+half_tile, tile_size, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size+half_tile, tile_size+half_tile, half_tile, half_tile);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i+tile_size, tile_size, tile_size, tile_size);
-			dx += tile_size;
-			
-			copyTile(g, image, dx, 0, i, tile_size, tile_size, tile_size);
-			dx += tile_size;
-			
-			copyTile(g, image, dx, 0, i+tile_size, tile_size, half_tile, tile_size);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+half_tile, tile_size, half_tile, tile_size);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i, half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+tile_size+half_tile, 0, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size+half_tile, half_tile, half_tile, half_tile);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i+tile_size, 0, tile_size, tile_size);
-			dx += tile_size;
-			
-			copyTile(g, image, dx, 0, i, 0, tile_size, tile_size);
-			dx += tile_size;
-			
-			copyTile(g, image, dx, 0, i+tile_size, 0, half_tile, tile_size);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+half_tile, 0, half_tile, tile_size);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i, tile_size, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i, half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+tile_size+half_tile, tile_size, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size+half_tile, half_tile, half_tile, half_tile);
-			dx += half_tile;
-			
-			copyTile(g, image, dx, 0, i+tile_size, tile_size, tile_size, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size, half_tile, tile_size, half_tile);
-			dx += tile_size;
-
-			copyTile(g, image, dx, 0, i, tile_size, tile_size, half_tile);
-			copyTile(g, image, dx, half_tile, i, half_tile, tile_size, half_tile);
-			dx += tile_size;
-			
-			copyTile(g, image, dx, 0, i+tile_size, tile_size, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+tile_size, half_tile, half_tile, half_tile);
-			dx += half_tile;
-			copyTile(g, image, dx, 0, i+half_tile, tile_size, half_tile, half_tile);
-			copyTile(g, image, dx, half_tile, i+half_tile, half_tile, half_tile, half_tile);
-			dx += half_tile;
+		Hashtable<Coords, Tile> tilemap = new Hashtable<Coords, Tile>();
+		for(int i=0; i<16; i++){
+			Coords c = getCoords(i);
+			if(tilemap.containsKey(c)) tiles[i] = tilemap.get(c);
+			else {
+				tiles[i] = SplitTile.Quad.createTile(image, c.x1, c.y1, c.x2, c.y2, c.x3, c.y3, c.x4, c.y4, new Tile.Info(this, i), tile_size);
+				tilemap.put(c, tiles[i]);}
 		}
-		if(frames > 1){
-			this.frames = new int[frames*2-2]; int f = 0;
-			for(int i=0; i<frames; i++) this.frames[f++] = tile_size*2*i;
-			for(int i=frames-2; i>0; i--) this.frames[f++] = tile_size*2*i;
-			for(int i=0; i<16; i++) tiles[i] = new AnimatedTile(i2, i*tile_size, 0 , new Tile.Info(this, i));
-		} else for(int i=0; i<16; i++) tiles[i] = new Tile(i2, i*tile_size, 0, new Tile.Info(this, i));
 	}
-	public WallTilemap(DataInputStream in, BufferedImage image, long _id, int tile_size) throws Exception {
-		this(image, _id, tile_size); walkable = in.readByte(); speed = in.readByte(); int len = in.readShort();
-		if(len == 0) frames = null; else {frames = new int[len]; for(int i=0; i<len; i++) frames[i] = in.readInt();}
+	public WallTilemap(DataInputStream in, BufferedImage image, TileResource r, int tile_size) throws Exception {
+		this(image, r, tile_size); walkable = in.readByte();
 	}
+	public int getTileSize(){return tile_size;}
+	public int getTilesX(){return 2;}
+	public int getTilesY(){return 2;}
 	public void write(DataOutputStream out) throws Exception {
-		out.writeByte(walkable); out.writeByte(speed); if(frames == null) out.writeShort(0);
-		else{out.writeShort(frames.length); for(int i=0; i<frames.length; i++) out.writeInt(frames[i]);}
+		out.writeByte(walkable);
 	}
-	public long getId(){return id;}
-	public String getType(){return AutoTile.TYPE;}
-	private static final void copyTile(Graphics g, BufferedImage image, int dx, int dy, int sx, int sy, int w, int h){
-		g.drawImage(image, dx, dy, dx+w, dy+h, sx, sy, sx+w, sy+h, null);
+	public TileResource getResource(){return resource;}
+	private Coords getCoords(int i){
+		int half_tile = tile_size>>1, half_tile3 = tile_size+half_tile;
+		int x1, y1, x2, y2, x3, y3, x4, y4;
+		boolean left = Direction.left(i), right = Direction.right(i), up = Direction.up(i), down = Direction.down(i);
+		
+		if(!left && !up){x1 = 0; y1 = 0;}
+		else if(!up){x1 = tile_size; y1 = 0;}
+		else if(!left){x1 = 0; y1 = tile_size;}
+		else {x1 = tile_size; y1 = tile_size;}
+		
+		if(!right && !up){x2 = half_tile3; y2 = 0;}
+		else if(!up){x2 = half_tile; y2 = 0;}
+		else if(!right){x2 = half_tile3; y2 = tile_size;}
+		else {x2 = half_tile; y2 = tile_size;}
+		
+		if(!left && !down){x3 = 0; y3 = half_tile3;}
+		else if(!down){x3 = tile_size; y3 = half_tile3;}
+		else if(!left){x3 = 0; y3 = half_tile;}
+		else {x3 = tile_size; y3 = half_tile;}
+		
+		if(!right && !down){x4 = half_tile3; y4 = half_tile3;}
+		else if(!down){x4 = half_tile; y4 = half_tile3;}
+		else if(!right){x4 = half_tile3; y4 = half_tile;}
+		else {x4 = half_tile; y4 = half_tile;}
+		
+		return new Coords(x1, y1, x2, y2, x3, y3, x4, y4);
 	}
 	public Tile getTile(int neighbors){return tiles[neighbors&15];}
 	public boolean indexNeighbors(){return true;}
+	private class Coords {
+		public final int x1, y1, x2, y2, x3, y3, x4, y4;
+		public Coords(int _x1, int _y1, int _x2, int _y2, int _x3, int _y3, int _x4, int _y4){
+			x1 = _x1; y1 = _y1; x2 = _x2; y2 = _y2; x3 = _x3; y3 = _y3; x4 = _x4; y4 = _y4;
+		}
+		public int hashCode(){
+			return y4*tile_size*7+x4*tile_size*6+y3*tile_size*5+x3*tile_size*4+y2*tile_size*3+
+				x2*tile_size*2+y1*tile_size+x1;
+		}
+		public boolean equals(Object o){
+			Coords c = (Coords)o;
+			return x1 == c.x1 && y1 == c.y1 && x2 == c.x2 && y2 == c.y2 && x3 == c.x3 && y3 == c.y3 && x4 == c.x4 && y4 == c.y4;
+		}
+	}
 	
 	public byte getWalkable(int index) {return walkable;}
 	public void setWalkable(int index, byte w){walkable = w;}
-	public int[] getFrames(int index){return frames;}
-	public void setFrames(int index, int[] f){frames = f;}
-	public int getSpeed(int index){return (int)speed;}
-	public void setSpeed(int index, int s){speed = (byte)s;}
 }

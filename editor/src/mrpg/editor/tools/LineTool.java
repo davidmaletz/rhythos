@@ -49,7 +49,7 @@ public class LineTool implements Tool {
 				int dx = (i.deltaX()+stX-x)%selWidth; if(dx < 0) dx += selWidth;
 				int dy = (i.deltaY()+stY-y)%selHeight; if(dy < 0) dy += selHeight;
 				Tile tile = i.next();
-				tile.paint(g, 0, (x+dx)*world.tile_size, (y+dy)*world.tile_size, 0, 0, world.tile_size, world.tile_size, world);
+				tile.paint(g, (x+dx)*world.tile_size, (y+dy)*world.tile_size, 0, 0, world.tile_size, world.tile_size, world);
 			}
 			lr.next();
 		}

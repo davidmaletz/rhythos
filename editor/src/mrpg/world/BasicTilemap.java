@@ -22,12 +22,12 @@ import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-import mrpg.editor.resource.Tileset;
+import mrpg.editor.resource.TileResource;
 
 public class BasicTilemap implements Tilemap {
-	private final int width; private final Tile tiles[]; private byte walkable[]; private final long id;
-	public BasicTilemap(BufferedImage image, long _id, int tile_size) throws Exception {
-		id = _id;
+	private final int width; private final Tile tiles[]; private byte walkable[]; private final TileResource resource; public final int tile_size;
+	public BasicTilemap(BufferedImage image, TileResource r, int ts) throws Exception {
+		resource = r; tile_size = ts;
 		if(image.getWidth()%tile_size != 0 || image.getHeight()%tile_size != 0)
 			throw new Exception("Tilemap dimensions must be divisible by the tile size ("+tile_size+" px).");
 		width = image.getWidth()/tile_size;
@@ -42,24 +42,20 @@ public class BasicTilemap implements Tilemap {
 				i++;
 			}
 	}
-	public BasicTilemap(DataInputStream in, BufferedImage image, long _id, int tile_size) throws Exception {
-		this(image, _id, tile_size); for(int i=0; i<walkable.length; i++) walkable[i] = in.readByte();
+	public BasicTilemap(DataInputStream in, BufferedImage image, TileResource r, int tile_size) throws Exception {
+		this(image, r, tile_size); for(int i=0; i<walkable.length; i++) walkable[i] = in.readByte();
 	}
 	public void write(DataOutputStream out) throws Exception {
 		for(int i=0; i<walkable.length; i++) out.writeByte(walkable[i]);
 	}
-	public long getId(){return id;}
-	public String getType(){return Tileset.TYPE;}
+	public TileResource getResource(){return resource;}
+	public int getTileSize(){return tile_size;}
 	public int getTilesX(){return width;}
 	public int getTilesY(){return tiles.length/width;}
-	public Tile getTile(int index){return tiles[index];}
-	public Tile getTile(int x, int y){return tiles[y*width+x];}
+	public Tile getTile(int index){return (index >= tiles.length)?Tile.empty:tiles[index];}
+	public Tile getTile(int x, int y){return getTile(y*width+x);}
 	public boolean indexNeighbors(){return false;}
 	
 	public byte getWalkable(int index) {return walkable[index];}
 	public void setWalkable(int index, byte w){walkable[index] = w;}
-	public int[] getFrames(int index){return null;}
-	public void setFrames(int index, int[] f){}
-	public int getSpeed(int index){return 2;}
-	public void setSpeed(int index, int s){}
 }

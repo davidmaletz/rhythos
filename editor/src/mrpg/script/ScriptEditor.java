@@ -46,7 +46,7 @@ public class ScriptEditor extends JFrame implements ScriptTextPane.ModifiedListe
 		textPane.initSearchDialogs(this); JMenuBar bar = new JMenuBar();
 		JMenu menu = new JMenu("File"); save = MapEditor.createMenuItemIcon("Save", MapEditor.SAVE, KeyEvent.VK_S, ActionEvent.CTRL_MASK, this);
 		menu.add(save); bar.add(menu); bar.add(textPane.createViewMenu()); bar.add(textPane.createSearchMenu()); setJMenuBar(bar);
-		setDefaultCloseOperation(HIDE_ON_CLOSE); pack();
+		setDefaultCloseOperation(HIDE_ON_CLOSE); setIconImages(MapEditor.getWindowIcon()); pack(); MapEditor.addFrame("script", this);
 	}
 	public void setModified(boolean modified){
 		if(script != null){script.setModified(modified); save.setEnabled(modified); MapEditor.instance.updateSaveButtons();}
@@ -83,5 +83,4 @@ public class ScriptEditor extends JFrame implements ScriptTextPane.ModifiedListe
 		((AbstractTokenMakerFactory)TokenMakerFactory.getDefaultInstance()).putMapping(ScriptTextPane.SYNTAX_STYLE_HAXE, "org.fife.ui.rsyntaxtextarea.modes.HaxeTokenMaker");
 		FoldParserManager.get().addFoldParserMapping(ScriptTextPane.SYNTAX_STYLE_HAXE, new CurlyFoldParser());
 	}
-	public static void destroy(){if(instance != null) instance.dispose(); HaxeCompiler.destroy();}
 }

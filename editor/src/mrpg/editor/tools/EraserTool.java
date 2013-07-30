@@ -42,7 +42,7 @@ public class EraserTool implements Tool {
 		Composite c = ((Graphics2D)g).getComposite();
 		((Graphics2D)g).setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
 		int x = mouseX, y = mouseY; Tile tile = Tile.empty;
-		tile.paint(g, 0, x*world.tile_size, y*world.tile_size, 0, 0, world.tile_size, world.tile_size, world);
+		tile.paint(g, x*world.tile_size, y*world.tile_size, 0, 0, world.tile_size, world.tile_size, world);
 		((Graphics2D)g).setComposite(c);
 	}
 	public void paintTop(Graphics g, double scale, int stX, int stY, int mouseX, int mouseY){

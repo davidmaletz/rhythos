@@ -75,8 +75,8 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 	}
 	public void refresh(){
 		if(project == null) return; try{
-			if(mainMap != null) mainMap = (BasicTilemap)TileResource.refresh(mainMap,project);
-			if(extraTiles != null) for(int i=0; i<extraTiles.size(); i++) extraTiles.set(i, TileResource.refresh(extraTiles.get(i),project));
+			if(mainMap != null) mainMap = (BasicTilemap)mainMap.getResource().getTilemap();
+			if(extraTiles != null) for(int i=0; i<extraTiles.size(); i++) extraTiles.set(i, extraTiles.get(i).getResource().getTilemap());
 			computeSize();
 		} catch(Exception e){}
 	}
@@ -104,11 +104,11 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 	public void addElements(Document doc, Element element, Project p){
 		if(project != p) return;
 		if(mainMap != null){
-			Element elem = doc.createElement("tileset"); elem.setAttribute("type", mainMap.getType());
-			elem.setTextContent(Long.toString(mainMap.getId())); element.appendChild(elem);
+			TileResource r = mainMap.getResource(); Element elem = doc.createElement("tileset"); elem.setAttribute("type", r.getType());
+			elem.setTextContent(Long.toHexString(r.getId())); element.appendChild(elem);
 		} if(extraTiles != null) for(Tilemap t : extraTiles){
-			Element elem = doc.createElement("autotile"); elem.setAttribute("type", t.getType());
-			elem.setTextContent(Long.toString(t.getId())); element.appendChild(elem);
+			TileResource r = t.getResource(); Element elem = doc.createElement("autotile"); elem.setAttribute("type", r.getType());
+			elem.setTextContent(Long.toHexString(r.getId())); element.appendChild(elem);
 		}
 	}
 	public void paint(Graphics g){
@@ -136,7 +136,7 @@ public class TilesetViewer extends JPanel implements MouseListener, MouseMotionL
 					if(_x+_w > rw) _w -= _x+_w-rw;
 					if(_y < rect.y){sy += rect.y-_y; _h -= sy; _y = rect.y;}
 					if(_y+_h > rh) _h -= _y+_h-rh;
-					extraTiles.get(i).getTile(Direction.NONE).paint(g2, 0, _x, _y, sx, sy, _w, _h, this);
+					extraTiles.get(i).getTile(Direction.NONE).paint(g2, _x, _y, sx, sy, _w, _h, this);
 				}
 		}
 		g.getClipBounds(rect);
