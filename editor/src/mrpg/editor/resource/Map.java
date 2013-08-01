@@ -18,17 +18,12 @@
  ******************************************************************************/
 package mrpg.editor.resource;
 
-import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -52,79 +47,66 @@ import mrpg.export.WorldIO;
 import mrpg.world.World;
 
 
-public class Map extends Modifiable {
+public class Map extends TypedModifiable {
 	private static final long serialVersionUID = 3067630717384565840L;
 	public static final String EXT = "map", MAP = "map", TYPE = "m"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon(MAP);
-	private World world; private Properties properties; private ImageResource background; private long id;
+	private World world; private ImageResource background;
 	public Map(File f, MapEditor e){super(f,e);}
+	public String getType(){return TYPE;}
+	public short getVersion(){return VERSION;}
+	public JDialog getProperties(){return new Properties(this);}
 	public void contextMenu(JPopupMenu menu){
 		WorkspaceBrowser browser = editor.getBrowser(); menu.add(browser.edit); menu.add(browser.properties); menu.addSeparator();
 		super.contextMenu(menu);
 	}
-	public long getId(){return id;}
 	public void setName(String n) throws Exception {
 		super.setName(n); if(editor.getWorld() == world) editor.setMapName(getName());
 	}
 	public boolean isCompatible(Project p){return p.tile_size == WorkspaceBrowser.getProject(this).tile_size && super.isCompatible(p);}
 	public World getWorld(){return world;}
 	public boolean edit(){editor.setMap(this); return true;}
-	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	private boolean active = false;
 	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete); active = editor.removeMap(this);
+		super.remove(delete); active = editor.removeMap(this);
 	}
-	public void addToProject(Project p) throws Exception {
-		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-		if(background != null && WorkspaceBrowser.getProject(background) != p){
-			try{background = p.getImageById(background.getId());}catch(Exception ex){background = null;}
-		} world.refresh(p, true);
+	public void addToProject(Project p, boolean changeProject) throws Exception {
+		super.addToProject(p, changeProject);
+		if(changeProject){
+			if(background != null){
+				try{background = (ImageResource)p.getById(background.getType(), background.getId());}catch(Exception ex){background = null;}
+			} world.refresh(p, true);
+		}
 	}
-	public boolean hasProperties(){return true;}
 	public Icon getIcon(){return icon;}
-	public void save() throws Exception {
-		File f = getFile(); DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-		try{
-			out.writeShort(VERSION); out.writeLong(id); ImageResource.write(out, background);
-			WorldIO w = new WorldIO(); world.write(w); w.write(out); out.flush(); out.close(); setModified(false); editor.saveMap(this);
-		}catch(Exception e){out.close(); throw e;}
+	public void writeInner(DataOutputStream out) throws Exception {
+		ImageResource.write(out, background); WorldIO w = new WorldIO(); world.write(w); w.write(out);
 	}
+	public void readInner(DataInputStream in) throws Exception {
+		Project p = WorkspaceBrowser.getProject(this); background = ImageResource.read(in, p);
+		if(background != null) world.background = background.getImage(); world = World.read(new WorldIO(p, in));
+	}
+	public void save() throws Exception {super.save(); editor.saveMap(this);}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MAP);}
 	public void deferredRead(File f) throws Exception{
-		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{if(in.readShort() != VERSION) throw new Exception();
-			Project p = WorkspaceBrowser.getProject(this);
-			id = in.readLong(); background = ImageResource.read(in, p);
-			world = World.read(new WorldIO(p, in)); in.close(); if(background != null) world.background = background.getImage();
-			long i = p.setId(TYPE, this, id); if(i != id){id = i; save();} if(active){active = false; edit();} setModified(false);
-		}catch(Exception e){in.close(); throw e;}
+		super.deferredRead(f); if(active){active = false; edit();}
 	}
 	
 	public static Map createMap(Resource parent, MapEditor e, Project p) throws Exception{
 		String dir = parent.getFile().toString();
 		File f = new File(dir,"New Map"+"."+EXT);
-		Map ret = new Map(f,e); ret._setName(null); ret.world = new World(20,15); ret.id = p.newId(TYPE); ret.properties();
-		if(!ret.properties.updated) throw new Exception();
-		p.setId(TYPE, ret, ret.id); return ret;
+		Map ret = new Map(f,e); ret.newId(p); ret._setName(null); ret.world = new World(20,15); ret.properties();
+		if(!((Properties)ret.properties).updated) throw new Exception();
+		ret.addToProject(p, false); return ret;
 	}
-	private static class Properties extends JDialog implements ActionListener {
+	private static class Properties extends TypedResource.Properties {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final int MIN_SIZE = 10, MAX_SIZE = 500;
-		public boolean updated;
-		private final Map map; private final JTextField name, id; private final JSpinner width, height;
-		private final JCheckBox x_wrap, y_wrap; private final JLabel image_thumb; private ImageResource background;
-		public Properties(Map m){
-			super(JOptionPane.getFrameForComponent(m.editor), "Map Properties", true); map = m;
-			setResizable(false);
-			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
-			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
-			name = new JTextField(map.getName(), 20); name.setActionCommand(MapEditor.OK); name.addActionListener(this);
-			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
-			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-			id.setEditable(false); p.add(id); inner.add(p);
-			settings.add(inner);
-			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Size"));
+		private JSpinner width, height; private JCheckBox x_wrap, y_wrap; private JLabel image_thumb; private ImageResource background;
+		public Properties(Map m){super(m, "Map Properties");}
+		public void addControls(JPanel settings){
+			Map map = (Map)resource;
+			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Size"));
 			width = new JSpinner(new SpinnerNumberModel(map.world.getWidth(), MIN_SIZE, MAX_SIZE, 1));
 			JTextField f = ((JSpinner.DefaultEditor)width.getEditor()).getTextField();
 			f.setActionCommand(MapEditor.OK); f.addActionListener(this); inner.add(width);
@@ -148,54 +130,40 @@ public class Map extends Modifiable {
 			//inner.add(new JCheckBox("Horizontal Scroll"));
 			//inner.add(new JCheckBox("Vertical Scroll"));
 			settings.add(inner);
-			c.add(settings);
-			inner = new JPanel();
-			JButton b = new JButton("Ok"); b.setActionCommand(MapEditor.OK); b.addActionListener(this); inner.add(b);
-			b = new JButton("Cancel"); b.setActionCommand(MapEditor.CANCEL); b.addActionListener(this); inner.add(b);
-			c.add(inner);
-			pack();
 		}
-		public void setVisible(boolean b){
-			if(b == true){
-				updated = false; id.setText(Long.toHexString(map.id));
-				name.setText(map.getName()); name.requestFocus(); name.selectAll();
-				width.setValue(map.world.getWidth()); height.setValue(map.world.getHeight());
-				x_wrap.setSelected(map.world.wrapX); y_wrap.setSelected(map.world.wrapY);
-				background = map.background;
-				if(background == null) image_thumb.setIcon(new ImageIcon()); else image_thumb.setIcon(new ImageIcon(background.getImage()));
-			}
-			super.setVisible(b);
+		public void updateControls(){
+			Map map = (Map)resource;
+			width.setValue(map.world.getWidth()); height.setValue(map.world.getHeight());
+			x_wrap.setSelected(map.world.wrapX); y_wrap.setSelected(map.world.wrapY);
+			background = map.background;
+			if(background == null) image_thumb.setIcon(new ImageIcon()); else image_thumb.setIcon(new ImageIcon(background.getImage()));
 		}
+		public void acceptControls(){
+			Map map = (Map)resource;
+			int w = (Integer)width.getValue(), h = (Integer)height.getValue(); boolean u = false;
+			if(w != map.world.getWidth() || h != map.world.getHeight()){map.world.resize(w, h); u = true;}
+			u |= (map.world.wrapX != x_wrap.isSelected()) || (map.world.wrapY != y_wrap.isSelected());
+			map.world.wrapX = x_wrap.isSelected(); map.world.wrapY = y_wrap.isSelected();
+			if(u) map.world.updateNeighbors();
+			map.background = background; if(background != null) map.world.background = background.getImage(); else map.world.background = null;
+			map.editor.updateMap(map);
+		}
+		public boolean saveOnEdit(){return true;}
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
-			if(command == MapEditor.OK){
-				int w = (Integer)width.getValue(), h = (Integer)height.getValue(); boolean u = false;
-				if(w != map.world.getWidth() || h != map.world.getHeight()){map.world.resize(w, h); u = true;}
-				u |= (map.world.wrapX != x_wrap.isSelected()) || (map.world.wrapY != y_wrap.isSelected());
-				map.world.wrapX = x_wrap.isSelected(); map.world.wrapY = y_wrap.isSelected();
-				if(u) map.world.updateNeighbors();
-				map.background = background; if(background != null) map.world.background = background.getImage(); else map.world.background = null;
-				map.editor.updateMap(map);
-				try{
-					map.setName(name.getText());
-				}catch(Exception ex){
-					name.setText(map.getName()); return;
-				} try{map.save(); map.editor.updateSaveButtons(); updated = true;}catch(Exception ex){}
-				setVisible(false);
-			} else if(command == MapEditor.SET){
-				Project p = map.getProject();
+			if(command == MapEditor.SET){
+				Project p = resource.getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Map is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
 				ImageResource im = ImageResource.choose(p, background);
 				if(im != null){background = im; image_thumb.setIcon(new ImageIcon(background.getImage()));}
 			} else if(command == MapEditor.CLEAR){
 				background = null; image_thumb.setIcon(new ImageIcon());
-			}
-			else setVisible(false);
+			} else super.actionPerformed(e);
 		}
 	}
 	public String getExt(){return EXT;}
-	public static void register(){
-		Resource.register("Map Files", Map.EXT, Map.class);
+	public static void register() throws Exception {
+		Resource.register("Map Files", Map.EXT, Map.TYPE, Map.class);
 		Folder.new_options.addMenu("Map", Map.MAP).
 			addItem("Map", MAP, KeyEvent.VK_M, ActionEvent.CTRL_MASK, new CreateMapAction());
 	}

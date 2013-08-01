@@ -65,7 +65,7 @@ public class ResourceChooser extends JDialog implements ActionListener, TreeSele
 		JButton b = new JButton("Ok"); b.setActionCommand(MapEditor.OK); b.addActionListener(this); inner.add(b);
 		b = new JButton("Cancel");  b.setActionCommand(MapEditor.CANCEL); b.addActionListener(this); inner.add(b);
 		c.add(inner);
-		if(selected != null) tree.setSelectionPath(new TreePath(WorkspaceBrowser.getPathToRoot(selected, root)));
+		if(selected != null) try{tree.setSelectionPath(new TreePath(WorkspaceBrowser.getPathToRoot(selected, root)));}catch(Exception e){}
 		pack();
 	}
 	public Resource getSelectedResource(){return selected_resource;}

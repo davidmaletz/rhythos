@@ -19,7 +19,6 @@
 package mrpg.editor.resource;
 
 import java.awt.BorderLayout;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -28,13 +27,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
@@ -50,7 +45,6 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ListModel;
@@ -64,82 +58,59 @@ import mrpg.editor.MapEditor;
 import mrpg.editor.ResourceChooser;
 import mrpg.editor.WorkspaceBrowser;
 
-public class Sprite extends Resource {
+public class Sprite extends TypedResource {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "spr", TYPE = "sp"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon("chr_appearance");
 	private final ArrayList<Layer> layers = new ArrayList<Layer>(); private AnimationSet animation;
-	private final Properties properties; private long id;
-	public Sprite(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
-	public long getId(){return id;}
-	public void contextMenu(JPopupMenu menu){
-		menu.add(editor.getBrowser().properties); menu.addSeparator();
-		super.contextMenu(menu);
-	}
-	public boolean edit(){properties(); return true;}
-	public void properties(){properties.setVisible(true);}
-	public boolean hasProperties(){return true;}
+	public Sprite(File f, MapEditor editor){super(f, editor);}
+	public String getType(){return TYPE;}
+	public short getVersion(){return VERSION;}
+	public JDialog getProperties(){return new Properties(this);}
 	public Icon getIcon(){return icon;}
-	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
-	}
-	public void addToProject(Project p) throws Exception {
-		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-		if(animation != null && WorkspaceBrowser.getProject(animation) != p)
-			try{animation = (AnimationSet)p.getById(AnimationSet.TYPE, animation.getId());}catch(Exception ex){animation = null;}
-		for(Layer l : layers){
-			if(l != null && l.image != null && WorkspaceBrowser.getProject(l.image) != p){
-				try{l.image = p.getImageById(l.image.getId());}catch(Exception ex){l.image = null;}
-			} if(l != null && l.layer != null && WorkspaceBrowser.getProject(l.layer) != p){
-				try{l.layer = (SpriteLayer)p.getById(SpriteLayer.TYPE, l.layer.getId());}catch(Exception ex){l.layer = null;}
+	public void addToProject(Project p, boolean changeProject) throws Exception {
+		super.addToProject(p, changeProject);
+		if(changeProject){
+			if(animation != null)
+				try{animation = (AnimationSet)p.getById(AnimationSet.TYPE, animation.getId());}catch(Exception ex){animation = null;}
+			for(Layer l : layers){
+				if(l != null && l.image != null){
+					try{l.image = (ImageResource)p.getById(l.image.getType(), l.image.getId());}catch(Exception ex){l.image = null;}
+				} if(l != null && l.layer != null){
+					try{l.layer = (SpriteLayer)p.getById(SpriteLayer.TYPE, l.layer.getId());}catch(Exception ex){l.layer = null;}
+				}
 			}
 		}
 	}
-	public void save() throws Exception {
-		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
-		try{
-			out.writeShort(VERSION); out.writeLong(id); out.writeShort(layers.size());
-			for(Layer l : layers) l.write(out); out.writeLong((animation==null)?0:animation.getId());
-			out.flush(); out.close();
-		}catch(Exception e){out.close(); throw e;}
+	public void writeInner(DataOutputStream out) throws Exception {
+		out.writeShort(layers.size()); for(Layer l : layers) l.write(out);
+		out.writeLong((animation==null)?0:animation.getId());
+	}
+	public void readInner(DataInputStream in) throws Exception {
+		Project p = WorkspaceBrowser.getProject(this);
+		short nLayers = in.readShort();
+		layers.clear(); for(int i=0; i<nLayers; i++) layers.add(Layer.read(p, in));
+		long aid = in.readLong(); AnimationSet ani = null;
+		if(aid != 0) try{ani = (AnimationSet)p.getById(AnimationSet.TYPE, aid);}catch(Exception ex){}
+		animation = ani;
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
-	public void deferredRead(File f) throws Exception{
-		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{if(in.readShort() != VERSION) throw new Exception();
-			Project p = WorkspaceBrowser.getProject(this);
-			id = in.readLong(); short nLayers = in.readShort();
-			layers.clear(); for(int i=0; i<nLayers; i++) layers.add(Layer.read(p, in));
-			long aid = in.readLong(); AnimationSet ani = null;
-			if(aid != 0) try{ani = (AnimationSet)p.getById(AnimationSet.TYPE, aid);}catch(Exception ex){}
-			animation = ani; in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-		}catch(Exception e){in.close(); throw e;}
-	}
 	public static Sprite create(Resource parent, MapEditor e, Project p) throws Exception {
 		String dir = parent.getFile().toString();
 		File f = new File(dir,"New Sprite"+"."+EXT);
-		Sprite ret = new Sprite(f,e); ret._setName(null); ret.id = p.newId(TYPE); ret.properties();
-		if(!ret.properties.updated) throw new Exception();
-		p.setId(TYPE, ret, ret.id); return ret;
+		Sprite ret = new Sprite(f,e); ret._setName(null); ret.newId(p); ret.properties();
+		if(!((Properties)ret.properties).updated) throw new Exception();
+		ret.addToProject(p, false); return ret;
 	}
 	
-	private static class Properties extends JDialog implements ActionListener, MouseListener, DragList.Listener {
+	private static class Properties extends TypedResource.Properties implements MouseListener, DragList.Listener {
 		private static final long serialVersionUID = -4987880557990107307L;
-		private static final String OK = "ok", CANCEL = "cancel", ADD = "add", REM = "rem";
-		public boolean updated;
-		private final Sprite chara; private final JTextField name, id; private AnimationSet animation; private final JTextField ani_label;
-		private final JLabel image_thumb; private final JList layers; private final JComboBox preview_ani;
-		public Properties(Sprite chr){
-			super(JOptionPane.getFrameForComponent(chr.editor), "Sprite Properties", true); chara = chr;
-			setResizable(false);
-			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
-			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
-			name = new JTextField(chr.getName(), 20); name.setActionCommand(OK); name.addActionListener(this);
-			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
-			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-			id.setEditable(false); p.add(id); inner.add(p);
-			settings.add(inner); inner = new JPanel(new BorderLayout()); p = new JPanel(new BorderLayout());
+		private static final String ADD = "add", REM = "rem";
+		private AnimationSet animation; private JTextField ani_label;
+		private JLabel image_thumb; private JList layers; private JComboBox preview_ani;
+		public Properties(Sprite chr){super(chr, "Sprite Properties");}
+		public void addControls(JPanel settings){
+			JPanel inner = new JPanel(new BorderLayout()); JPanel p = new JPanel(new BorderLayout());
 			p.setBorder(BorderFactory.createTitledBorder("Layers"));
 			layers = new JList(); layers.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 			layers.addMouseListener(this); new DragList(layers, Layer.class, this);
@@ -158,36 +129,24 @@ public class Sprite extends Resource {
 			JButton clear = new JButton("Clear"); clear.setActionCommand(MapEditor.CLEAR); clear.addActionListener(this); p.add(clear);
 			inner.add(p); p = new JPanel(); p.add(new JLabel("Preview: ")); preview_ani = new JComboBox(); preview_ani.setEnabled(false);
 			preview_ani.addActionListener(this); preview_ani.setPreferredSize(ani_label.getPreferredSize()); p.add(preview_ani); inner.add(p);
-			settings.add(inner); c.add(settings); inner = new JPanel();
-			JButton b = new JButton("Ok"); b.setActionCommand(OK); b.addActionListener(this); inner.add(b);
-			b = new JButton("Cancel"); b.setActionCommand(CANCEL); b.addActionListener(this); inner.add(b);
-			c.add(inner);
-			pack();
+			settings.add(inner);
 		}
-		public void setVisible(boolean b){
-			if(b == true){
-				updated = false; name.setText(chara.getName()); name.requestFocus(); name.selectAll();
-				setAnimation(chara.animation); DefaultListModel m = new DefaultListModel();
-				for(Layer i : chara.layers) m.addElement(i); layers.setModel(m);
-				if(chara.layers.size() > 0) layers.setSelectedIndex(0);
-				id.setText(Long.toHexString(chara.id)); updatePreview();
-			}
-			super.setVisible(b);
+		public void updateControls(){
+			Sprite chara = (Sprite)resource; setAnimation(chara.animation); DefaultListModel m = new DefaultListModel();
+			for(Layer i : chara.layers) m.addElement(i); layers.setModel(m);
+			if(chara.layers.size() > 0) layers.setSelectedIndex(0); updatePreview();
 		}
+		public void acceptControls(){
+			Sprite chara = (Sprite)resource; chara.animation = animation; chara.layers.clear();
+			ListModel m = layers.getModel(); for(int i=0; i<m.getSize(); i++) chara.layers.add((Layer)m.getElementAt(i));
+		}
+		public boolean saveOnEdit(){return true;}
 		public void actionPerformed(ActionEvent e) {
 			if(e.getSource() == preview_ani){
 				if(preview_ani.isEnabled()) updateAnimation(); return;
 			}
 			String command = e.getActionCommand();
-			if(command == OK){
-				chara.animation = animation; chara.layers.clear(); ListModel m = layers.getModel();
-				for(int i=0; i<m.getSize(); i++) chara.layers.add((Layer)m.getElementAt(i));
-				try{
-					chara.setName(name.getText());
-				} catch(Exception ex){name.setText(chara.getName()); return;}
-				try{chara.save(); chara.editor.updateSaveButtons(); updated = true;}catch(Exception ex){}
-				setVisible(false);
-			} else if(command == REM){
+			if(command == REM){
 				int i = layers.getSelectedIndex(); if(i != -1){((DefaultListModel)layers.getModel()).removeElementAt(i); updatePreview();}
 			} else if(command == ADD){
 				Layer layer = editLayer(null); if(layer != null){
@@ -198,7 +157,7 @@ public class Sprite extends Resource {
 				AnimationSet a = AnimationSet.choose(getProject(), animation); if(a != null) setAnimation(a);
 			} else if(command == MapEditor.CLEAR){
 				setAnimation(null);
-			} else setVisible(false);
+			} else super.actionPerformed(e);
 		}
 		private void setAnimation(AnimationSet a){
 			animation = a; if(animation != null && animation.numAnimations() > 0){
@@ -244,7 +203,7 @@ public class Sprite extends Resource {
 			} else image_thumb.setIcon(new ImageIcon());
 		}
 		private Project getProject(){
-			Project p = chara.getProject();
+			Project p = resource.getProject();
 			if(p == null){JOptionPane.showMessageDialog(this, "Sprite is not added to any project, no resources to load...", "Cannot Find Resources", JOptionPane.ERROR_MESSAGE); return null;}
 			return p;
 		}
@@ -287,8 +246,8 @@ public class Sprite extends Resource {
 		}
 	}
 	public String getExt(){return EXT;}
-	public static void register(){
-		Resource.register("Sprite Files", Sprite.EXT, Sprite.class);
+	public static void register() throws Exception {
+		Resource.register("Sprite Files", Sprite.EXT, Sprite.TYPE, Sprite.class);
 		Folder.new_options.addMenu("Sprite", "chr_appearance").
 			addItem("Sprite", "chr_appearance", new CreateCharaAction());
 	}

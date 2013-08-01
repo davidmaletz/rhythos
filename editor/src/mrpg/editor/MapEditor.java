@@ -131,7 +131,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	private final History history = new History(); private final Clipboard clipboard = new Clipboard();
 	private TilesetViewer tileset_viewer; private MediaPlayer media_player; private JPanel tileset;
 
-	public MapEditor(){
+	private MapEditor(){
 		super("Rhythos! Game Builder");
 		InputMap im = (InputMap)UIManager.getDefaults().get("Button.focusInputMap");
         Object pressedAction = im.get(KeyStroke.getKeyStroke("pressed SPACE"));
@@ -251,7 +251,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	
 	public static final Menu menu_bar = new Menu(), toolbar = new Menu(), tile_toolbar = new Menu(), tile_toolbar_right = new Menu();
 
-	public void updateMenuBar(){setJMenuBar(menu_bar.getMenuBar());}
+	public void updateMenuBar(){setJMenuBar(menu_bar.getMenuBar()); validate();}
 	public void updateToolbar(){
 		Container c = getContentPane(); c.remove(0); c.add(toolbar.getToolbar(), BorderLayout.NORTH, 0); c.validate();
 	}
@@ -692,12 +692,15 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		prop = new ToggleableMenuItem("Map properties", PROPERTIES, actionListener, false);
 		tile_toolbar_right.addItem(prop);
 	}
+	public static String safeName(String name){return name.replaceAll("[\u0000-\u001f\\/\\n\\r\\t\\f\\`\\?\\*\\\\\\<\\>\\|\\\"\\:]", "");}
 	public static void main(String[] args){
 		PluginManager.showInitWindow(); PluginManager.setInitStatus("Initializing..."); ScriptEditor.init();
 		setupMenuBar(); setupToolbar(); setupTileToolbar();
-		Resource.register(); Folder.register(); Image.register(); Media.register();
-		Map.register(); Tileset.register(); AutoTile.register(); Sprite.register();
-		AnimationSet.register(); SpriteLayer.register(); Script.register();
+		try{
+			Resource.register(); Folder.register(); Image.register(); Media.register();
+			Map.register(); Tileset.register(); AutoTile.register(); Sprite.register();
+			AnimationSet.register(); SpriteLayer.register(); Script.register();
+		}catch(Exception e){System.out.println("Resource Conflict"); System.exit(-1);}
 		tile_toolbar.addItem(new ToolItem(PencilTool.class));
 		tile_toolbar.addItem(new ToolItem(EraserTool.class));
 		tile_toolbar.addItem(new ToolItem(LineTool.class));

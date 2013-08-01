@@ -101,17 +101,13 @@ public class HaxeCompiler {
 	private static void generateAssetListFl(Project p, File f) throws Exception {
 		BufferedWriter out = new BufferedWriter(new FileWriter(new File(f, "AssetList.hx")));
 		out.write("class AssetList {}"); out.newLine();
-		for(Image i : p.getImages()){
-			out.write("class Ai"); out.write(Long.toHexString(i.getId()));
-			out.write(" extends nme.display.BitmapData { public function new () { super (0, 0); } }"); out.newLine();
-		} for(Media m : p.getMedia()){
-			out.write("class As"); out.write(Long.toHexString(m.getId()));
-			out.write(" extends nme.media.Sound { }"); out.newLine();
-		} for(String type : p.getResourceTypes()){
-			if(type.equals(Export.IMAGE) || type.equals(Export.SOUND)) continue;
+		for(String type : p.getResourceTypes()){
+			boolean image = type.equals(Export.IMAGE), sound = type.equals(Export.SOUND); 
 			for(Resource rs : p.getResources(type)){
 				out.write("class A"); out.write(type); out.write(Long.toHexString(rs.getId()));
-				out.write(" extends nme.utils.ByteArray { }"); out.newLine();
+				if(image) out.write(" extends nme.display.BitmapData { public function new () { super (0, 0); } }");
+				else if(sound) out.write(" extends nme.media.Sound { }");
+				else out.write(" extends nme.utils.ByteArray { }"); out.newLine();
 			}
 		} out.flush(); out.close();
 	}
@@ -168,13 +164,13 @@ public class HaxeCompiler {
 			export = new NekoExport(new File(new File(_target, "bin"), "assets"));
 		} else if(t.equals("flash")) export = new SWFExport(new File(new File(new File(fbin, t), "bin"), getProjectOut(p)+".swf"));
 		else throw new Exception();
-		for(Image i : p.getImages()) export.addImage(i);
-		for(Media m : p.getMedia()) export.addMedia(m);
 		for(String type : p.getResourceTypes()){
-			if(type.equals(Export.IMAGE) || type.equals(Export.SOUND)) continue;
+			boolean image = type.equals(Export.IMAGE), sound = type.equals(Export.SOUND); 
 			for(Resource rs : p.getResources(type)){
-				BufferedInputStream in = new BufferedInputStream(new FileInputStream(rs.getFile()));
-				in.skip(rs.getHeaderSize()); export.addData(in, type, rs.getId(), rs.getFile().lastModified());
+				if(image) export.addImage((Image)rs); else if(sound) export.addMedia((Media)rs); else {
+					BufferedInputStream in = new BufferedInputStream(new FileInputStream(rs.getFile()));
+					in.skip(rs.getHeaderSize()); export.addData(in, type, rs.getId(), rs.getFile().lastModified());
+				}
 			}
 		} export.finish();
 	}

@@ -33,13 +33,9 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -58,7 +54,6 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -78,21 +73,13 @@ import mrpg.editor.ResourceChooser;
 import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
 
-public class AnimationSet extends Resource implements Iterable<Animation> {
+public class AnimationSet extends TypedResource implements Iterable<Animation> {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "ani", TYPE = "an"; private static final short VERSION=1;
-	private static final Icon icon = MapEditor.getIcon("chr_appearance"); private ImageResource image; private BufferedImage cache;
+	private static final Icon icon = MapEditor.getIcon("chr_appearance");
+	private ImageResource image; private BufferedImage cache; private int width, height;
 	private final ArrayList<Animation> animations = new ArrayList<Animation>();
-	private final Properties properties; private long id; private int width, height;
-	public AnimationSet(File f, MapEditor editor){super(f, editor); width = 4; height = 4; properties = new Properties(this);}
-	public long getId(){return id;}
-	public void contextMenu(JPopupMenu menu){
-		menu.add(editor.getBrowser().properties); menu.addSeparator();
-		super.contextMenu(menu);
-	}
-	public boolean edit(){properties(); return true;}
-	public void properties(){properties.setVisible(true);}
-	public boolean hasProperties(){return true;}
+	public AnimationSet(File f, MapEditor editor){super(f, editor); width = 4; height = 4;}
 	public Icon getIcon(){return icon;}
 	public int numAnimations(){return animations.size();}
 	public Iterator<Animation> iterator(){return animations.iterator();}
@@ -102,60 +89,40 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 	public Icon getAnimatedIcon(JLabel l, int i, BufferedImage img){
 		return new Animation.Icon(l, animations.get(i), img, width, height);
 	}
-	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
-	}
-	public void addToProject(Project p) throws Exception {
-		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-	}
 	public int getHeaderSize(){return super.getHeaderSize()+ImageResource.getSize(image);}
-	public void save() throws Exception {
-		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
-		try{
-			out.writeShort(VERSION); out.writeLong(id); ImageResource.write(out, image); out.writeShort(width);
-			out.writeShort(height); out.writeShort(animations.size()); for(Animation a : animations) a.write(out);
-			out.flush(); out.close();
-		}catch(Exception e){out.close(); throw e;}
+	public void writeInner(DataOutputStream out) throws Exception {
+		ImageResource.write(out, image); out.writeShort(width);
+		out.writeShort(height); out.writeShort(animations.size()); for(Animation a : animations) a.write(out);
+	}
+	public void readInner(DataInputStream in) throws Exception {
+		Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
+		width = in.readShort(); height = in.readShort(); short nAni = in.readShort();
+		animations.clear(); for(int i=0; i<nAni; i++) animations.add(Animation.read(p, in, this));
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
-	public void deferredRead(File f) throws Exception{
-		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{if(in.readShort() != VERSION) throw new Exception();
-			Project p = WorkspaceBrowser.getProject(this); id = in.readLong(); image = ImageResource.read(in, p);
-			width = in.readShort(); height = in.readShort(); short nAni = in.readShort();
-			animations.clear(); for(int i=0; i<nAni; i++) animations.add(Animation.read(p, in, this));
-			in.close(); addToProject(p);
-		}catch(Exception e){in.close(); throw e;}
-	}
+	public String getType(){return TYPE;}
+	public short getVersion(){return VERSION;}
+	public JDialog getProperties(){return new Properties(this);}
 	public static AnimationSet create(Resource parent, MapEditor e, Project p) throws Exception {
 		String dir = parent.getFile().toString();
 		File f = new File(dir,"New Animation"+"."+EXT);
-		AnimationSet ret = new AnimationSet(f,e); ret._setName(null); ret.id = p.newId(TYPE); ret.properties();
-		if(!ret.properties.updated) throw new Exception();
-		p.setId(TYPE, ret, ret.id); return ret;
+		AnimationSet ret = new AnimationSet(f,e); ret.newId(p); ret._setName(null); ret.properties();
+		if(!((Properties)ret.properties).updated) throw new Exception();
+		ret.addToProject(p,false); return ret;
 	}
 	
-	private static class Properties extends JDialog implements ActionListener, MouseListener, ListSelectionListener, ChangeListener, DragList.Listener {
+	private static class Properties extends TypedResource.Properties implements MouseListener, ListSelectionListener, ChangeListener, DragList.Listener {
 		private static final long serialVersionUID = -4987880557990107307L;
-		private static final String OK = "ok", CANCEL = "cancel", ADD = "add", REM = "rem";
-		public boolean updated;
-		private final AnimationSet animation; private final JTextField name, id; private final JSpinner width, height;
-		private final JLabel image_thumb; private final JList animations; private ImageResource image;
-		public Properties(AnimationSet ani){
-			super(JOptionPane.getFrameForComponent(ani.editor), "Animation Set Properties", true); animation = ani;
-			setResizable(false);
-			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
-			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
-			name = new JTextField(ani.getName(), 20); name.setActionCommand(OK); name.addActionListener(this);
-			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
-			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-			id.setEditable(false); p.add(id); inner.add(p); settings.add(inner);
-			inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Dimensions"));
+		private static final String ADD = "add", REM = "rem";
+		private JSpinner width, height; private JLabel image_thumb; private JList animations; private ImageResource image;
+		public Properties(AnimationSet ani){super(ani, "Animation Set Properties");}
+		public void addControls(JPanel settings){
+			AnimationSet ani = (AnimationSet)resource;
+			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Dimensions"));
 			width = new JSpinner(new SpinnerNumberModel(ani.width, 1, Short.MAX_VALUE, 1)); width.addChangeListener(this);
 			inner.add(width); inner.add(new JLabel(" X ")); height = new JSpinner(new SpinnerNumberModel(ani.height, 1, Short.MAX_VALUE, 1));
 			height.addChangeListener(this); inner.add(height);
-			settings.add(inner); inner = new JPanel(new BorderLayout()); p = new JPanel(new BorderLayout());
+			settings.add(inner); inner = new JPanel(new BorderLayout()); JPanel p = new JPanel(new BorderLayout());
 			p.setBorder(BorderFactory.createTitledBorder("Animations"));
 			animations = new JList(); animations.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 			animations.addMouseListener(this); animations.addListSelectionListener(this); new DragList(animations, Animation.class, this);
@@ -171,34 +138,23 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 			JButton set = new JButton("Set"); set.setActionCommand(MapEditor.SET); set.addActionListener(this); inner2.add(set);
 			JButton clear = new JButton("Clear"); clear.setActionCommand(MapEditor.CLEAR); clear.addActionListener(this); inner2.add(clear);
 			panel.add(inner2, BorderLayout.SOUTH); inner.add(panel, BorderLayout.CENTER); settings.add(inner);
-			c.add(settings);
-			inner = new JPanel();
-			JButton b = new JButton("Ok"); b.setActionCommand(OK); b.addActionListener(this); inner.add(b);
-			b = new JButton("Cancel"); b.setActionCommand(CANCEL); b.addActionListener(this); inner.add(b);
-			c.add(inner);
-			pack();
 		}
-		public void setVisible(boolean b){
-			if(b == true){
-				updated = false; name.setText(animation.getName()); name.requestFocus(); name.selectAll(); image = animation.image;
-				width.setValue(animation.width); height.setValue(animation.height); DefaultListModel m = new DefaultListModel();
-				for(Animation i : animation.animations) m.addElement(i); animations.setModel(m);
-				if(animation.animations.size() > 0) animations.setSelectedIndex(0);
-				id.setText(Long.toHexString(animation.id)); updateCache();
-			}
-			super.setVisible(b);
+		public void updateControls(){
+			AnimationSet ani = (AnimationSet)resource; image = ani.image;
+			width.setValue(ani.width); height.setValue(ani.height); DefaultListModel m = new DefaultListModel();
+			for(Animation i : ani.animations) m.addElement(i); animations.setModel(m);
+			updateCache(); if(ani.animations.size() > 0) animations.setSelectedIndex(0);
 		}
+		public void acceptControls(){
+			AnimationSet ani = (AnimationSet)resource;
+			ani.image = image; ani.animations.clear(); ListModel m = animations.getModel();
+			for(int i=0; i<m.getSize(); i++) ani.animations.add((Animation)m.getElementAt(i));
+			ani.width = (Integer)width.getValue(); ani.height = (Integer)height.getValue();
+		}
+		public boolean saveOnEdit(){return true;}
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
-			if(command == OK){
-				animation.image = image; animation.animations.clear(); ListModel m = animations.getModel();
-				for(int i=0; i<m.getSize(); i++) animation.animations.add((Animation)m.getElementAt(i));
-				animation.width = (Integer)width.getValue(); animation.height = (Integer)height.getValue(); try{
-					animation.setName(name.getText());
-				} catch(Exception ex){name.setText(animation.getName()); return;}
-				try{animation.save(); animation.editor.updateSaveButtons(); updated = true;}catch(Exception ex){}
-				setVisible(false);
-			} else if(command == REM){
+			if(command == REM){
 				int i = animations.getSelectedIndex(); if(i != -1) ((DefaultListModel)animations.getModel()).removeElementAt(i);
 			} else if(command == ADD){
 				Animation ani = editAnimation(null); if(ani != null){
@@ -206,13 +162,13 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 					m.addElement(ani); animations.setSelectedIndex(sz);
 				}
 			} else if(command == MapEditor.SET){
-				Project p = animation.getProject();
+				Project p = resource.getProject();
 				if(p == null){JOptionPane.showMessageDialog(this, "Animation Set is not added to any project, no images to load...", "Cannot Find Images", JOptionPane.ERROR_MESSAGE); return;}
 				ImageResource im = ImageResource.choose(p, image);
 				if(im != null){image = im; updateCache();}
 			} else if(command == MapEditor.CLEAR){
 				image = null; updateCache();
-			} else setVisible(false);
+			} else super.actionPerformed(e);
 		}
 		public void mouseClicked(MouseEvent e){
 			if(e.getClickCount() == 2){
@@ -250,17 +206,18 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 					g.setColor(trans_white); g.fillRect(sx-2, sy, sw+4, 18);
 					g.setColor(trans_black); g.drawString(i, sx, sy+16);
 				}
-			animation.cache = b; updatePreview();
+			((AnimationSet)resource).cache = b; updatePreview();
 		}
 		private void updatePreview(){
+			AnimationSet ani = (AnimationSet)resource;
 			Animation a = (Animation)animations.getSelectedValue();
-			if(a == null || a.numFrames() == 0) image_thumb.setIcon(new ImageIcon(animation.cache));
-			else image_thumb.setIcon(new Animation.Icon(image_thumb, a, animation.cache, (Integer)width.getValue(), (Integer)height.getValue()));
+			if(a == null || a.numFrames() == 0) image_thumb.setIcon(new ImageIcon(ani.cache));
+			else image_thumb.setIcon(new Animation.Icon(image_thumb, a, ani.cache, (Integer)width.getValue(), (Integer)height.getValue()));
 		}
 		
 		private AnimationEdit ani_edit;
 		private Animation editAnimation(Animation i){
-			if(ani_edit == null) ani_edit = new AnimationEdit(this, animation);
+			if(ani_edit == null) ani_edit = new AnimationEdit(this, ((AnimationSet)resource));
 			ani_edit.show(i, (Integer)width.getValue(), (Integer)height.getValue()); if(ani_edit.updated) return ani_edit.get(); else return null;
 		}
 		public void updateDrag(){}
@@ -273,7 +230,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 						copy++; name = clipboard.getName()+" copy"+((copy==1)?"":" "+copy); changed = true; break;
 					}
 				}
-			} return new Animation(name, (byte)clipboard.getDir(), clipboard.speed, animation, clipboard.getFramesList()); 
+			} return new Animation(name, (byte)clipboard.getDir(), clipboard.speed, ((AnimationSet)resource), clipboard.getFramesList()); 
 		}
 	}
 	private static class AnimationEdit extends JDialog implements ActionListener {
@@ -325,7 +282,7 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(command == MapEditor.OK){
-				ListModel m = animation.properties.animations.getModel(); for(int i=0; i<m.getSize(); i++){
+				ListModel m = ((Properties)animation.properties).animations.getModel(); for(int i=0; i<m.getSize(); i++){
 					Animation a = (Animation)m.getElementAt(i);
 					if(cur != a && a.getName().equals(name.getSelectedItem().toString()) && a.getDir() == dir.getSelectedIndex()){
 						JOptionPane.showMessageDialog(this, "The animation "+a+" already exists!", "Unable to Add Animation", JOptionPane.ERROR_MESSAGE); return;
@@ -359,8 +316,8 @@ public class AnimationSet extends Resource implements Iterable<Animation> {
 		}
 	}
 	public String getExt(){return EXT;}
-	public static void register(){
-		Resource.register("Animation Files", AnimationSet.EXT, AnimationSet.class);
+	public static void register() throws Exception {
+		Resource.register("Animation Files", AnimationSet.EXT, AnimationSet.TYPE, AnimationSet.class);
 		Folder.new_options.addMenu("Sprite", "chr_appearance").
 			addItem("Animation Set", "chr_appearance", new CreateAnimationAction());
 	}

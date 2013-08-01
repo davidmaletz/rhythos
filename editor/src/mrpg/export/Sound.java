@@ -38,11 +38,9 @@ public class Sound {
 		rate = s.getRate(); channels = s.getChannelCount(); size = s.getSampleSize();
 		count = s.getSampleCount(); fmt = s.getFormat().getValue(); data = s.getSound(); 
 	}
-	public Sound(File f) throws Exception {this(new DataInputStream(new BufferedInputStream(new FileInputStream(f))));}
 	public Sound(DataInputStream in) throws Exception {
 		fmt = in.readInt(); rate = in.readInt(); channels = in.readInt(); size = in.readInt();
-		count = in.readInt(); int len = in.readInt(); data = new byte[len];
-		in.read(data); in.close();
+		count = in.readInt(); int len = in.readInt(); data = new byte[len]; in.read(data);
 	}
 	public DefineSound getSound(int i){
 		return new DefineSound(i, SoundFormat.fromInt(fmt), rate, channels, size, count, data);
@@ -53,11 +51,17 @@ public class Sound {
 	public int getSampleSize(){return size;}
 	public int getSampleCount(){return count;}
 	public byte[] getData(){return data;}
-	public void write(File f) throws Exception {write(new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))));}
+	public void write(File f) throws Exception {
+		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
+		write(out); out.flush(); out.close();
+	}
 	public void write(DataOutputStream out) throws Exception {
 		out.writeInt(fmt); out.writeInt(rate); out.writeInt(channels); out.writeInt(size);
 		out.writeInt(count); out.writeInt(data.length); out.write(data);
-		out.flush(); out.close();
+	}
+	public Sound read(File f) throws Exception {
+		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
+		Sound ret = new Sound(in); in.close(); return ret;
 	}
 	public Audio.Clip getClip() throws Exception {
 		if(cache == null) cache = Audio.getClip(this); return cache;

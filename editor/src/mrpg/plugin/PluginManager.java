@@ -1,12 +1,32 @@
+/*******************************************************************************
+ * Rhythos Editor is a game editor and project management tool for making RPGs on top of the Rhythos Game system.
+ * 
+ * Copyright (C) 2013  David Maletz
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ******************************************************************************/
 package mrpg.plugin;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
@@ -34,8 +54,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import com.sun.awt.AWTUtilities;
-
 public class PluginManager extends JFrame implements ActionListener {
 	private static final long serialVersionUID = -7566025672296138929L;
 	public static class PluginData {
@@ -45,9 +63,9 @@ public class PluginManager extends JFrame implements ActionListener {
 			file = f; plugin = null; installed = 0;
 			JarFile jar = new JarFile(file); Manifest m = jar.getManifest(); Attributes a = m.getMainAttributes();
 			name = get(a, "Plugin-Name"); desc = get(a, "Plugin-Desc"); author = get(a, "Plugin-Author");
-			version = get(a, "Version-Version"); main = a.get("Plugin-Main").toString();
+			version = get(a, "Plugin-Version"); main = a.getValue("Plugin-Main").toString();
 		}
-		private String get(Attributes a, String s){Object o = a.get(s); return (o == null)?"":o.toString();}
+		private String get(Attributes a, String s){Object o = a.getValue(s); return (o == null)?"":o.toString();}
 		public Plugin getPlugin() throws Exception {
 			if(plugin == null){
 				URLClassLoader loader = URLClassLoader.newInstance(new URL[]{file.toURI().toURL()}, PluginManager.class.getClassLoader());
@@ -68,11 +86,14 @@ public class PluginManager extends JFrame implements ActionListener {
 	}
 	private static HashMap<String, PluginData> plugins = new HashMap<String, PluginData>();
 	private PluginManager(){
-		super("Plugin Manager"); setIconImages(MapEditor.getWindowIcon()); setSize(640,480);
+		super("Plugin Manager"); setIconImages(MapEditor.getWindowIcon()); setSize(640,380);
 		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE); MapEditor.addFrame("plugins", this);
 		JTable table = new JTable(new PluginTableModel(this)); table.setFillsViewportHeight(true); JPanel p = new JPanel(new BorderLayout());
 		p.add(new JScrollPane(table)); setContentPane(p); JMenuBar bar = new JMenuBar(); JMenu menu = new JMenu("Plugins");
 		JMenuItem item = new JMenuItem("Refresh Plugins"); item.addActionListener(this); menu.add(item); bar.add(menu); setJMenuBar(bar);
+		table.getColumnModel().getColumn(0).setPreferredWidth(150); table.getColumnModel().getColumn(1).setPreferredWidth(300);
+		table.getColumnModel().getColumn(2).setPreferredWidth(75); table.getColumnModel().getColumn(3).setPreferredWidth(50);
+		table.getColumnModel().getColumn(4).setMinWidth(60); table.getColumnModel().getColumn(4).setMaxWidth(60);
 	}
 	public void actionPerformed(ActionEvent e){scanPluginDirectory();}
 	public static void openManager(){if(manager == null) manager = new PluginManager(); manager.setVisible(true);}
@@ -85,7 +106,14 @@ public class PluginManager extends JFrame implements ActionListener {
 			Dimension w = l.getPreferredSize(); l.setBounds(0,0,w.width,w.height); p.add(l);
 			l = new JLabel(); l.setBounds(271,334,314,26); l.setHorizontalAlignment(JLabel.CENTER);
 			l.setBackground(Color.WHITE); l.setOpaque(true); l.setFont(l.getFont().deriveFont(18.f)); p.add(l);
-			initWindow.setBackground(new Color(0,true)); AWTUtilities.setWindowOpaque(initWindow, false);
+			initWindow.setBackground(new Color(0,true));
+			try{
+				Class<?> awtUtilsClass = Class.forName("com.sun.awt.AWTUtilities");
+				if(awtUtilsClass  != null){
+					Method method = awtUtilsClass.getMethod("setWindowOpaque", Window.class, boolean.class);
+					method.invoke(null, initWindow, false);
+				}
+			}catch(Exception e){}
 			initWindow.setContentPane(p); initWindow.setSize(w); Dimension s = Toolkit.getDefaultToolkit().getScreenSize();
 			initWindow.setLocation((s.width-w.width)>>1, ((s.height-w.height)>>1)-50); initWindow.setVisible(true);
 		} catch(Exception e){e.printStackTrace();}

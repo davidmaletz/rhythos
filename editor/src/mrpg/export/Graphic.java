@@ -57,10 +57,8 @@ public class Graphic {
 			int count = deflater.deflate(buffer); out.write(buffer, 0, count);
 		} data = out.toByteArray();
 	}
-	public Graphic(File f) throws Exception {this(new DataInputStream(new BufferedInputStream(new FileInputStream(f))));}
 	public Graphic(DataInputStream in) throws Exception {
-		width = in.readInt(); height = in.readInt(); int len = in.readInt(); data = new byte[len];
-		in.read(data); in.close();
+		width = in.readInt(); height = in.readInt(); int len = in.readInt(); data = new byte[len]; in.read(data);
 	}
 	public ImageTag defineImage(int i){
 		return new DefineImage2(i, width, height, data);
@@ -77,10 +75,16 @@ public class Graphic {
 			cache.setData(r);
 		} return cache;
 	}
-	public void write(File f) throws Exception {write(new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))));}
+	public void write(File f) throws Exception {
+		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
+		write(out); out.flush(); out.close();
+	}
 	public void write(DataOutputStream out) throws Exception {
 		out.writeInt(width); out.writeInt(height); out.writeInt(data.length); out.write(data);
-		out.flush(); out.close();
+	}
+	public static Graphic read(File f) throws Exception {
+		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
+		Graphic ret = new Graphic(in); in.close(); return ret;
 	}
 	
 	public static Graphic decode(File f) throws Exception {return new Graphic(ImageIO.read(f));}

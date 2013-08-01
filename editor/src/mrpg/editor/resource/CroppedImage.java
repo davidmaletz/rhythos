@@ -1,38 +1,46 @@
+/*******************************************************************************
+ * Rhythos Editor is a game editor and project management tool for making RPGs on top of the Rhythos Game system.
+ * 
+ * Copyright (C) 2013  David Maletz
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ******************************************************************************/
 package mrpg.editor.resource;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 
 import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
@@ -40,57 +48,39 @@ import mrpg.editor.WorkspaceBrowser;
 public class CroppedImage extends ImageResource {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "cimg", TYPE = "ci"; private static final short VERSION=1;
-	private final Properties properties; private ImageResource image; private int x = 0, y = 0, w, h;
-	private long id; private BufferedImage cache;
-	public CroppedImage(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
-	public long getId(){return id;}
+	private ImageResource image; private int x = 0, y = 0, w, h; private BufferedImage cache;
+	public CroppedImage(File f, MapEditor editor){super(f, editor);}
 	public String getType(){return TYPE;}
+	public short getVersion(){return VERSION;}
+	public JDialog getProperties(){return new Properties(this);}
 	public BufferedImage getImage(){
 		if(cache == null){
 			cache = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 			cache.getGraphics().drawImage(image.getImage(), -x, -y, null);
 		} return cache;
 	}
-	public void contextMenu(JPopupMenu menu){
-		menu.add(editor.getBrowser().properties); menu.addSeparator();
-		super.contextMenu(menu);
-	}
-	public boolean edit(){properties(); return true;}
-	public void properties(){properties.setVisible(true);}
-	public boolean hasProperties(){return true;}
-	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
-	}
-	public void addToProject(Project p) throws Exception {
-		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-		if(WorkspaceBrowser.getProject(image) != p){
-			image = p.getImageById(image.getId());
+	public void addToProject(Project p, boolean changeProject) throws Exception {
+		super.addToProject(p, changeProject);
+		if(changeProject){
+			image = (ImageResource)p.getById(image.getType(), image.getId());
 		}
 	}
 	public boolean isCompatible(Project p){
-		try{p.getImageById(image.getId()); return super.isCompatible(p);}catch(Exception e){return false;}
+		try{p.getById(image.getType(), image.getId()); return super.isCompatible(p);}catch(Exception e){return false;}
 	}
 	public void copyAssets(Project p) throws Exception {
 		if(!image.isCompatible(p)) image.copyAssets(p);
 		p.editor.getBrowser().addResource(Resource.readFile(image.copy(p.getFile(), p, false), p.editor), p);
 	}
-	public void save() throws Exception {
-		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
-		try{
-			out.writeShort(VERSION); out.writeLong(id); ImageResource.write(out, image);
-			out.writeShort(x); out.writeShort(y); out.writeShort(w); out.writeShort(h);
-			out.flush(); out.close();
-		}catch(Exception e){out.close(); throw e;}
+	public void writeInner(DataOutputStream out) throws Exception {
+		ImageResource.write(out, image); out.writeShort(x); out.writeShort(y); out.writeShort(w); out.writeShort(h);
+	}
+	public void readInner(DataInputStream in) throws Exception {
+		Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
+		if(image == null) throw new Exception();
+		x = in.readShort(); y = in.readShort(); w = in.readShort(); h = in.readShort();
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_IMG_RESOURCE);}
-	public void deferredRead(File f) throws Exception{
-		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{if(in.readShort() != VERSION) throw new Exception();
-			id = in.readLong(); Project p = WorkspaceBrowser.getProject(this); image = ImageResource.read(in, p);
-			if(image == null) throw new Exception();
-			x = in.readShort(); y = in.readShort(); w = in.readShort(); h = in.readShort(); in.close(); addToProject(p);
-		}catch(Exception e){e.printStackTrace(); in.close(); throw e;}
-	}
 	
 	public static CroppedImage create(ImageResource im) {
 		try{
@@ -98,37 +88,27 @@ public class CroppedImage extends ImageResource {
 			File f = new File(dir,"Cropped "+im.getName()+"."+EXT);
 			CroppedImage ret = new CroppedImage(f,im.editor); ret._setName(null); ret.image = im;
 			ret.x = 0; ret.y = 0; BufferedImage img = ret.image.getImage(); ret.w = img.getWidth(); ret.h = img.getHeight();
-			Project p = WorkspaceBrowser.getProject(im); ret.id = p.newId(TYPE); ret.properties();
-			if(!ret.properties.updated) throw new Exception();
-			p.setId(TYPE, ret, ret.id); im.editor.getBrowser().addResource(ret, parent); return ret;
+			Project p = WorkspaceBrowser.getProject(im); ret.properties();
+			if(!((Properties)ret.properties).updated) throw new Exception();
+			ret.addToProject(p,false); im.editor.getBrowser().addResource(ret, parent); return ret;
 		}catch(Exception e){return null;}
 	}
-	public static CroppedImage create(ImageResource im, String name, int x, int y, int w, int h){return create(im, im.getParent(), name, x, y, w, h);}
-	public static CroppedImage create(ImageResource im, Resource parent, String name, int x, int y, int w, int h){
+	public static CroppedImage create(Project p, ImageResource im, String name, int x, int y, int w, int h){return create(p, im, im.getParent(), name, x, y, w, h);}
+	public static CroppedImage create(Project p, ImageResource im, Resource parent, String name, int x, int y, int w, int h){
 		try{
 			String dir = parent.getFile().toString(); File f = new File(dir,name+"."+EXT); if(f.exists()) throw new Exception();
-			CroppedImage ret = new CroppedImage(f,im.editor); ret.image = im;
-			ret.x = x; ret.y = y; ret.w = w; ret.h = h; Project p = WorkspaceBrowser.getProject(im); ret.id = p.newId(TYPE);
-			p.setId(TYPE, ret, ret.id); im.editor.getBrowser().addResource(ret, parent); ret.save(); return ret;
+			CroppedImage ret = new CroppedImage(f,im.editor); ret.newId(p);
+			ret.image = im; ret.x = x; ret.y = y; ret.w = w; ret.h = h;
+			ret.addToProject(p, false); im.editor.getBrowser().addResource(ret, parent); ret.save(); return ret;
 		}catch(Exception e){return null;}
 	}
 
-	private static class Properties extends JDialog implements ActionListener {
+	private static class Properties extends TypedResource.Properties {
 		private static final long serialVersionUID = -4987880557990107307L;
-		private static final String OK = "ok", CANCEL = "cancel";
-		private final CroppedImage image; private final JTextField name, id; private final ImageCropper cropper;
-		private ImageResource img; private JComboBox lock; public boolean updated;
-		public Properties(CroppedImage i){
-			super(JOptionPane.getFrameForComponent(i.editor), "Cropped Image Properties", true); image = i;
-			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
-			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
-			name = new JTextField(image.getName(), 20); name.setActionCommand(OK); name.addActionListener(this);
-			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
-			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-			id.setEditable(false); p.add(id); inner.add(p);
-			settings.add(inner);
-			inner = new JPanel(new BorderLayout()); inner.setBorder(BorderFactory.createTitledBorder("Image"));
+		private ImageCropper cropper; private ImageResource img; private JComboBox lock;
+		public Properties(CroppedImage i){super(i, "Cropped Image Properties", true);}
+		public void addControls(JPanel settings){
+			JPanel inner = new JPanel(new BorderLayout()); inner.setBorder(BorderFactory.createTitledBorder("Image"));
 			cropper = new ImageCropper();
 			JScrollPane pane = new JScrollPane(cropper); pane.setPreferredSize(new Dimension(400, 350));
 			pane.setBorder(BorderFactory.createLoweredBevelBorder()); inner.add(pane, BorderLayout.CENTER);
@@ -137,36 +117,24 @@ public class CroppedImage extends ImageResource {
 			lock.setEditable(true); p2.add(lock); p2.add(new JLabel("  ")); JButton b = new JButton("Set");
 			b.setActionCommand(MapEditor.SET); b.addActionListener(this); p2.add(b); inner.add(p2, BorderLayout.SOUTH);
 			settings.add(inner);
-			c.add(settings);
-			inner = new JPanel();
-			b = new JButton("Ok"); b.setActionCommand(OK); b.addActionListener(this); inner.add(b);
-			b = new JButton("Cancel"); b.setActionCommand(CANCEL); b.addActionListener(this); inner.add(b);
-			c.add(inner);
-			pack();
 		}
-		public void setVisible(boolean b){
-			if(b == true){
-				updated = false; name.setText(image.getName()); name.requestFocus(); name.selectAll();
-				id.setText(Long.toHexString(image.id)); img = image.image;
-				cropper.setImage(img.getImage(), image.x, image.y, image.w, image.h);
-			}
-			super.setVisible(b);
+		public void updateControls(){
+			CroppedImage image = (CroppedImage)resource;
+			img = image.image; cropper.setImage(img.getImage(), image.x, image.y, image.w, image.h);
 		}
+		public void acceptControls(){
+			CroppedImage image = (CroppedImage)resource; image.image = img; image.x = cropper.x1; image.y = cropper.y1;
+			image.w = cropper.x2-cropper.x1; image.h = cropper.y2-cropper.y1; image.cache = null;
+		}
+		public boolean saveOnEdit(){return true;}
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
 			if(e.getSource() == lock){
 				try{cropper.lock = Integer.parseInt(lock.getSelectedItem().toString());}catch(Exception ex){lock.setSelectedItem(Integer.toString(cropper.lock));}
-			} else if(command == OK){
-				image.image = img; image.x = cropper.x1; image.y = cropper.y1; image.w = cropper.x2-cropper.x1; image.h = cropper.y2-cropper.y1;
-				try{
-					image.setName(name.getText());
-				} catch(Exception ex){name.setText(image.getName()); return;}
-				try{image.save(); image.editor.updateSaveButtons(); updated = true;}catch(Exception ex){}
-				image.cache = null; setVisible(false);
-			} else if(command == MapEditor.SET){
+			} if(command == MapEditor.SET){
 				ImageResource im = ImageResource.choose(WorkspaceBrowser.getProject(img), img);
-				if(im != null && im != image){img = im; cropper.setImage(img.getImage());}
-			} else setVisible(false);
+				if(im != null && im != resource){img = im; cropper.setImage(img.getImage());}
+			} else super.actionPerformed(e);
 		}
 	}
 	public String getExt(){return EXT;}

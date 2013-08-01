@@ -42,6 +42,12 @@ public class Folder extends Resource {
 		menu.add(import_options.getMenuItem(false));
 		menu.addSeparator();
 	}
+	public Resource getChildByName(String n){
+		if(children == null) return null;
+		for(Object o : children){
+			if(o.toString().equals(n)) return (Resource)o;
+		} return null;
+	}
 	public long getId(){return 0;}
 	public Icon getIcon(){return icon;}
 	public static String OUT_DIR = "__haxe"; 
@@ -49,6 +55,7 @@ public class Folder extends Resource {
 		for(File file : f.listFiles())
 			if(!file.getName().equals(OUT_DIR)) try{add(Resource.readFile(file, editor));}catch(Exception e){}
 	}
+	public int getHeaderSize(){return 0;}
 	public File copy(File dir, Project p, boolean checkCompatible) throws Exception {
 		if(!dir.isDirectory()) throw new Exception(); File f = changeDirectory(dir, p, true, checkCompatible);
 		if(!f.mkdir()) throw new Exception(); for(int i=0; i<getChildCount(); i++) getChild(i).copy(f, p, checkCompatible);

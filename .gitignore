@@ -6,7 +6,9 @@ Desktop.ini
 
 *.swf
 .workspace
-jar
+jar/
+plugins/
+plugin_src/
 
 #################
 ## Eclipse

@@ -53,7 +53,7 @@ public class AutoTileEditor extends JPanel implements MouseListener, MouseMotion
 	}
 	public void setAnimation(AnimationSet animation, int aid){
 		if(aid < 0 || animation == null || aid >= animation.numAnimations()) ani = null;
-		else{ani = animation.getAnimation(aid); ct = ani.speed;}
+		else{ani = animation.getAnimation(aid); ct = ani.speed; if(timer == null) repaint();}
 	}
 	public void actionPerformed(ActionEvent e){
 		if(ani == null || !isShowing()){timer.stop(); timer = null;} else{

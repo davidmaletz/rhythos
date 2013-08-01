@@ -28,18 +28,18 @@ import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.world.Tilemap;
 
-public abstract class TileResource extends Resource {
+public abstract class TileResource extends TypedResource {
 	private static final long serialVersionUID = 6072902526037159097L;
 	public static final String TILESET = "database";
-	private static final Icon icon = MapEditor.getIcon(TILESET);
+	public static final Icon icon = MapEditor.getIcon(TILESET);
 	protected TileResource(File f, MapEditor e){super(f,e);}
 	public Icon getIcon(){return icon;}
 	public abstract ImageResource getImage();
 	public abstract Tilemap getTilemap();
 	public abstract String getType();
 	public Animation getAnimation(){return null;}
-	public void writeTileSize(DataOutputStream out) throws Exception {out.writeShort(getProject().tile_size);}
-	public void checkTileSize(DataInputStream in) throws Exception {
+	public void writeInner(DataOutputStream out) throws Exception {out.writeShort(getProject().tile_size);}
+	public void readInner(DataInputStream in) throws Exception {
 		if(in.readShort() != WorkspaceBrowser.getProject(this).tile_size) throw new Exception();
 	}
 	public int getHeaderSize(){return super.getHeaderSize()+2;}

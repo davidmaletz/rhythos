@@ -34,7 +34,7 @@ import mrpg.editor.MapEditor;
 import mrpg.editor.WorkspaceBrowser;
 import mrpg.script.ScriptEditor;
 
-public class Script extends Modifiable implements ActionListener {
+public class Script extends ModifiableResource implements ActionListener {
 	private static final long serialVersionUID = 3981925226292874481L;
 	private static final Icon icon = MapEditor.getIcon("script");
 	public static final String EXT = "hx";
@@ -53,6 +53,7 @@ public class Script extends Modifiable implements ActionListener {
 	public Icon getIcon(){return icon;}
 	public void actionPerformed(ActionEvent e) {edit();}
 
+	public int getHeaderSize(){return 0;}
 	public void save() throws Exception {
 		ScriptEditor.loadScript(this);
 		File f = getFile(); BufferedWriter out = new BufferedWriter(new FileWriter(f));
@@ -73,8 +74,8 @@ public class Script extends Modifiable implements ActionListener {
 		Script ret = new Script(f, e); f.createNewFile(); return ret;
 	}
 	public String getExt(){return EXT;}
-	public static void register(){
-		Resource.register("Script", Script.EXT, Script.class);
+	public static void register() throws Exception {
+		Resource.register("Script", Script.EXT, null, Script.class);
 		Folder.new_options.addItem("Script", "script", KeyEvent.VK_C, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, new CreateScriptAction());
 	}
 	private static class CreateScriptAction implements ActionListener {

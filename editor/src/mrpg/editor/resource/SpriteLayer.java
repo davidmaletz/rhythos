@@ -29,13 +29,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
@@ -50,7 +46,6 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
@@ -75,30 +70,23 @@ import mrpg.editor.MapEditor;
 import mrpg.editor.Matrix;
 import mrpg.editor.WorkspaceBrowser;
 
-public class SpriteLayer extends Resource {
+public class SpriteLayer extends TypedResource {
 	private static final long serialVersionUID = -5394199071824545816L;
 	public static final String EXT = "spl", TYPE = "sl"; private static final short VERSION=1;
 	private static final Icon icon = MapEditor.getIcon("chr_appearance");
 	private final ArrayList<Img> images = new ArrayList<Img>(); private final ArrayList<Color> colors = new ArrayList<Color>();
-	private final Properties properties; private long id;
-	public SpriteLayer(File f, MapEditor editor){super(f, editor); properties = new Properties(this);}
-	public long getId(){return id;}
-	public void contextMenu(JPopupMenu menu){
-		menu.add(editor.getBrowser().properties); menu.addSeparator();
-		super.contextMenu(menu);
-	}
-	public boolean edit(){properties(); return true;}
-	public void properties(){properties.setVisible(true);}
-	public boolean hasProperties(){return true;}
+	public SpriteLayer(File f, MapEditor editor){super(f, editor);}
 	public Icon getIcon(){return icon;}
-	public void remove(boolean delete) throws Exception {
-		WorkspaceBrowser.getProject(this).removeId(TYPE, this, id); super.remove(delete);
-	}
-	public void addToProject(Project p) throws Exception {
-		long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-		for(Img img : images){
-			if(img != null && img.image != null && WorkspaceBrowser.getProject(img.image) != p){
-				try{img.image = p.getImageById(img.image.getId());}catch(Exception ex){img.image = null;}
+	public String getType(){return TYPE;}
+	public short getVersion(){return VERSION;}
+	public JDialog getProperties(){return new Properties(this);}
+	public void addToProject(Project p, boolean changeProject) throws Exception {
+		super.addToProject(p, changeProject);
+		if(changeProject){
+			for(Img img : images){
+				if(img != null && img.image != null){
+					try{img.image = (ImageResource)p.getById(img.image.getType(), img.image.getId());}catch(Exception ex){img.image = null;}
+				}
 			}
 		}
 	}
@@ -113,62 +101,46 @@ public class SpriteLayer extends Resource {
 		if(col.glow != null && col.glow.strength > 0) b = new OuterGlowFilter(col.glow).filter(b, null);
 		return b;
 	}
-	public void save() throws Exception {
-		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(getFile())));
-		try{
-			out.writeShort(VERSION); out.writeLong(id); out.writeShort(images.size()); out.writeShort(colors.size());
-			for(Img i : images){out.writeUTF(i.name); ImageResource.write(out, i.image);}
-			for(Color c : colors){
-				out.writeUTF(c.name); for(int i=0; i<20; i++) out.writeFloat((float)c.color.matrix[i]);
-				Glow g = (c.glow == null)?new Glow():c.glow;
-				out.writeInt(g.color.getRGB()); out.writeByte(g.blurX); out.writeByte(g.blurY);
-				out.writeFloat(g.strength); out.writeByte(g.quality);
-			} out.flush(); out.close();
-		}catch(Exception e){out.close(); throw e;}
+	public void writeInner(DataOutputStream out) throws Exception {
+		out.writeShort(images.size()); out.writeShort(colors.size());
+		for(Img i : images){out.writeUTF(i.name); ImageResource.write(out, i.image);}
+		for(Color c : colors){
+			out.writeUTF(c.name); for(int i=0; i<20; i++) out.writeFloat((float)c.color.matrix[i]);
+			Glow g = (c.glow == null)?new Glow():c.glow;
+			out.writeInt(g.color.getRGB()); out.writeByte(g.blurX); out.writeByte(g.blurY);
+			out.writeFloat(g.strength); out.writeByte(g.quality);
+		}
+	}
+	public void readInner(DataInputStream in) throws Exception {
+		Project p = WorkspaceBrowser.getProject(this);
+		short nImg = in.readShort(), nCol = in.readShort();
+		images.clear(); colors.clear(); for(int i=0; i<nImg; i++){
+			String n = in.readUTF(); ImageResource img = ImageResource.read(in, p);
+			images.add(new Img(n, img));
+		} for(int c=0; c<nCol; c++){
+			String n = in.readUTF(); double m[] = new double[20];
+			for(int i=0; i<20; i++) m[i] = in.readFloat();
+			Glow g = new Glow(); g.color = new java.awt.Color(in.readInt()); g.blurX = in.readByte();
+			g.blurY = in.readByte(); g.strength = in.readFloat(); g.quality = in.readByte();
+			colors.add(new Color(n, new ColorMatrix(m), g));
+		}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_PROJECT);}
-	public void deferredRead(File f) throws Exception{
-		DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-		try{if(in.readShort() != VERSION) throw new Exception();
-			Project p = WorkspaceBrowser.getProject(this);
-			id = in.readLong(); short nImg = in.readShort(), nCol = in.readShort();
-			images.clear(); colors.clear(); for(int i=0; i<nImg; i++){
-				String n = in.readUTF(); ImageResource img = ImageResource.read(in, p);
-				images.add(new Img(n, img));
-			} for(int c=0; c<nCol; c++){
-				String n = in.readUTF(); double m[] = new double[20];
-				for(int i=0; i<20; i++) m[i] = in.readFloat();
-				Glow g = new Glow(); g.color = new java.awt.Color(in.readInt()); g.blurX = in.readByte();
-				g.blurY = in.readByte(); g.strength = in.readFloat(); g.quality = in.readByte();
-				colors.add(new Color(n, new ColorMatrix(m), g));
-			} in.close(); long i = p.setId(TYPE, this, id); if(i != id){id = i; save();}
-		}catch(Exception e){in.close(); throw e;}
-	}
 	public static SpriteLayer create(Resource parent, MapEditor e, Project p) throws Exception {
 		String dir = parent.getFile().toString();
 		File f = new File(dir,"New Layer"+"."+EXT);
-		SpriteLayer ret = new SpriteLayer(f,e); ret._setName(null); ret.id = p.newId(TYPE); ret.properties();
-		if(!ret.properties.updated) throw new Exception();
-		p.setId(TYPE, ret, ret.id); return ret;
+		SpriteLayer ret = new SpriteLayer(f,e); ret._setName(null); ret.newId(p); ret.properties();
+		if(!((Properties)ret.properties).updated) throw new Exception();
+		ret.addToProject(p, false); return ret;
 	}
 	
-	private static class Properties extends JDialog implements ActionListener, MouseListener, ListSelectionListener {
+	private static class Properties extends TypedResource.Properties implements MouseListener, ListSelectionListener {
 		private static final long serialVersionUID = -4987880557990107307L;
-		private static final String OK = "ok", CANCEL = "cancel", ADDI = "addi", REMI = "remi", ADDC = "addc", REMC = "remc";
-		public boolean updated;
-		private final SpriteLayer chara; private final JTextField name, id;
-		private final JLabel image_thumb; private final JList images, colors;
-		public Properties(SpriteLayer chr){
-			super(JOptionPane.getFrameForComponent(chr.editor), "Sprite Layer Properties", true); chara = chr;
-			setResizable(false);
-			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
-			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
-			JPanel inner = new JPanel(); inner.setBorder(BorderFactory.createTitledBorder("Name")); inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
-			name = new JTextField(chr.getName(), 20); name.setActionCommand(OK); name.addActionListener(this);
-			inner.add(name); JPanel p = new JPanel(); p.add(new JLabel("Id: "));
-			id = new JTextField("", 15); id.setOpaque(false); id.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-			id.setEditable(false); p.add(id); inner.add(p);
-			settings.add(inner); inner = new JPanel(new GridLayout(1,2)); p = new JPanel(new BorderLayout());
+		private static final String ADDI = "addi", REMI = "remi", ADDC = "addc", REMC = "remc";
+		private JLabel image_thumb; private JList images, colors;
+		public Properties(SpriteLayer chr){super(chr, "Sprite Layer Properties");}
+		public void addControls(JPanel settings){
+			JPanel inner = new JPanel(new GridLayout(1,2)); JPanel p = new JPanel(new BorderLayout());
 			p.setBorder(BorderFactory.createTitledBorder("Images"));
 			images = new JList(); images.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 			images.addMouseListener(this); images.addListSelectionListener(this); new DragList(images, Img.class);
@@ -189,37 +161,24 @@ public class SpriteLayer extends Resource {
 			pane = new JScrollPane(image_thumb); pane.setPreferredSize(ImageResource.THUMB_SIZE);
 			pane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Preview"),
 					BorderFactory.createLoweredBevelBorder())); settings.add(pane);
-			c.add(settings);
-			inner = new JPanel();
-			JButton b = new JButton("Ok"); b.setActionCommand(OK); b.addActionListener(this); inner.add(b);
-			b = new JButton("Cancel"); b.setActionCommand(CANCEL); b.addActionListener(this); inner.add(b);
-			c.add(inner);
-			pack();
 		}
-		public void setVisible(boolean b){
-			if(b == true){
-				updated = false; name.setText(chara.getName()); name.requestFocus(); name.selectAll();
-				DefaultListModel m = new DefaultListModel();
-				for(Img i : chara.images) m.addElement(i); images.setModel(m);
-				m = new DefaultListModel(); for(Color c : chara.colors) m.addElement(c); colors.setModel(m);
-				if(chara.images.size() > 0) images.setSelectedIndex(0);
-				if(chara.colors.size() > 0) colors.setSelectedIndex(0);
-				id.setText(Long.toHexString(chara.id)); updatePreview();
-			}
-			super.setVisible(b);
+		public void updateControls(){
+			SpriteLayer chara = (SpriteLayer)resource; DefaultListModel m = new DefaultListModel();
+			for(Img i : chara.images) m.addElement(i); images.setModel(m);
+			m = new DefaultListModel(); for(Color c : chara.colors) m.addElement(c); colors.setModel(m);
+			if(chara.images.size() > 0) images.setSelectedIndex(0);
+			if(chara.colors.size() > 0) colors.setSelectedIndex(0);
+			updatePreview();
 		}
+		public void acceptControls(){
+			SpriteLayer chara = (SpriteLayer)resource; chara.images.clear(); chara.colors.clear(); ListModel m = images.getModel();
+			for(int i=0; i<m.getSize(); i++) chara.images.add((Img)m.getElementAt(i)); m = colors.getModel();
+			for(int i=0; i<m.getSize(); i++) chara.colors.add((Color)m.getElementAt(i));
+		}
+		public boolean saveOnEdit(){return true;}
 		public void actionPerformed(ActionEvent e) {
 			String command = e.getActionCommand();
-			if(command == OK){
-				chara.images.clear(); chara.colors.clear(); ListModel m = images.getModel();
-				for(int i=0; i<m.getSize(); i++) chara.images.add((Img)m.getElementAt(i)); m = colors.getModel();
-				for(int i=0; i<m.getSize(); i++) chara.colors.add((Color)m.getElementAt(i));
-				try{
-					chara.setName(name.getText());
-				} catch(Exception ex){name.setText(chara.getName()); return;}
-				try{chara.save(); chara.editor.updateSaveButtons(); updated = true;}catch(Exception ex){}
-				setVisible(false);
-			} else if(command == REMI){
+			if(command == REMI){
 				int i = images.getSelectedIndex(); if(i != -1) ((DefaultListModel)images.getModel()).removeElementAt(i);
 			} else if(command == REMC){
 				int i = colors.getSelectedIndex(); if(i != -1) ((DefaultListModel)colors.getModel()).removeElementAt(i);
@@ -233,7 +192,7 @@ public class SpriteLayer extends Resource {
 					DefaultListModel m = (DefaultListModel)colors.getModel(); int sz = m.getSize();
 					m.addElement(col); colors.setSelectedIndex(sz);
 				} else updatePreview();
-			} else setVisible(false);
+			} else super.actionPerformed(e);
 		}
 		public void mouseClicked(MouseEvent e){
 			if(e.getClickCount() == 2){
@@ -276,7 +235,7 @@ public class SpriteLayer extends Resource {
 		
 		private ImageEdit img_edit;
 		private Img editImage(Img i){
-			if(img_edit == null) img_edit = new ImageEdit(this, chara);
+			if(img_edit == null) img_edit = new ImageEdit(this, (SpriteLayer)resource);
 			img_edit.show(i); if(img_edit.updated) return img_edit.get(); else return null;
 		}
 		private ColorEdit color_edit;
@@ -546,8 +505,8 @@ public class SpriteLayer extends Resource {
 		}
 	}
 	public String getExt(){return EXT;}
-	public static void register(){
-		Resource.register("Sprite Layer Files", SpriteLayer.EXT, SpriteLayer.class);
+	public static void register() throws Exception {
+		Resource.register("Sprite Layer Files", SpriteLayer.EXT, SpriteLayer.TYPE, SpriteLayer.class);
 		Folder.new_options.addMenu("Sprite", "chr_appearance").
 			addItem("Layer", "chr_appearance", new CreateCharaAction());
 	}

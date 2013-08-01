@@ -33,7 +33,6 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Random;
 
 import javax.swing.BorderFactory;
@@ -56,7 +55,6 @@ import javax.swing.JTextField;
 import mrpg.editor.MapEditor;
 import mrpg.editor.TilesetViewer;
 import mrpg.editor.WorkspaceBrowser;
-import mrpg.export.Export;
 import mrpg.script.HaxeCompiler;
 
 
@@ -77,7 +75,7 @@ public class Project extends Folder {
 	public String getTarget(){return target;}
 	public static Project createProject(MapEditor e) throws Exception {
 		File f; if(folderChooser.showSaveDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
-			f = folderChooser.getSelectedFile(); if(!f.exists() && !f.mkdirs()) throw new Exception();
+			f = folderChooser.getSelectedFile(); if(f.exists() || !f.mkdirs()) throw new Exception();
 		} else throw new Exception();
 		if(f.listFiles().length > 0) throw new Exception();
 		Project p = new Project(f, e); File project = new File("project");
@@ -101,6 +99,10 @@ public class Project extends Folder {
 		} Project p = new Project(f, e); p.read(f); return p;
 	}
 	public Project(File f, MapEditor e) throws Exception {super(f, e);}
+	public void init(int ts) throws Exception {
+		target = HaxeCompiler.defaultTarget(); tile_size = ts;
+		options = new ArrayList<String>(); save();
+	}
 	public boolean canDelete(){return false;}
 	public void properties(){if(properties == null) properties = new Properties(this); properties.setVisible(true);}
 	public void save() throws Exception {
@@ -150,36 +152,13 @@ public class Project extends Folder {
 			ret = new HashMap<Long,Resource>(); assets.put(type, ret);
 		} return ret;
 	}
-	private static class ConvertIterator<T> implements Iterator<T> {
-		private Iterator<?> parent;
-		public ConvertIterator(Iterator<?> p){parent = p;}
-		public boolean hasNext(){return parent.hasNext();}
-		@SuppressWarnings("unchecked")
-		public T next(){return (T)parent.next();}
-		public void remove(){parent.remove();}
-	}
-	private static class ConvertIterable<T> implements Iterable<T> {
-		private Iterable<?> parent;
-		public ConvertIterable(Iterable<?> p){parent = p;}
-		public Iterator<T> iterator(){return new ConvertIterator<T>(parent.iterator());}
-	}
-	public long newImageId(){return newId(get(Export.IMAGE));}
-	public long setImageId(Image r, long id) throws Exception {return setId(get(Export.IMAGE), r, id);}
-	public void removeImageId(Image r, long id) throws Exception {removeId(get(Export.IMAGE), r, id);}
-	public Image getImageById(long id) throws Exception {return (Image)getById(get(Export.IMAGE), id);}
-	public Iterable<Image> getImages(){return new ConvertIterable<Image>(get(Export.IMAGE).values());}
-	public long newMediaId(){return newId(get(Export.SOUND));}
-	public long setMediaId(Media r, long id) throws Exception {return setId(get(Export.SOUND), r, id);}
-	public void removeMediaId(Media r, long id) throws Exception {removeId(get(Export.SOUND), r, id);}
-	public Media getMediaById(long id) throws Exception {return (Media)getById(get(Export.SOUND), id);}
-	public Iterable<Media> getMedia(){return new ConvertIterable<Media>(get(Export.SOUND).values());}
-	public long newId(String type){return newId(get(type));}
-	public long setId(String type, Resource r, long id) throws Exception {return setId(get(type), r, id);}
-	public void removeId(String type, Resource r, long id) throws Exception {removeId(get(type), r, id);}
+	public long newId(TypedResource r) {return newId(get(r.getType()));}
+	public long setId(TypedResource r, long id) throws Exception {return setId(get(r.getType()), r, id);}
+	public void removeId(TypedResource r, long id) throws Exception {removeId(get(r.getType()), r, id);}
 	public Resource getById(String type, long id) throws Exception {return getById(get(type), id);}
 	public Iterable<Resource> getResources(String type){return get(type).values();}
 	public Iterable<String> getResourceTypes(){return assets.keySet();}
-	public void removeType(String type){
+	public void removeType(String type) throws Exception {
 		if(!assets.containsKey(type)) return;
 		for(Resource r : getResources(type)){
 			editor.getBrowser().removeResource(r, false);

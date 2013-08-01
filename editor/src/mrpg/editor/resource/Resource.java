@@ -70,7 +70,10 @@ public abstract class Resource extends DefaultMutableTreeNode {
 		}
 	}
 	public abstract long getId();
-	public void setName(String n) throws Exception {File f = changeName(n); if(f != null) rename(f);}
+	public void setName(String n) throws Exception {
+		n = MapEditor.safeName(n); if(n.length() == 0) throw new Exception();
+		File f = changeName(n); if(f != null) rename(f);
+	}
 	public String getName(){
 		if(name == null){
 			String n = file.getName(); int i = n.lastIndexOf('.'); if(i != -1) n = n.substring(0, i); return n;
@@ -85,12 +88,10 @@ public abstract class Resource extends DefaultMutableTreeNode {
 			throw new Exception();
 		}
 	}
-	public void addToProject(Project p) throws Exception {
-		for(int i=0; i<getChildCount(); i++) getChild(i).addToProject(p);
+	public void addToProject(Project p, boolean changeProject) throws Exception {
+		for(int i=0; i<getChildCount(); i++) getChild(i).addToProject(p, changeProject);
 	}
-	//Returns the amount of bytes at the beginning of the resource only used for editing purposes and should be skipped in game.
-	//Default = 10 bytes, 2 byte version, 8 byte id
-	public int getHeaderSize(){return 10;}
+	public abstract int getHeaderSize();
 	public void properties(){}
 	public boolean hasProperties(){return false;}
 	public void contextMenu(JPopupMenu menu){}
@@ -159,13 +160,15 @@ public abstract class Resource extends DefaultMutableTreeNode {
 	}
 	
 	private static final HashMap<String, Class<? extends Resource>> resources = new HashMap<String, Class<? extends Resource>>();
+	private static final HashMap<String, Class<? extends Resource>> types = new HashMap<String, Class<? extends Resource>>();
 	public static JFileChooser resourceChooser = new JFileChooser();
 	static {
 		resourceChooser.setAcceptAllFileFilterUsed(false); resourceChooser.setMultiSelectionEnabled(true);
 		resourceChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 	}
 	public abstract String getExt();
-	public static void register(String name, String ext, Class<? extends Resource> r){
+	public static void register(String name, String ext, String type, Class<? extends Resource> r) throws Exception {
+		if(resources.containsKey(ext) || types.containsKey(type)) throw new Exception(); types.put(type, r);
 		resources.put(ext, r); resourceChooser.addChoosableFileFilter(new ExtFileFilter(name, new String[]{ext}));
 	}
 	public static void unregister(String ext){
@@ -184,7 +187,7 @@ public abstract class Resource extends DefaultMutableTreeNode {
 		}
 	}
 	
-	public static void register(){
+	public static void register() throws Exception {
 		Folder.import_options.addItem("Resource File", "database", KeyEvent.VK_R, ActionEvent.CTRL_MASK, new ImportResourceAction());
 	}
 	private static class ImportResourceAction implements ActionListener {
