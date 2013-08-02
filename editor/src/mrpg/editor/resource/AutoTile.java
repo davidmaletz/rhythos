@@ -89,8 +89,10 @@ public class AutoTile extends TileResource implements ActionListener {
 		animation = ani; aid = in.readShort();
 	}
 	public void deferredRead(File f) throws Exception {
+		try{
 		super.deferredRead(f);
 		if(active){active = false; editor.getTilesetViewer().addAutoTile(autotile, WorkspaceBrowser.getProject(this));}
+		}catch(Exception e){e.printStackTrace(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public boolean isCompatible(Project p){
@@ -112,7 +114,7 @@ public class AutoTile extends TileResource implements ActionListener {
 		File f = new File(dir,name+"."+EXT);
 		AutoTile ret = new AutoTile(f, e); ret.newId(p); ret.format = fmt;
 		ret.image = im; ret.autotile = new AutoTilemap(ret.format.getFormat(), im.getImage(), ret, p.tile_size);
-		ret.addToProject(p,false); return ret;
+		parent.add(ret); ret.save(); ret.addToProject(p,false); return ret;
 	}
 	public Animation getAnimation(){
 		if(aid < 0 || animation == null || aid >= animation.numAnimations()) return null;

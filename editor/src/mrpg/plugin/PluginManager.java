@@ -72,9 +72,9 @@ public class PluginManager extends JFrame implements ActionListener {
 				plugin = (Plugin)loader.loadClass(main).newInstance();
 			} return plugin;
 		}
-		public boolean isInstalled(){return installed == 1;}
+		public boolean isInstalled(){return installed == 1 || installed == -1;}
 		public void install(JFrame f){
-			if(installed == 0) try{getPlugin().install(); installed = 1;}catch(Exception e){
+			if(installed == 0) try{getPlugin().install(f==null); installed = 1;}catch(Exception e){
 				if(f != null){installed = 2; JOptionPane.showMessageDialog(f, "The plugin will be installed the next time Rhythos is restarted.", "Plugin Install", JOptionPane.INFORMATION_MESSAGE);}
 			}
 		}

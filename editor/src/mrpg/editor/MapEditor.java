@@ -103,14 +103,14 @@ import mrpg.plugin.PluginManager;
 import mrpg.script.ScriptEditor;
 import mrpg.world.World;
 
-public class MapEditor extends JFrame implements Runnable, WindowListener, ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
+public class MapEditor extends JFrame implements WindowListener, ActionListener, ChangeListener, TreeSelectionListener, History.Listener, SelectTool.Listener, ZoomTool.Listener, Clipboard.Listener {
 	
 	private static final long serialVersionUID = 7934438411041874443L;
 	
 	public static final String NEW = "new", OPEN = "open", SAVE = "save", SAVE_ALL = "save_all", IMPORT = "import",
 		EXPORT = "export", TEST = "test", BUILD = "build", SEARCH = "search", HELP = "help", ABOUT = "about", PLUGINS = "plugins";
 	public static final String CUT = "cut", COPY = "copy", PASTE = "paste", DELETE = "delete", REFRESH = "refresh", REVERT = "revert", REMOVE = "remove", SEL_ALL = "sel_all",
-		DSEL_ALL = "dsel_all", SHOW_ALL = "show_all", SHOW_GRID = "grid", NEXT_LAYER = "next_l", PREV_LAYER = "prev_l";
+		DSEL_ALL = "dsel_all", SHOW_ALL = "show_all", SHOW_GRID = "grid", ANIMATE="animate", NEXT_LAYER = "next_l", PREV_LAYER = "prev_l";
 	public static final String RENAME = "rename";
 	public static final String UNDO = "undo", REDO = "redo", PROPERTIES = "properties", LAYER = "layer";
 	public static final String OK = "ok", CANCEL = "cancel", SET = "set", CLEAR = "clear", M_PLAYER = "media_player"; 
@@ -124,7 +124,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	
 	private static ToggleableMenuItem undo, redo, cut, copy, paste, delete, dsel, prev_layer,
 		next_layer, prop, save, save_map, saveall, refresh, revert;
-	private static CheckboxMenuItem showGrid, showAll;
+	private static CheckboxMenuItem showGrid, showAll, animate;
 	private static final ArrayList<ToggleableMenuItem> buttons = new ArrayList<ToggleableMenuItem>();
 	private Map current_map;
 	
@@ -198,6 +198,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		w.startAnim();
 		addWindowListener(this); setIconImages(getWindowIcon());
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); setSize(800,600);
+		loadSettings();
 	}
 	
 	public WorldOverlay getOverlay(){return world_overlay;}
@@ -283,8 +284,11 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 			}
 		} else if(command == DSEL_ALL){if(browser_focus) browser.clearSelection(); else select.deselectAll();
 		} else if(command == SHOW_ALL){
-				WorldPanel world = world_overlay.getPanel();
-				world.showLevel((showAll.isSelected())?-1:world.getEditLevel());
+			WorldPanel world = world_overlay.getPanel();
+			world.showLevel((showAll.isSelected())?-1:world.getEditLevel());
+		} else if(command == ANIMATE){
+			WorldPanel world = world_overlay.getPanel();
+			world.animate = animate.isSelected();
 		} else if(command == SHOW_GRID){world_overlay.getPanel().setShowGrid(((AbstractButton)e.getSource()).isSelected());
 		} else if(command == PREV_LAYER){layer_spinner.setValue(Math.max(0, (Integer)layer_spinner.getValue()-1));
 		} else if(command == NEXT_LAYER){layer_spinner.setValue(Math.min(MAX_LAYERS, (Integer)layer_spinner.getValue()+1));
@@ -541,6 +545,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 			element.setTextContent(Resource.resourceChooser.getCurrentDirectory().toString()); root.appendChild(element);
 			if(showGrid.isSelected()) root.appendChild(doc.createElement("showGrid"));
 			if(showAll.isSelected()) root.appendChild(doc.createElement("showAllLayers"));
+			if(animate.isSelected()) root.appendChild(doc.createElement("showMapAnimations"));
 			element = doc.createElement("layer");
 			element.setTextContent(layer_spinner.getValue().toString()); root.appendChild(element);
 			element = doc.createElement("zoom");
@@ -569,7 +574,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 	public static <T> T getByIndex(Enumeration<T> e, int i) throws Exception {
 		while(i > 0){e.nextElement(); i--;} return e.nextElement();
 	}
-	public void run(){
+	public void loadSettings(){
 		PluginManager.setInitStatus("Loading Settings..."); File f = new File(".workspace");
 		if(f.exists()) try{
 			Document doc = document_factory.newDocumentBuilder().parse(f);
@@ -587,6 +592,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 			try{Resource.resourceChooser.setCurrentDirectory(new File(root.getElementsByTagName("resourceDirectory").item(0).getTextContent()));}catch(Exception ex){}
 			if(root.getElementsByTagName("showGrid").getLength() > 0) showGrid.getMenuItem(true).doClick();
 			if(root.getElementsByTagName("showAllLayers").getLength() > 0) showAll.getMenuItem(true).doClick();
+			if(root.getElementsByTagName("showMapAnimations").getLength() > 0) animate.getMenuItem(true).doClick();
 			try{layer_spinner.setValue(Integer.parseInt(root.getElementsByTagName("layer").item(0).getTextContent()));}catch(Exception ex){}
 			try{zoom_spinner.setValue(Double.parseDouble(root.getElementsByTagName("zoom").item(0).getTextContent()));}catch(Exception ex){}
 			try{getByIndex(tools.getElements(), Integer.parseInt(root.getElementsByTagName("tool").item(0).getTextContent())).doClick();}catch(Exception ex){}
@@ -645,6 +651,7 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		menu = menu_bar.addMenu("View", null);
 		showGrid = new CheckboxMenuItem("Show Grid", SHOW_GRID, KeyEvent.VK_G, ActionEvent.CTRL_MASK, actionListener); menu.addItem(showGrid);
 		showAll = new CheckboxMenuItem("Show All Layers", SHOW_ALL, KeyEvent.VK_A, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, actionListener); menu.addItem(showAll);
+		animate = new CheckboxMenuItem("Show Map Animations", ANIMATE, actionListener); menu.addItem(animate);
 		menu.addSeparator();
 		prev_layer = new ToggleableMenuItem("Previous Layer", PREV_LAYER, KeyEvent.VK_L, ActionEvent.CTRL_MASK | ActionEvent.SHIFT_MASK, actionListener, false);
 		next_layer = new ToggleableMenuItem("Next Layer", NEXT_LAYER, KeyEvent.VK_L, ActionEvent.CTRL_MASK, actionListener);
@@ -721,8 +728,6 @@ public class MapEditor extends JFrame implements Runnable, WindowListener, Actio
 		//TODO: Animation Editing based on VIDE?
 		//TODO: Sound Editing based on ??
 		instance = new MapEditor(); instance.init();
-		PluginManager.setInitStatus("Starting Editor...");
-		SwingUtilities.invokeLater(instance);
 	}
 	
 	private static class Listener implements ActionListener {

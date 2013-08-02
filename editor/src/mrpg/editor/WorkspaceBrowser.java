@@ -122,12 +122,11 @@ public class WorkspaceBrowser extends JTree implements ActionListener, MouseList
 	}
 	public static Project getProject(TreePath path){return (path.getPathCount() <= 1)?null:(Project)path.getPathComponent(1);}
 	public static Project getProject(Resource node){
-		Resource ret = null;
-		while(node.getParent() != null){
-			ret = node;
+		while(true){
 			node = node.getParent();
+			if(node == null) return null;
+			if(node instanceof Project) return (Project)node;
 		}
-		return (Project)ret;
 	}
 	public void addResource(Resource r, Resource parent){
 		DefaultTreeModel m = (DefaultTreeModel)getModel();

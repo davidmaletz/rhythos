@@ -43,6 +43,12 @@ public class AutotileFormat extends TypedResource {
 	public short getVersion(){return VERSION;}
 	public TypedResource.Properties getProperties(){return new Properties(this, "Auto Tile Format Properties");}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_MEDIA);}
+	public static AutotileFormat create(Resource parent, MapEditor e, Project p, String name, AutoTileFormat fmt) throws Exception {
+		String dir = parent.getFile().toString();
+		File f = new File(dir,name+"."+EXT);
+		AutotileFormat ret = new AutotileFormat(f, e); ret.newId(p); ret.format = fmt;
+		parent.add(ret); ret.save(); ret.addToProject(p,false); return ret;
+	}
 	public String getExt(){return EXT;}
 	public static void register() throws Exception {
 		Resource.register("Auto Tile Format Files", AutotileFormat.EXT, AutotileFormat.TYPE, AutotileFormat.class);

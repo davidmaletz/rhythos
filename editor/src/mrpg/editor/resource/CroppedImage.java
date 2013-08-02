@@ -99,7 +99,7 @@ public class CroppedImage extends ImageResource {
 			String dir = parent.getFile().toString(); File f = new File(dir,name+"."+EXT); if(f.exists()) throw new Exception();
 			CroppedImage ret = new CroppedImage(f,im.editor); ret.newId(p);
 			ret.image = im; ret.x = x; ret.y = y; ret.w = w; ret.h = h;
-			ret.addToProject(p, false); im.editor.getBrowser().addResource(ret, parent); ret.save(); return ret;
+			parent.add(ret); ret.save(); ret.addToProject(p, false); return ret;
 		}catch(Exception e){return null;}
 	}
 

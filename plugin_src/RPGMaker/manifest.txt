@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Plugin-Name: RPGMaker 2k/2k3 Project Importer
+Plugin-Desc: Creates new projects from existing RPGMaker projects.
+Plugin-Author: David Maletz
+Plugin-Version: 0.1
+Plugin-Main: mrpg.plugin.rpgmaker.ImportProject

@@ -99,6 +99,12 @@ public class Map extends TypedModifiable {
 		if(!((Properties)ret.properties).updated) throw new Exception();
 		ret.addToProject(p, false); return ret;
 	}
+	public static Map createMap(Resource parent, MapEditor e, Project p, String name, World w) throws Exception {
+		String dir = parent.getFile().toString();
+		File f = new File(dir,name+"."+EXT);
+		Map ret = new Map(f, e); ret.newId(p); ret.world = w;
+		parent.add(ret); ret.save(); ret.addToProject(p, false); return ret;
+	}
 	private static class Properties extends TypedResource.Properties {
 		private static final long serialVersionUID = -4987880557990107307L;
 		private static final int MIN_SIZE = 10, MAX_SIZE = 500;

@@ -102,7 +102,7 @@ public class Tileset extends TileResource implements ActionListener {
 		File f = new File(dir,name+"."+EXT);
 		Tileset ret = new Tileset(f, e); ret.newId(p);
 		ret.image = im; ret.tilemap = new BasicTilemap(im.getImage(), ret, p.tile_size);
-		ret.addToProject(p, false); return ret;
+		parent.add(ret); ret.save(); ret.addToProject(p, false); return ret;
 	}
 	private static class Properties extends TypedResource.Properties {
 		private static final long serialVersionUID = -4987880557990107307L;
