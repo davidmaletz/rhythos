@@ -713,6 +713,7 @@ public class MapEditor extends JFrame implements WindowListener, ActionListener,
 		tile_toolbar.addItem(new ToolItem(LineTool.class));
 		tile_toolbar.addItem(new ToolItem(RectTool.class));
 		tile_toolbar.addItem(new ToolItem(FillTool.class));
+		//TODO: Save tileset selection to workspace.
 		//TODO: Events, Plugin system
 		//TODO: Map wrap and background don't work client side.
 		//TODO: Clean up client side API to make it easy to manage resources, right now it's very messy.

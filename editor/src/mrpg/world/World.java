@@ -151,7 +151,7 @@ public class World {
 					c.setTile(Tile.read(tileIO), level, false);
 				}
 			}
-		}
+		} w.updateNeighbors();
 		return w;
 	}
 }
