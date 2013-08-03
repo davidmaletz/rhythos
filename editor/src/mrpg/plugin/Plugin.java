@@ -18,7 +18,12 @@
  ******************************************************************************/
 package mrpg.plugin;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 public interface Plugin {
 	public void install(boolean init) throws Exception ;
 	public void uninstall() throws Exception ;
+	public void saveSettings(Document doc, Element e) throws Exception ;
+	public void readSettings(Document doc, Element e)throws Exception ;
 }

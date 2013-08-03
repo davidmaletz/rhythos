@@ -79,7 +79,7 @@ public class PluginManager extends JFrame implements ActionListener {
 			}
 		}
 		public void uninstall(JFrame f){
-			if(installed == 1) try{getPlugin().uninstall(); installed = 0;}catch(Exception e){
+			if(installed == 1) try{getPlugin().uninstall(); installed = 0; plugin = null;}catch(Exception e){
 				installed = -1; JOptionPane.showMessageDialog(f, "The plugin will be uninstalled the next time Rhythos is restarted.", "Plugin Uninstall", JOptionPane.INFORMATION_MESSAGE);
 			}
 		}
@@ -95,7 +95,7 @@ public class PluginManager extends JFrame implements ActionListener {
 		table.getColumnModel().getColumn(2).setPreferredWidth(75); table.getColumnModel().getColumn(3).setPreferredWidth(50);
 		table.getColumnModel().getColumn(4).setMinWidth(60); table.getColumnModel().getColumn(4).setMaxWidth(60);
 	}
-	public void actionPerformed(ActionEvent e){scanPluginDirectory();}
+	public void actionPerformed(ActionEvent e){scanPluginDirectory(); repaint();}
 	public static void openManager(){if(manager == null) manager = new PluginManager(); manager.setVisible(true);}
 	private static JFrame initWindow, manager;
 	public static void showInitWindow(){
@@ -135,13 +135,18 @@ public class PluginManager extends JFrame implements ActionListener {
 	public static void installPlugins(Document doc, Element root){
 		setInitStatus("Loading Plugins..."); scanPluginDirectory(); NodeList list = root.getElementsByTagName("plugin");
 		for(int i=0; i<list.getLength(); i++){
-			try{plugins.get(((Element)list.item(i)).getTextContent()).install(null);}catch(Exception ex){}
+			try{
+				Element element = (Element)list.item(i); PluginData data = plugins.get(element.getAttribute("name"));
+				data.install(null); data.plugin.readSettings(doc, element);
+			}catch(Exception ex){}
 		} closeInitWindow();
 	}
 	public static void getInstalledPlugins(Document doc, Element root){
 		Iterator<Map.Entry<String, PluginData> > i = plugins.entrySet().iterator();
-		while(i.hasNext()){ Map.Entry<String, PluginData> e = i.next(); if(e.getValue().installed > 0){
-			Element element = doc.createElement("plugin"); element.setTextContent(e.getKey()); root.appendChild(element);
+		while(i.hasNext()){ Map.Entry<String, PluginData> e = i.next(); PluginData plugin = e.getValue(); if(plugin.installed > 0){
+			Element element = doc.createElement("plugin"); element.setAttribute("name", e.getKey());
+			if(plugin.plugin != null)
+				try{plugin.plugin.saveSettings(doc, element);}catch(Exception ex){} root.appendChild(element);
 		}}
 	}
 	

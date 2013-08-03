@@ -89,10 +89,8 @@ public class AutoTile extends TileResource implements ActionListener {
 		animation = ani; aid = in.readShort();
 	}
 	public void deferredRead(File f) throws Exception {
-		try{
 		super.deferredRead(f);
 		if(active){active = false; editor.getTilesetViewer().addAutoTile(autotile, WorkspaceBrowser.getProject(this));}
-		}catch(Exception e){e.printStackTrace(); throw e;}
 	}
 	protected void read(File f) throws Exception {MapEditor.deferRead(this, MapEditor.DEF_TILEMAP);}
 	public boolean isCompatible(Project p){

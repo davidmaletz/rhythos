@@ -22,13 +22,25 @@
  ******************************************************************************/
 package mrpg.plugin.rpgmaker;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 import mrpg.editor.MapEditor;
 import mrpg.editor.MenuItem;
@@ -62,8 +74,82 @@ public class ImportProject implements Plugin, ActionListener {
 			MapEditor.instance.updateMenuBar();
 		}
 	}
+	public void saveSettings(Document doc, Element e) throws Exception {
+		Element element = doc.createElement("rpgmakerDirectory");
+		element.setTextContent(rpgmakerChooser.getCurrentDirectory().toString()); e.appendChild(element);
+	}
+	public void readSettings(Document doc, Element e)throws Exception {
+		rpgmakerChooser.setCurrentDirectory(new File(e.getElementsByTagName("rpgmakerDirectory").item(0).getTextContent()));
+	}
+	public static JFileChooser rpgmakerChooser = new JFileChooser();
+	static {
+		rpgmakerChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		rpgmakerChooser.setDialogTitle("Choose RPGMaker Project"); 
+	}
+	private static File selectProject(Component parent) throws Exception {
+		if(rpgmakerChooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION){
+			return rpgmakerChooser.getSelectedFile();
+		} else throw new Exception();
+	}
+	private static class ImportDialog extends JDialog implements ActionListener {
+		private static final long serialVersionUID = -9167142368732222315L;
+		private static final String BROWSE_IN = "browse_in", BROWSE_OUT = "browse_out";
+		private final Component component; private final JTextField in, out; private File in_f, out_f;
+		public ImportDialog(Component com){
+			super(JOptionPane.getFrameForComponent(com), "Import RPGMaker Project", true); component = com; setResizable(false);
+			Container c = getContentPane(); c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS)); JPanel settings = new JPanel();
+			settings.setLayout(new BoxLayout(settings, BoxLayout.Y_AXIS)); settings.setBorder(BorderFactory.createRaisedBevelBorder());
+			JPanel inner = new JPanel(new BorderLayout()); inner.setBorder(BorderFactory.createTitledBorder("Project to Import"));
+			in = new JTextField("", 20); inner.add(in, BorderLayout.CENTER); settings.add(inner);
+			JButton b = new JButton("..."); b.setActionCommand(BROWSE_IN); b.addActionListener(this); inner.add(b, BorderLayout.EAST);
+			inner = new JPanel(new BorderLayout()); inner.setBorder(BorderFactory.createTitledBorder("New Project Directory"));
+			out = new JTextField("", 20); inner.add(out, BorderLayout.CENTER); settings.add(inner);
+			b = new JButton("..."); b.setActionCommand(BROWSE_OUT); b.addActionListener(this); inner.add(b, BorderLayout.EAST);
+			c.add(settings);
+			inner = new JPanel();
+			b = new JButton("Ok"); b.setActionCommand(MapEditor.OK); b.addActionListener(this); inner.add(b);
+			b = new JButton("Cancel"); b.setActionCommand(MapEditor.CANCEL); b.addActionListener(this); inner.add(b);
+			c.add(inner);
+			setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE); pack(); setVisible(true);
+		}
+		public void checkIn() throws Exception {
+			File ldb = new File(in_f, "RPG_RT.ldb"); 
+			File lmt = new File(in_f, "RPG_RT.lmt");
+			if(!ldb.exists() || !lmt.exists()){
+				JOptionPane.showMessageDialog(this, "\""+in_f.getAbsolutePath()+"\" is not an RPGMaker project.", "Import RPGMaker Project", JOptionPane.ERROR_MESSAGE);
+				throw new Exception();
+			}
+		}
+		public void checkOut() throws Exception {
+			if(out_f.exists() && out_f.listFiles().length != 0){
+				JOptionPane.showMessageDialog(this, "\""+out_f.getAbsolutePath()+"\" must be an empty folder.", "Import RPGMaker Project", JOptionPane.ERROR_MESSAGE);
+				throw new Exception();
+			}
+		}
+		public void actionPerformed(ActionEvent e){
+			String command = e.getActionCommand();
+			try{
+				if(command == MapEditor.OK){
+					in_f = new File(in.getText()); checkIn();
+					out_f = new File(out.getText()); checkOut();
+					if(!out_f.exists() && !out_f.mkdirs()){
+						JOptionPane.showMessageDialog(this, "Unable to create folder: \""+out_f.getAbsolutePath()+"\" for new project.", "Import RPGMaker Project", JOptionPane.ERROR_MESSAGE);
+						throw new Exception();
+					} dispose();
+					Import(component, in_f, out_f);
+				} else if(command == BROWSE_IN){
+					in_f = selectProject(this);
+					checkIn(); in.setText(in_f.getAbsolutePath());
+				} else if(command == BROWSE_OUT){
+					out_f = Project.selectProject(this);
+					checkOut(); out.setText(out_f.getAbsolutePath());
+				} else dispose();
+			}catch(Exception ex){}
+			
+		}
+	}
 	public void actionPerformed(ActionEvent e){
-		Import((Component)e.getSource(), new File("C:/Games/FallingStars"), new File("C:/Games/Rhythos/FallingStars"));
+		new ImportDialog((Component)e.getSource());
 	}
 	public static File getAvailable(File f, String name, String ext){
 		File file = new File(f, name+ext); int i=2; while(file.exists()){file = new File(f, name+ext); i++;} return file;
@@ -170,7 +256,7 @@ public class ImportProject implements Plugin, ActionListener {
 			JOptionPane.showMessageDialog(c, "Could not read RPGMaker project at \""+from.getAbsolutePath()+"\".", "Unable to Import!", JOptionPane.ERROR_MESSAGE);
 			return;
 		} try{
-			if(to.exists() || !to.mkdirs()) throw new Exception(); MapEditor e = MapEditor.instance; 
+			MapEditor e = MapEditor.instance; 
 			Project p = new Project(to, e); File code = new File("project/com"), project = p.getFile();
 			if(code.exists()){
 				Resource.copyDir(code, new File(project, "com")); p.refresh();
@@ -228,7 +314,8 @@ public class ImportProject implements Plugin, ActionListener {
 				} if(lmu.map.children.size() > 0){
 					File file = getAvailable(parent.getFile(), n, "");
 					Resource folder = Folder.create(file, e); parent.add(folder); parent = folder;
-				} File file = getAvailable(parent.getFile(), n, "."+Map.EXT); n = file.getName(); System.out.println(n+" "+i+"/"+sz); i++;
+				} File file = getAvailable(parent.getFile(), n, "."+Map.EXT); n = file.getName();
+				System.out.println(n+" "+i+"/"+sz); i++; //TODO: Would be nice to have a progress monitor.
 				Map m = Map.createMap(parent, e, p, n.substring(0, n.length()-Map.EXT.length()-1), w); lmu.map.resource = m;
 			} MapEditor.instance.getBrowser().addProject(p);
 		}catch(Exception e){

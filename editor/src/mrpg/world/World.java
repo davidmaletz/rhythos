@@ -64,11 +64,12 @@ public class World {
 		}
 	}
 	public int getWidth(){return width;} public int getHeight(){return height;}
+	private final Cell OOB = new Cell(this, -1, -1);
 	public Cell getCell(int x, int y){
 		boolean oob = false;
 		if(wrapX){x = x%width; if(x < 0) x += width;} else oob = oob || x < 0 || x >= width;
 		if(wrapY){y = y%height; if(y < 0) y += height;} else oob = oob || y < 0 || y >= height;
-		return (oob)?null:cells.get(y*width+x);
+		return (oob)?OOB:cells.get(y*width+x);
 	}
 	public Cell addCell(int x, int y){
 		if(x < 0 || y < 0 || x >= width || y >= height) return null;
@@ -76,7 +77,7 @@ public class World {
 		return c;
 	}
 	public boolean isNeighbor(int x, int y, Tile tile, int level){
-		Cell c = getCell(x, y); return c != null && c.getTile(level).info.map == tile.info.map;
+		Cell c = getCell(x, y); return c == OOB || (c != null && c.getTile(level).info.map == tile.info.map);
 	}
 	public int getNeighbors(int x, int y, Tile tile, int level){
 		int neighbors = Direction.NONE;

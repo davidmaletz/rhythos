@@ -18,6 +18,7 @@
  ******************************************************************************/
 package mrpg.editor.resource;
 
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -73,11 +74,14 @@ public class Project extends Folder {
 	public ImageResource getFont(){return font;}
 	public ImageResource getBG(){return bg;}
 	public String getTarget(){return target;}
-	public static Project createProject(MapEditor e) throws Exception {
-		File f; if(folderChooser.showSaveDialog(MapEditor.instance) == JFileChooser.APPROVE_OPTION){
-			f = folderChooser.getSelectedFile(); if(f.exists() || !f.mkdirs()) throw new Exception();
+	public static File selectProject(Component parent) throws Exception {
+		if(folderChooser.showSaveDialog(parent) == JFileChooser.APPROVE_OPTION){
+			return folderChooser.getSelectedFile();
 		} else throw new Exception();
-		if(f.listFiles().length > 0) throw new Exception();
+	}
+	public static Project createProject(MapEditor e) throws Exception {
+		File f = selectProject(e); if(f.exists()){if(f.listFiles().length > 0) throw new Exception();}
+		else if(!f.mkdirs()) throw new Exception();
 		Project p = new Project(f, e); File project = new File("project");
 		if(project.exists()){
 			Resource.copyDir(project, f); p.read(f);
